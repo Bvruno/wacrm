@@ -186,7 +186,14 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-4">
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <MessageSquare className="h-4 w-4" />
+              <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+                <text x="70" y="285" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="700" fill="#FFFFFF">
+                  Codix
+                </text>
+                <text x="340" y="285" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="700" fill="#E11B22">
+                  IA
+                </text>
+              </svg>
             </div>
             <span className="text-sm font-semibold text-foreground">
               CodixIA CRM
