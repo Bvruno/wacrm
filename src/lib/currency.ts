@@ -29,7 +29,8 @@ export interface CurrencyOption {
  */
 export const CURRENCIES: CurrencyOption[] = [
   { code: "USD", label: "US Dollar", symbol: "$" },
-  { code: "EUR", label: "Euro", symbol: "€" },
+  { code: "PEN", label: "Nuevo Sol", symbol: "/S" },
+  /**{ code: "EUR", label: "Euro", symbol: "€" },
   { code: "GBP", label: "British Pound", symbol: "£" },
   { code: "INR", label: "Indian Rupee", symbol: "₹" },
   { code: "AUD", label: "Australian Dollar", symbol: "A$" },
@@ -42,6 +43,7 @@ export const CURRENCIES: CurrencyOption[] = [
   { code: "NGN", label: "Nigerian Naira", symbol: "₦" },
   { code: "SGD", label: "Singapore Dollar", symbol: "S$" },
   { code: "MXN", label: "Mexican Peso", symbol: "$" },
+   */
 ];
 
 /**
