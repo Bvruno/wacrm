@@ -14,6 +14,16 @@
     "noAccount": "Don't have an account?",
     "createAccount": "Create account"
   },
+  "roles": {
+    "admin": "Admin",
+    "adminHint": "Manage members + everything",
+    "agent": "Agent",
+    "agentHint": "Use features; no settings",
+    "viewer": "Viewer",
+    "viewerHint": "Read-only across the app",
+    "owner": "Owner",
+    "ownerHint": "Full control over account and billing"
+  },
   "Sidebar": {
     "title": "CodixIA",
     "dashboard": "Dashboard",

@@ -63,6 +63,7 @@ import {
 import { interactivePayloadPreviewText } from "@/lib/whatsapp/interactive"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
+import { insertStepAt } from "./step-tree"
 
 // ------------------------------------------------------------
 // Types (builder-local — mirror the flattened rows we POST)
@@ -653,7 +654,7 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
       step_config: blankConfig(type),
       branches: type === "condition" ? { yes: [], no: [] } : undefined,
     }
-    setState((s) => ({ ...s, steps: insertAt(s.steps, parentPath, parent, index, node) }))
+    setState((s) => ({ ...s, steps: insertStepAt(s.steps, parent, index, node) }))
     setExpandedId(node.cid)
   }
 
@@ -1166,7 +1167,12 @@ function StepRenderer({
         </div>
 
         {isCondition && (
-          <ConditionBranches step={step} parentPath={path} {...props} />
+          <ConditionBranches
+            step={step}
+            parentPath={path}
+            parentScope={parentScope}
+            {...props}
+          />
         )}
       </div>
 
@@ -1534,24 +1540,7 @@ function previewFor(step: BuilderStep): string {
 // Tree mutation helpers
 // ------------------------------------------------------------
 
-function insertAt(
-  steps: BuilderStep[],
-  parent: ParentScope,
-  index: number,
-  node: BuilderStep,
-): BuilderStep[] {
-  if (parent.kind === "root") {
-    const copy = [...steps]
-    copy.splice(index, 0, node)
-    return copy
-  }
-  return steps.map((s) => {
-    if (s.cid !== parent.parentCid || !s.branches) return s
-    const list = [...s.branches[parent.branch]]
-    list.splice(index, 0, node)
-    return { ...s, branches: { ...s.branches, [parent.branch]: list } }
-  })
-}
+export { insertStepAt } from "./step-tree"
 
 function mapAtPath(
   steps: BuilderStep[],
