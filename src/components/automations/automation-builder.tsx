@@ -641,14 +641,19 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
     setState((s) => ({ ...s, steps: mapAtPath(s.steps, path, updater) }))
   }
 
-  function addStepAt(parent: ParentScope, index: number, type: AutomationStepType) {
+  function addStepAt(
+    parentPath: StepPath,
+    parent: ParentScope,
+    index: number,
+    type: AutomationStepType,
+  ) {
     const node: BuilderStep = {
       cid: cid(),
       step_type: type,
       step_config: blankConfig(type),
       branches: type === "condition" ? { yes: [], no: [] } : undefined,
     }
-    setState((s) => ({ ...s, steps: insertAt(s.steps, parent, index, node) }))
+    setState((s) => ({ ...s, steps: insertAt(s.steps, parentPath, parent, index, node) }))
     setExpandedId(node.cid)
   }
 
@@ -762,6 +767,7 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
             <StepList
               steps={state.steps}
               parentPath={[]}
+              parentScope={{ kind: "root" }}
               expandedId={expandedId}
               setExpandedId={setExpandedId}
               updateStep={updateStep}
@@ -1023,28 +1029,26 @@ type StepPath = (
 interface StepListProps {
   steps: BuilderStep[]
   parentPath: StepPath
+  parentScope: ParentScope
   expandedId: string | null
   setExpandedId: (id: string | null) => void
   updateStep: (path: StepPath, updater: (s: BuilderStep) => BuilderStep) => void
-  addStepAt: (parent: ParentScope, index: number, type: AutomationStepType) => void
+  addStepAt: (
+    parentPath: StepPath,
+    parent: ParentScope,
+    index: number,
+    type: AutomationStepType,
+  ) => void
   deleteStepAt: (path: StepPath) => void
   moveStepAt: (path: StepPath, direction: -1 | 1) => void
 }
 
 function StepList(props: StepListProps) {
-  const { steps, parentPath, ...rest } = props
-  const parentScope: ParentScope =
-    parentPath.length === 0
-      ? { kind: "root" }
-      : (() => {
-          const last = parentPath[parentPath.length - 1]
-          if (last.kind !== "branch") return { kind: "root" } as const
-          return { kind: "branch", parentCid: last.parentCid, branch: last.branch } as const
-        })()
+  const { steps, parentPath, parentScope, ...rest } = props
 
   return (
     <div className="flex flex-col items-center">
-      <AddButton onPick={(t) => props.addStepAt(parentScope, 0, t)} />
+      <AddButton onPick={(t) => props.addStepAt(parentPath, parentScope, 0, t)} />
       {steps.map((step, idx) => (
         <StepRenderer
           key={step.cid}
@@ -1073,7 +1077,7 @@ function StepRenderer({
   total: number
   parentScope: ParentScope
   parentPath: StepPath
-} & Omit<StepListProps, "steps" | "parentPath">) {
+} & Omit<StepListProps, "steps" | "parentPath" | "parentScope">) {
   const t = useTranslations("Automations.builder")
   const path: StepPath = [
     ...parentPath,
@@ -1171,7 +1175,7 @@ function StepRenderer({
           the trailing connector here would produce a spurious third output. */}
       {!isCondition && (
         <AddButton
-          onPick={(t) => props.addStepAt(parentScope, index + 1, t)}
+          onPick={(t) => props.addStepAt(parentPath, parentScope, index + 1, t)}
         />
       )}
     </>
