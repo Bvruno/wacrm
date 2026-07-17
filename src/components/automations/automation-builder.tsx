@@ -1049,7 +1049,9 @@ function StepList(props: StepListProps) {
 
   return (
     <div className="flex flex-col items-center">
-      <AddButton onPick={(t) => props.addStepAt(parentPath, parentScope, 0, t)} />
+      <AddButton
+        onPick={(type) => props.addStepAt(parentPath, parentScope, 0, type)}
+      />
       {steps.map((step, idx) => (
         <StepRenderer
           key={step.cid}
@@ -1216,10 +1218,20 @@ function ConditionBranches({
     // cards. Two-column grid returns on sm+.
     <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
       <BranchColumn label={t("branches.yes")} color="text-primary">
-        <StepList {...props} steps={yes} parentPath={yesPath} />
+        <StepList
+          {...props}
+          steps={yes}
+          parentPath={yesPath}
+          parentScope={{ kind: "branch", parentCid: step.cid, branch: "yes" }}
+        />
       </BranchColumn>
       <BranchColumn label={t("branches.no")} color="text-rose-400">
-        <StepList {...props} steps={no} parentPath={noPath} />
+        <StepList
+          {...props}
+          steps={no}
+          parentPath={noPath}
+          parentScope={{ kind: "branch", parentCid: step.cid, branch: "no" }}
+        />
       </BranchColumn>
     </div>
   )
