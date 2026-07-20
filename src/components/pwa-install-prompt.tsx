@@ -1,13 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { X } from 'lucide-react'
+import { X, Download } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
 
 export function PwaInstallPrompt() {
   const t = useTranslations('pwa')
   const [mounted, setMounted] = useState(false)
   const [dismissed, setDismissed] = useState(false)
+  const deferredPrompt = useRef<Event | null>(null)
+  const [installReady, setInstallReady] = useState(false)
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -20,6 +24,14 @@ export function PwaInstallPrompt() {
         // SW registration failed — not critical
       })
     }
+
+    const handler = (e: Event) => {
+      e.preventDefault()
+      deferredPrompt.current = e
+      setInstallReady(true)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -32,6 +44,21 @@ export function PwaInstallPrompt() {
   ).matches
   if (isStandalone) return null
 
+  async function handleInstall() {
+    const prompt = deferredPrompt.current as
+      | { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }
+      | null
+      | undefined
+    if (!prompt) return
+    await prompt.prompt()
+    const { outcome } = await prompt.userChoice
+    if (outcome === 'accepted') {
+      deferredPrompt.current = null
+      setInstallReady(false)
+      setDismissed(true)
+    }
+  }
+
   return (
     <div className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-xl border border-border bg-card p-4 shadow-lg">
       <div className="flex items-start justify-between gap-2">
@@ -40,6 +67,16 @@ export function PwaInstallPrompt() {
           <p className="mt-1 text-xs text-muted-foreground">
             {isIOS ? t('iosHint') : t('installHint')}
           </p>
+          {!isIOS && installReady && (
+            <Button
+              size="sm"
+              onClick={handleInstall}
+              className="mt-3 bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <Download className="mr-1.5 h-4 w-4" />
+              {t('install')}
+            </Button>
+          )}
         </div>
         <button
           type="button"

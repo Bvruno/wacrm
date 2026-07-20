@@ -1726,6 +1726,7 @@
     "title": "Install wacrm",
     "installHint": "Add this app to your home screen for the best experience.",
     "iosHint": "Tap the share button and select \"Add to Home Screen\".",
+    "install": "Install app",
     "dismiss": "Dismiss"
   }
 }

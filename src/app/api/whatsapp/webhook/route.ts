@@ -9,6 +9,7 @@ import { runAutomationsForTrigger } from '@/lib/automations/engine'
 import { dispatchInboundToFlows } from '@/lib/flows/engine'
 import { dispatchInboundToAiReply } from '@/lib/ai/auto-reply'
 import { dispatchWebhookEvent } from '@/lib/webhooks/deliver'
+import { sendPushToAccount } from '@/lib/push/send-push'
 import {
   handleTemplateWebhookChange,
   isTemplateWebhookField,
@@ -204,13 +205,17 @@ export async function POST(request: Request) {
   // (see issue #301). `after()` hands the callback to the runtime, which
   // keeps the function alive until it resolves (within the route's
   // maxDuration).
+  console.log('[AFTER_TEST] before after() — POST handler running')
   after(async () => {
+    console.log('[AFTER_TEST] INSIDE after() callback — THIS SHOULD APPEAR')
     try {
       await processWebhook(body)
+      console.log('[AFTER_TEST] processWebhook completed successfully')
     } catch (error) {
-      console.error('Error processing webhook:', error)
+      console.error('[AFTER_TEST] Error in processWebhook:', error)
     }
   })
+  console.log('[AFTER_TEST] after after() — about to return 200')
 
   return NextResponse.json({ status: 'received' }, { status: 200 })
 }
@@ -700,6 +705,22 @@ async function processMessage(
 
   if (convError) {
     console.error('Error updating conversation:', convError)
+  }
+
+  // Fire push notification to subscribed agents so they know a new
+  // message arrived, even when the app is backgrounded / closed.
+  console.log('[PUSH_DEBUG] About to call sendPushToAccount for account', accountId)
+  try {
+    const result = await sendPushToAccount(accountId, {
+      title: contactRecord.name || contactRecord.phone || 'New message',
+      body: contentText || `[${message.type}]`,
+      url: `/inbox?c=${conversation.id}`,
+    })
+    if (result.sent === 0) {
+      console.warn('[push] no subscriptions found for account', accountId)
+    }
+  } catch (err) {
+    console.error('[push] sendPushToAccount failed:', err)
   }
 
   // If this contact was a recent broadcast recipient, flag the reply

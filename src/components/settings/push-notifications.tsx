@@ -66,10 +66,14 @@ export function PushNotifications() {
     setSending(true)
     setSent(false)
     try {
-      await sendNotification(message)
-      setSent(true)
-      setMessage('')
-      setTimeout(() => setSent(false), 3000)
+      const res = await sendNotification(message)
+      if (res.success) {
+        setSent(true)
+        setMessage('')
+        setTimeout(() => setSent(false), 3000)
+      } else {
+        console.error('Push test failed:', res.error)
+      }
     } catch (err) {
       console.error('Failed to send test notification:', err)
     } finally {
