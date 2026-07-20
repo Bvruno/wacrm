@@ -1,6 +1,6 @@
 # MCP server
 
-wacrm ships a [Model Context Protocol](https://modelcontextprotocol.io)
+CodixIA ships a [Model Context Protocol](https://modelcontextprotocol.io)
 server so you can drive your CRM from AI assistants — Claude Desktop,
 Claude Code, Cursor, and any other MCP client — in natural language:
 
@@ -9,7 +9,7 @@ Claude Code, Cursor, and any other MCP client — in natural language:
 > "Send the `order_update` template to that contact."
 
 It lives in [`mcp-server/`](../mcp-server) and is published to npm as
-[`wacrm-mcp`](https://www.npmjs.com/package/wacrm-mcp). Under the hood
+[`codixia-mcp`](https://www.npmjs.com/package/codixia-mcp). Under the hood
 it's a thin wrapper over the [public API](./public-api.md), so every
 request is authenticated and scoped by your instance exactly like any
 other API call.
@@ -26,10 +26,10 @@ other API call.
      "mcpServers": {
        "wacrm": {
          "command": "npx",
-         "args": ["-y", "wacrm-mcp"],
+         "args": ["-y", "codixia-mcp"],
          "env": {
-           "WACRM_BASE_URL": "https://crm.example.com",
-           "WACRM_API_KEY": "wacrm_live_xxxxxxxxxxxxxxxxxxxxxxxx"
+           "CODIXIA_BASE_URL": "https://crm.example.com",
+           "CODIXIA_API_KEY": "wacrm_live_xxxxxxxxxxxxxxxxxxxxxxxx"
          }
        }
      }
@@ -37,8 +37,8 @@ other API call.
    ```
 
 That's **read-only** — the safe default. To let the assistant change
-data or send messages, add `"WACRM_ENABLE_WRITES": "true"` (and
-`"WACRM_ENABLE_BROADCASTS": "true"` for mass sends) to `env`.
+data or send messages, add `"CODIXIA_ENABLE_WRITES": "true"` (and
+`"CODIXIA_ENABLE_BROADCASTS": "true"` for mass sends) to `env`.
 
 ## What it exposes
 

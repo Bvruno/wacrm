@@ -70,7 +70,7 @@ export async function sendNotification(message: string) {
     await webpush.sendNotification(
       { endpoint: sub.endpoint, keys: { p256dh: sub.keys_p256dh, auth: sub.keys_auth } },
       JSON.stringify({
-        title: 'wacrm',
+        title: 'CodixIA',
         body: message,
         icon: '/codixia-icon.svg',
         badge: '/codixia-icon.svg',

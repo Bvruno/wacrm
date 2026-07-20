@@ -69,6 +69,12 @@ export async function middleware(request: NextRequest) {
     return withRefreshedCookies(NextResponse.redirect(url))
   }
 
+  // Public marketing pages - let anyone through
+  const marketingPaths = ['/', '/features', '/pricing', '/about']
+  if (marketingPaths.includes(request.nextUrl.pathname)) {
+    return supabaseResponse
+  }
+
   // Protected pages - redirect to login if not authenticated
   const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/broadcasts', '/automations', '/settings']
   if (!user && protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))) {

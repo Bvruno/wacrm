@@ -1,8 +1,8 @@
 // ============================================================
 // Broadcast tool — the highest-risk action.
 //
-// Registered only when BOTH WACRM_ENABLE_WRITES and
-// WACRM_ENABLE_BROADCASTS are set. A single call can message up to
+// Registered only when BOTH CODIXIA_ENABLE_WRITES and
+// CODIXIA_ENABLE_BROADCASTS are set. A single call can message up to
 // 1000 people, so on top of the env gate the tool requires an
 // explicit `confirm: true` argument — the model must consciously opt
 // in, and a client that echoes tool args gives the user a last look.

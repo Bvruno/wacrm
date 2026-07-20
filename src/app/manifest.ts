@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'wacrm',
-    short_name: 'wacrm',
+    name: 'CodixIA',
+    short_name: 'CodixIA',
     description: 'Self-hostable CRM template for WhatsApp.',
     start_url: '/',
     display: 'standalone',

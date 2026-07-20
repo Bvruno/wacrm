@@ -23,21 +23,17 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "wacrm",
-    template: "%s — wacrm",
+    default: "CodixIA",
+    template: "%s — CodixIA",
   },
   description: "Self-hostable CRM template for WhatsApp.",
-  robots: {
-    index: false,
-    follow: false,
-  },
   icons: {
     icon: [{ url: "/icon" }],
     apple: [{ url: "/codixia-icon.svg" }],
   },
   appleWebApp: {
     capable: true,
-    title: "wacrm",
+    title: "CodixIA",
     statusBarStyle: "black-translucent",
   },
   formatDetection: {

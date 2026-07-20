@@ -1284,7 +1284,7 @@
       "labelTooLong": "라벨은 {max}자 이하여야 합니다",
       "copied": "초대 링크가 복사되었습니다",
       "clipboardBlocked": "클립보드 접근이 차단되었습니다 — 링크를 직접 복사하세요",
-      "whatsappMessage": "이 링크(유효 기간 {expiresInDays}일)로 wacrm의 {accountName}에 참여하세요: {url}"
+      "whatsappMessage": "이 링크(유효 기간 {expiresInDays}일)로 CodixIA의 {accountName}에 참여하세요: {url}"
     },
     "tagsAndFields": {
       "title": "필드 & 태그",
@@ -1404,8 +1404,8 @@
       "submitApproval": "승인 요청",
 
       "deleteDialogTitle": "템플릿을 삭제하시겠습니까?",
-      "deleteMetaDesc": "\"{name}\"이(가) Meta와 wacrm에서 삭제됩니다. 이 템플릿을 사용하는 활성 브로드캐스트는 다음 전송부터 실패하기 시작합니다. 되돌릴 수 없습니다.",
-      "deleteLocalDesc": "\"{name}\"이(가) wacrm에서 삭제됩니다. Meta에 제출된 적이 없으므로 별도의 원격 정리가 필요하지 않습니다.",
+      "deleteMetaDesc": "\"{name}\"이(가) Meta와 CodixIA에서 삭제됩니다. 이 템플릿을 사용하는 활성 브로드캐스트는 다음 전송부터 실패하기 시작합니다. 되돌릴 수 없습니다.",
+      "deleteLocalDesc": "\"{name}\"이(가) CodixIA에서 삭제됩니다. Meta에 제출된 적이 없으므로 별도의 원격 정리가 필요하지 않습니다.",
       "deleting": "삭제 중…",
       "delete": "삭제",
 
@@ -1447,7 +1447,7 @@
       "notConnected": "연결되지 않음",
       "connectedDesc": "액세스 토큰으로 Meta 인증이 완료되었습니다. 웹훅이 실제로 연결되었는지는 아래 등록 상태를 확인하세요.",
       "notConnectedDesc": "아래에서 Meta API 자격 증명을 설정해 WhatsApp 비즈니스 계정을 연결하세요.",
-      "registered": "등록됨 — Meta가 wacrm으로 이벤트를 전달합니다",
+      "registered": "등록됨 — Meta가 CodixIA으로 이벤트를 전달합니다",
       "notRegistered": "등록되지 않음 — Meta가 이벤트를 전달하지 않습니다",
       "verifyWithMeta": "Meta로 확인",
       "subscribedSince": "{date}부터 구독 중입니다. 이벤트가 더 이상 도착하지 않으면 Meta로 확인을 클릭하세요.",
@@ -1471,7 +1471,7 @@
       "twoStepPin": "2단계 인증 PIN",
       "optional": "(선택)",
       "pinPlaceholder": "Meta WhatsApp 관리자에서 발급받은 6자리 PIN",
-      "pinHint": "프로덕션 번호의 수신 메시지를 연결하려면 필요합니다. Meta 비즈니스 관리자 → WhatsApp 계정 → 전화번호 → 2단계 인증에서 설정한 뒤 여기에 붙여넣으면 wacrm이 해당 번호를 구독할 수 있습니다 — 그렇지 않으면 Meta는 마지막으로 이 번호를 등록한 앱으로 수신 이벤트를 보냅니다(공유 WABA 하의 두 번째 번호에서 흔히 발생하는 증상입니다). Meta 테스트 번호는 PIN이 없고 이미 등록되어 있으므로 이 필드를 비워두세요. 비워두면 기존 등록도 그대로 유지됩니다.",
+      "pinHint": "프로덕션 번호의 수신 메시지를 연결하려면 필요합니다. Meta 비즈니스 관리자 → WhatsApp 계정 → 전화번호 → 2단계 인증에서 설정한 뒤 여기에 붙여넣으면 CodixIA이 해당 번호를 구독할 수 있습니다 — 그렇지 않으면 Meta는 마지막으로 이 번호를 등록한 앱으로 수신 이벤트를 보냅니다(공유 WABA 하의 두 번째 번호에서 흔히 발생하는 증상입니다). Meta 테스트 번호는 PIN이 없고 이미 등록되어 있으므로 이 필드를 비워두세요. 비워두면 기존 등록도 그대로 유지됩니다.",
       "webhookTitle": "웹훅 설정",
       "webhookDesc": "Meta 앱 대시보드의 웹훅 콜백으로 이 URL을 사용하세요.",
       "webhookUrl": "웹훅 콜백 URL",
@@ -1581,6 +1581,21 @@
       "accentColor": "강조 색상",
       "useTheme": "{name} 테마 사용"
     },
+    "push": {
+      "title": "푸시 알림",
+      "description": "중요한 이벤트가 발생할 때 푸시 알림을 받습니다. 서버에 VAPID 키가 구성되어 있어야 합니다.",
+      "notSupported": "이 브라우저에서는 푸시 알림이 지원되지 않습니다.",
+      "notConfigured": "푸시 알림이 구성되지 않았습니다. 관리자에게 서버 환경에서 VAPID 키를 설정하도록 요청하세요.",
+      "subscribedTitle": "알림이 켜져 있습니다",
+      "subscribedDesc": "새 메시지 및 대화 배정과 같은 이벤트에 대한 푸시 알림을 받게 됩니다.",
+      "unsubscribedTitle": "알림이 꺼져 있습니다",
+      "unsubscribedDesc": "구독하면 앱이 닫혀 있을 때도 푸시 알림을 받을 수 있습니다.",
+      "subscribe": "활성화",
+      "unsubscribe": "비활성화",
+      "testTitle": "테스트 알림",
+      "testPlaceholder": "테스트 메시지 작성…",
+      "send": "보내기"
+    },
     "security": {
       "title": "로그인 & 보안",
       "description": "비밀번호를 변경하고 기기에서 로그아웃하세요. 계정을 안전하게 유지하는 데 도움이 됩니다."
@@ -1637,7 +1652,7 @@
     },
     "aiConfig": {
       "title": "에이전트 설정",
-      "description": "직접 발급받은 OpenAI 또는 Anthropic 키를 사용하세요. wacrm은 회원님의 키로 공급자에 직접 요청하므로 좌석당 AI 비용이 없고 데이터도 온전히 회원님의 것입니다. 인박스의 AI 답장 초안, 자동 응답 봇, 플레이그라운드에 사용됩니다.",
+      "description": "직접 발급받은 OpenAI 또는 Anthropic 키를 사용하세요. CodixIA은 회원님의 키로 공급자에 직접 요청하므로 좌석당 AI 비용이 없고 데이터도 온전히 회원님의 것입니다. 인박스의 AI 답장 초안, 자동 응답 봇, 플레이그라운드에 사용됩니다.",
       "adminOnlyConfig": "관리자와 소유자만 AI 설정을 변경할 수 있습니다.",
       "loadFailed": "AI 설정을 불러오지 못했습니다",
       "providerAndKey": "공급자 & 키",
@@ -1704,10 +1719,200 @@
     }
   },
   "pwa": {
-    "title": "wacrm 설치",
+    "title": "CodixIA 설치",
     "installHint": "최상의 경험을 위해 홈 화면에 추가하세요.",
     "iosHint": "공유 버튼을 누르고 \"홈 화면에 추가\"를 선택하세요.",
     "install": "앱 설치",
     "dismiss": "닫기"
+  },
+  "LandingPage": {
+    "meta": {
+      "title": "CodixIA — WhatsApp CRM",
+      "description": "팀으로 WhatsApp에서 비즈니스를 관리하세요. 공유 인박스, 영업 파이프라인, 브로드캐스트, 자동화, AI 어시스턴트."
+    },
+    "header": {
+      "features": "기능",
+      "pricing": "가격",
+      "about": "소개",
+      "signIn": "로그인",
+      "signUp": "회원가입",
+      "dashboard": "대시보드"
+    },
+    "hero": {
+      "badge": "자가 호스팅 WhatsApp CRM",
+      "title": "팀으로 WhatsApp에서 비즈니스를 관리하세요",
+      "subtitle": "공유 인박스, 영업 파이프라인, 브로드캐스트 캠페인, 코드 없는 자동화, AI 어시스턴트 — 모두 당신이 제어하는 하나의 플랫폼에서.",
+      "ctaPrimary": "무료로 시작하기",
+      "ctaSecondary": "기능 살펴보기",
+      "slide1": "다중 사용자 공유 인박스",
+      "slide2": "시각적 영업 파이프라인",
+      "slide3": "브로드캐스트 캠페인",
+      "slide4": "코드 없는 자동화",
+      "slide5": "AI 어시스턴트"
+    },
+    "features": {
+      "title": "WhatsApp에서 판매를 위한 모든 것",
+      "subtitle": "영업 및 지원팀을 위해 설계된 5가지 핵심 기능.",
+      "sharedInbox": {
+        "title": "공유 인박스",
+        "description": "모든 WhatsApp 채팅을 한곳에서 관리하세요. 대화를 배정하고, 태그를 추가하고, 서로의 메시지를 방해하지 않고 팀으로 작업하세요."
+      },
+      "pipeline": {
+        "title": "영업 파이프라인",
+        "description": "칸반 보드에서 리드를 시각화하세요. 단계 간 드래그 앤 드롭, 흐름 커스터마이징, 기회를 절대 놓치지 마세요."
+      },
+      "broadcasts": {
+        "title": "브로드캐스트",
+        "description": "세분화된 대량 캠페인을 보내세요. 메시지를 예약하고, 결과를 측정하고, 적시에 연락처에 도달하세요."
+      },
+      "automations": {
+        "title": "자동화",
+        "description": "트리거와 액션으로 코드 없는 워크플로를 만드세요 — 자동 환영 메시지부터 스마트 후속 조치까지."
+      },
+      "aiAssistant": {
+        "title": "AI 어시스턴트",
+        "description": "지능형 제안으로 더 빠르게 답장하세요. 어시스턴트가 지식베이스에서 학습하고 답변 초안을 작성합니다."
+      },
+      "cta": "모든 기능 살펴보기",
+      "learnMore": "더 알아보기"
+    },
+    "howItWorks": {
+      "title": "몇 분 만에 시작하세요",
+      "subtitle": "WhatsApp 커뮤니케이션을 혁신하는 세 가지 간단한 단계.",
+      "step1": {
+        "title": "WhatsApp 연결",
+        "description": "WhatsApp 비즈니스 API 번호를 몇 초 만에 연결하세요. 복잡한 설정이 필요하지 않습니다."
+      },
+      "step2": {
+        "title": "팀 초대",
+        "description": "상담원을 추가하고, 역할을 지정하고, 같은 인박스에서 협업을 시작하세요."
+      },
+      "step3": {
+        "title": "판매 시작",
+        "description": "리드를 관리하고, 캠페인을 보내고, 첫날부터 영업 프로세스를 자동화하세요."
+      }
+    },
+    "pricing": {
+      "title": "간단하고 투명한 가격",
+      "subtitle": "모든 플랜에 14일 무료 체험이 포함됩니다.",
+      "free": {
+        "name": "무료",
+        "description": "시작하기에 완벽합니다",
+        "price": "$0",
+        "period": "/월",
+        "features": [
+          "최대 2명의 상담원",
+          "공유 인박스",
+          "기본 파이프라인",
+          "일일 100개 메시지",
+          "이메일 지원"
+        ],
+        "cta": "무료로 시작하기"
+      },
+      "pro": {
+        "name": "프로",
+        "description": "성장하는 팀을 위한",
+        "price": "$29",
+        "period": "/월",
+        "features": [
+          "최대 10명의 상담원",
+          "무제한 브로드캐스트",
+          "자동화",
+          "AI 어시스턴트",
+          "우선 지원"
+        ],
+        "cta": "무료 체험",
+        "popular": "가장 인기 있음"
+      },
+      "enterprise": {
+        "name": "엔터프라이즈",
+        "description": "조직을 위한",
+        "price": "$99",
+        "period": "/월",
+        "features": [
+          "무제한 상담원",
+          "공개 API",
+          "자가 호스팅",
+          "SLA 보장",
+          "전담 지원"
+        ],
+        "cta": "영업팀에 문의"
+      }
+    },
+    "cta": {
+      "title": "커뮤니케이션을 혁신할 준비가 되셨나요?",
+      "subtitle": "CRM을 자체 호스팅하고 데이터를 완전히 제어하세요. 놀라움도, 숨겨진 제한도 없습니다.",
+      "button": "오늘 무료로 시작하세요",
+      "footnote": "신용카드 필요 없음"
+    },
+    "footer": {
+      "description": "자가 호스팅 WhatsApp CRM. 귀하의 비즈니스, 귀하의 데이터, 귀하의 통제.",
+      "product": "제품",
+      "home": "홈",
+      "features": "기능",
+      "pricing": "가격",
+      "about": "소개",
+      "legal": "법적 고지",
+      "privacy": "개인정보처리방침",
+      "terms": "이용약관",
+      "resources": "리소스",
+      "docs": "문서",
+      "github": "GitHub",
+      "copyright": "© {year} CodixIA. All rights reserved.",
+      "selfHost": "❤️로 자체 호스팅"
+    },
+    "featuresPage": {
+      "title": "기능",
+      "subtitle": "CodixIA가 팀을 위해 할 수 있는 모든 것을 알아보세요.",
+      "sharedInbox": {
+        "title": "공유 인박스",
+        "description": "모든 WhatsApp 대화를 한곳에 중앙화하세요. 팀이 충돌 없이 보고, 배정하고, 답장할 수 있습니다.",
+        "features": ["실시간 대화", "상담원 배정", "태그 및 필터", "전체 기록"]
+      },
+      "pipeline": {
+        "title": "영업 파이프라인",
+        "description": "시각적 파이프라인으로 더 많은 리드를 전환하세요. 단계 간 드래그 앤 드롭, 영업 흐름 커스터마이징, 모든 기회를 추적하세요.",
+        "features": ["칸반 드래그 & 드롭", "커스터마이징 가능한 단계", "파이프라인 금액", "단계별 지표"]
+      },
+      "broadcasts": {
+        "title": "브로드캐스트",
+        "description": "한 번의 클릭으로 수백 명의 연락처에 도달하세요. 대상을 세분화하고, 캠페인을 예약하고, 성과를 측정하세요.",
+        "features": ["태그 기반 세분화", "전송 예약", "캠페인 지표", "재사용 가능한 템플릿"]
+      },
+      "automations": {
+        "title": "자동화",
+        "description": "코드를 한 줄도 작성하지 않고 자동화된 워크플로를 만드세요 — 환영 메시지부터 복잡한 후속 조치까지.",
+        "features": ["트리거 및 액션", "시각적 플로우", "코드 불필요", "연동"]
+      },
+      "aiAssistant": {
+        "title": "AI 어시스턴트",
+        "description": "더 빠르고 정확하게 답장하세요. AI 어시스턴트가 지식베이스에서 학습하고 상황에 맞는 답변을 제안합니다.",
+        "features": ["스마트 제안", "지식베이스", "자동 응답", "커스터마이징 가능"]
+      }
+    },
+    "pricingPage": {
+      "title": "가격",
+      "subtitle": "모든 규모의 팀을 위한 유연한 요금제.",
+      "faq": "질문이 있으신가요?",
+      "faqContact": "문의하기",
+      "cta": "무료로 시작하기",
+      "ctaEnterprise": "영업팀에 문의"
+    },
+    "aboutPage": {
+      "title": "CodixIA 소개",
+      "subtitle": "자가 호스팅 WhatsApp CRM.",
+      "mission": {
+        "title": "저희의 사명",
+        "description": "저희는 기업이 데이터와 커뮤니케이션을 완전히 통제할 자격이 있다고 믿습니다. CodixIA는 폐쇄형 CRM 플랫폼의 대안으로, 엔터프라이즈 성능과 프라이버시, 투명성을 결합하여 구축되었습니다."
+      },
+      "why": {
+        "title": "자가 호스팅 이유",
+        "description": "고객 데이터는 타사에 맡기기에는 너무 소중합니다. CodixIA는 자체 서버에서 실행되므로 누가 무엇에 접근하는지 절대적으로 통제할 수 있습니다 — 인위적인 제한도, 숨겨진 비용도 없습니다."
+      },
+      "stack": {
+        "title": "기술 스택",
+        "description": "Next.js, Supabase, TypeScript로 구축되었습니다. 빠르고 안전하며 배포하기 쉽게 설계되었습니다."
+      }
+    }
   }
 }

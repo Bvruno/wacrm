@@ -1,8 +1,8 @@
 {
-  "name": "wacrm-mcp",
+  "name": "codixia-mcp",
   "version": "0.1.1",
-  "mcpName": "io.github.ArnasDon/wacrm-mcp",
-  "description": "Model Context Protocol (MCP) server for wacrm — drive your self-hosted WhatsApp CRM from Claude, Cursor, and other MCP clients.",
+  "mcpName": "io.github.ArnasDon/codixia-mcp",
+  "description": "Model Context Protocol (MCP) server for CodixIA — drive your self-hosted WhatsApp CRM from Claude, Cursor, and other MCP clients.",
   "license": "MIT",
   "author": "Arnas Donauskas",
   "homepage": "https://github.com/ArnasDon/wacrm",
@@ -14,7 +14,7 @@
   "keywords": [
     "mcp",
     "model-context-protocol",
-    "wacrm",
+    "codixia",
     "whatsapp",
     "crm",
     "claude",
@@ -25,7 +25,7 @@
     "node": ">=20.0.0"
   },
   "bin": {
-    "wacrm-mcp": "./dist/index.js"
+    "codixia-mcp": "./dist/index.js"
   },
   "files": [
     "dist",
