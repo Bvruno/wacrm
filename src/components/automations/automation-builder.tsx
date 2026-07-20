@@ -1201,17 +1201,14 @@ function ConditionBranches({
   const t = useTranslations("Automations.builder")
   const yes = step.branches?.yes ?? []
   const no = step.branches?.no ?? []
-  // Build the child scope by appending a branch marker. The scope the
-  // StepList uses is driven by the LAST element of parentPath, so the
-  // tail's `index` doesn't matter — it's replaced per child during walks.
-  const yesPath: StepPath = [
-    ...parentPath,
-    { kind: "branch", parentCid: step.cid, branch: "yes", index: 0 },
-  ]
-  const noPath: StepPath = [
-    ...parentPath,
-    { kind: "branch", parentCid: step.cid, branch: "no", index: 0 },
-  ]
+  // Use parentPath directly — the branch context (yes/no) is already
+  // carried by parentScope passed to StepList. Appending an extra
+  // branch marker here would produce a duplicate segment in every
+  // step's path, causing mapAtPath / removeAt / moveAt to recurse
+  // into the child step's .branches (which doesn't exist for non-
+  // condition steps) and silently lose every mutation.
+  const yesPath: StepPath = parentPath
+  const noPath: StepPath = parentPath
   return (
     // Stack Yes/No vertically on mobile — two columns at 375px would
     // cram each branch to ~170px which is too narrow for the nested
