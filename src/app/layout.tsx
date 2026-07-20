@@ -6,6 +6,7 @@ import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { ThemedToaster } from "@/components/themed-toaster";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import {
   DEFAULT_MODE,
   DEFAULT_THEME,
@@ -32,11 +33,20 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [{ url: "/icon" }],
+    apple: [{ url: "/codixia-icon.svg" }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: "wacrm",
+    statusBarStyle: "black-translucent",
   },
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
   },
 };
 
@@ -112,6 +122,7 @@ export default async function RootLayout({
           <ThemeProvider>
             {children}
             <ThemedToaster />
+            <PwaInstallPrompt />
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

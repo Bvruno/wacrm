@@ -146,6 +146,15 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // Service worker must never be cached — a stale SW breaks
+        // push notifications and prevents updates from taking effect.
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+        ],
+      },
+      {
         // Security headers on every response, including /_next/static
         // assets (nosniff matters there) and /api/* (HSTS + referrer-
         // policy don't hurt).

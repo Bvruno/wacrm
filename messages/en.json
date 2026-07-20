@@ -1510,6 +1510,7 @@
       "profile": "Your profile",
       "security": "Login & security",
       "appearance": "Appearance",
+      "notifications": "Push notifications",
       "whatsapp": "WhatsApp",
       "templates": "Templates",
       "quick-replies": "Quick replies",
@@ -1583,6 +1584,21 @@
       "active": "Active",
       "accentColor": "Accent color",
       "useTheme": "Use {name} theme"
+    },
+    "push": {
+      "title": "Push notifications",
+      "description": "Receive push notifications when important events happen. Requires VAPID keys configured on the server.",
+      "notSupported": "Push notifications are not supported in this browser.",
+      "notConfigured": "Push notifications are not configured. Ask an admin to set the VAPID keys in the server environment.",
+      "subscribedTitle": "Notifications are on",
+      "subscribedDesc": "You will receive push notifications for events like new messages and conversation assignments.",
+      "unsubscribedTitle": "Notifications are off",
+      "unsubscribedDesc": "Subscribe to receive push notifications even when the app is closed.",
+      "subscribe": "Enable",
+      "unsubscribe": "Disable",
+      "testTitle": "Test notification",
+      "testPlaceholder": "Write a test message…",
+      "send": "Send"
     },
     "security": {
       "title": "Login & security",
@@ -1705,5 +1721,11 @@
       "reindexTooltip": "Re-embed all documents (e.g. after adding an embeddings key)",
       "loading": "Loading…"
     }
+  },
+  "pwa": {
+    "title": "Install wacrm",
+    "installHint": "Add this app to your home screen for the best experience.",
+    "iosHint": "Tap the share button and select \"Add to Home Screen\".",
+    "dismiss": "Dismiss"
   }
 }
