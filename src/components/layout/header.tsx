@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-import { LogOut, Menu, Settings as SettingsIcon, User } from "lucide-react";
+import { useSidebar } from "@/hooks/use-sidebar";
+import {
+  LogOut,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings as SettingsIcon,
+  User,
+} from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -38,8 +46,6 @@ function getPageTitleKey(pathname: string): string {
 }
 
 interface HeaderProps {
-  /** Wired to the shell's drawer state. Used only on mobile — the
-   *  hamburger button is hidden on lg+. */
   onOpenSidebar?: () => void;
 }
 
@@ -49,6 +55,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
   const t = useTranslations("Header");
   const pathname = usePathname();
   const { profile, signOut } = useAuth();
+  const { collapsed, toggleCollapsed } = useSidebar();
   const titleKey = getPageTitleKey(pathname);
 
   const initial =
@@ -59,7 +66,22 @@ export function Header({ onOpenSidebar }: HeaderProps) {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-4 lg:px-6">
       <div className="flex min-w-0 items-center gap-2">
-        {/* Hamburger — mobile only. 44×44 hit target per Apple HIG. */}
+        {/* Sidebar toggle — desktop only. Rotates icon to hint
+            at the current state (close icon = expanded, open icon = collapsed). */}
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="hidden h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:flex"
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="h-5 w-5" />
+          ) : (
+            <PanelLeftClose className="h-5 w-5" />
+          )}
+        </button>
+
+        {/* Hamburger — mobile only */}
         <button
           type="button"
           onClick={onOpenSidebar}
