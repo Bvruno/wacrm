@@ -32,6 +32,7 @@ import {
   rateLimitResponse,
   RATE_LIMITS,
 } from "@/lib/rate-limit";
+import { enforcePlanLimit } from "@/lib/plans/enforce";
 
 // Resolve the base URL we publish invite links under.
 //
@@ -215,6 +216,9 @@ export async function POST(request: Request) {
     }
 
     const { token, hash } = generateInviteToken();
+
+    // Enforce plan limit: check max_agents before allowing a new invitation
+    await enforcePlanLimit(ctx.accountId, 'max_agents');
 
     const { data, error } = await ctx.supabase
       .from("account_invitations")

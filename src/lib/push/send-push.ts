@@ -1,5 +1,6 @@
 import webpush from 'web-push'
 import { supabaseAdmin } from '@/lib/automations/admin-client'
+import type { NotificationPreferences } from '@/types'
 
 interface PushPayload {
   title: string
@@ -11,10 +12,13 @@ interface PushPayload {
 
 /**
  * Send a push notification to all subscribed users in an account.
+ * When `eventType` is provided, only users who have that preference
+ * enabled will receive the notification.
  */
 export async function sendPushToAccount(
   accountId: string,
   payload: PushPayload,
+  eventType?: keyof NotificationPreferences,
 ): Promise<{ sent: number; failed: number }> {
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
   const privateKey = process.env.VAPID_PRIVATE_KEY
@@ -31,7 +35,7 @@ export async function sendPushToAccount(
   // First try direct account_id match
   const { data: direct, error: directErr } = await db
     .from('push_subscriptions')
-    .select('user_id, endpoint, keys_p256dh, keys_auth')
+    .select('user_id, endpoint, keys_p256dh, keys_auth, preferences')
     .eq('account_id', accountId)
 
   if (directErr) {
@@ -53,7 +57,7 @@ export async function sendPushToAccount(
       const userIds = members.map((m: { user_id: string }) => m.user_id)
       const { data: viaMembers } = await db
         .from('push_subscriptions')
-        .select('user_id, endpoint, keys_p256dh, keys_auth')
+        .select('user_id, endpoint, keys_p256dh, keys_auth, preferences')
         .in('user_id', userIds)
       subs = viaMembers ?? []
     }
@@ -69,6 +73,14 @@ export async function sendPushToAccount(
   let failed = 0
 
   for (const sub of subs) {
+    // Respect user's notification preferences for the given event type
+    if (eventType && sub.preferences) {
+      const prefs = sub.preferences as Partial<NotificationPreferences>
+      if (prefs[eventType] === false) {
+        continue
+      }
+    }
+
     try {
       await webpush.sendNotification(
         {

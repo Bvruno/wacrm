@@ -54,8 +54,10 @@ export function buildSystemPrompt(args: {
   mode: 'draft' | 'auto_reply'
   /** Knowledge-base excerpts retrieved for the current question. */
   knowledge?: string[]
+  /** Contact profile (name, email, company, tags, custom fields). */
+  contactProfile?: string | null
 }): string {
-  const { userPrompt, mode, knowledge } = args
+  const { userPrompt, mode, knowledge, contactProfile } = args
   const parts: string[] = [
     'You are a customer-messaging assistant for a business that uses a WhatsApp CRM. ' +
       'You are shown the recent WhatsApp conversation between the business (assistant) and a customer (user). ' +
@@ -74,6 +76,14 @@ export function buildSystemPrompt(args: {
 
   if (userPrompt && userPrompt.trim()) {
     parts.push(`Business context and instructions:\n${userPrompt.trim()}`)
+  }
+
+  if (contactProfile && contactProfile.trim()) {
+    parts.push(
+      `Contact information:\n${contactProfile.trim()}\n\n` +
+        'Use this information to personalise your reply. Refer to the customer by name when appropriate. ' +
+        'When you have contact fields like company, tags, or custom data, use them to tailor the response.',
+    )
   }
 
   if (knowledge && knowledge.length > 0) {

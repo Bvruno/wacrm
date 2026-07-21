@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/use-auth'
 import { formatCurrency } from '@/lib/currency'
@@ -9,6 +9,11 @@ import {
   UserPlus,
   DollarSign,
   Send,
+  RefreshCw,
+  AlertTriangle,
+  Wifi,
+  Database,
+  Brain,
 } from 'lucide-react'
 
 import {
@@ -21,6 +26,7 @@ import {
 import type {
   ActivityItem,
   ConversationsSeriesPoint,
+  DashboardError,
   MetricsBundle,
   PipelineDonutData,
   ResponseTimeSummary,
@@ -33,201 +39,359 @@ import { ConversationsChart } from '@/components/dashboard/conversations-chart'
 import { PipelineDonut } from '@/components/dashboard/pipeline-donut'
 import { ResponseTimeChart } from '@/components/dashboard/response-time-chart'
 import { ActivityFeed } from '@/components/dashboard/activity-feed'
+import { SystemHealth } from '@/components/dashboard/system-health'
+import type { HealthItem } from '@/components/dashboard/system-health'
 
 import { useTranslations } from 'next-intl'
+import { cn } from '@/lib/utils'
 
 type RangeDays = 7 | 30 | 90
 
+interface SectionState<T> {
+  data: T | null
+  loading: boolean
+  error: string | null
+}
+
+const INIT_SECTION = <T,>(): SectionState<T> => ({
+  data: null,
+  loading: true,
+  error: null,
+})
+
 export default function DashboardPage() {
   const t = useTranslations('Dashboard.page')
-  const { defaultCurrency } = useAuth()
-  const [metrics, setMetrics] = useState<MetricsBundle | null>(null)
-  const [metricsLoading, setMetricsLoading] = useState(true)
+  const ht = useTranslations('Dashboard.systemHealth')
+  const { defaultCurrency, accountId } = useAuth()
+  const db = useRef(createClient())
 
+  const [metrics, setMetrics] = useState<SectionState<MetricsBundle>>(INIT_SECTION)
   const [range, setRange] = useState<RangeDays>(30)
-  // Keep a cache per range so switching tabs doesn't re-fetch what we
-  // already have. Ranges the user hasn't opened yet stay null and
-  // trigger a fetch on first view.
-  const [series, setSeries] = useState<Record<RangeDays, ConversationsSeriesPoint[] | null>>({
-    7: null,
-    30: null,
-    90: null,
+  const [series, setSeries] = useState<
+    Record<RangeDays, SectionState<ConversationsSeriesPoint[]>>
+  >({
+    7: INIT_SECTION(),
+    30: INIT_SECTION(),
+    90: INIT_SECTION(),
   })
-  const [seriesLoading, setSeriesLoading] = useState(true)
+  const [pipeline, setPipeline] = useState<SectionState<PipelineDonutData>>(INIT_SECTION)
+  const [responseTime, setResponseTime] = useState<SectionState<ResponseTimeSummary>>(INIT_SECTION)
+  const [activity, setActivity] = useState<SectionState<ActivityItem[]>>(INIT_SECTION)
 
-  const [pipeline, setPipeline] = useState<PipelineDonutData | null>(null)
-  const [pipelineLoading, setPipelineLoading] = useState(true)
+  const [errors, setErrors] = useState<DashboardError[]>([])
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
-  const [responseTime, setResponseTime] = useState<ResponseTimeSummary | null>(null)
-  const [responseTimeLoading, setResponseTimeLoading] = useState(true)
+  const [healthItems, setHealthItems] = useState<HealthItem[]>([
+    { key: 'whatsapp', label: ht('whatsapp'), icon: Wifi, status: 'disconnected', message: ht('checking') },
+    { key: 'storage', label: ht('storage'), icon: Database, status: 'ok', message: ht('checking') },
+    { key: 'ai', label: ht('ai'), icon: Brain, status: 'disabled', message: ht('checking') },
+  ])
+  const [healthLoading, setHealthLoading] = useState(true)
 
-  const [activity, setActivity] = useState<ActivityItem[] | null>(null)
-  const [activityLoading, setActivityLoading] = useState(true)
+  const loadSection = useCallback(
+    async <T,>(
+      loader: () => Promise<T>,
+      setter: (state: SectionState<T>) => void,
+      sectionName: string,
+    ) => {
+      setter({ data: null, loading: true, error: null })
+      try {
+        const data = await loader()
+        setter({ data, loading: false, error: null })
+        setErrors((prev) => prev.filter((e) => e.section !== sectionName))
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'An unexpected error occurred'
+        setter({ data: null, loading: false, error: message })
+        setErrors((prev) => {
+          const filtered = prev.filter((e) => e.section !== sectionName)
+          return [...filtered, { section: sectionName, message }]
+        })
+      }
+    },
+    [],
+  )
 
   const loadAll = useCallback(() => {
-    const db = createClient()
+    if (!accountId) return
+    const client = db.current
 
-    // Kick everything off in parallel. Each block has its own
-    // setState + finally so a slow query doesn't hold up faster
-    // sections — each widget shows its own skeleton independently.
-    void loadMetrics(db)
-      .then((m) => setMetrics(m))
-      .catch((err) => console.error('[dashboard] metrics failed:', err))
-      .finally(() => setMetricsLoading(false))
+    loadSection(
+      () => loadMetrics(client, accountId),
+      setMetrics,
+      'metrics',
+    )
+    loadSection(
+      () => loadConversationsSeries(client, accountId, 30),
+      (s) => setSeries((prev) => ({ ...prev, 30: s })),
+      'series-30',
+    )
+    loadSection(
+      () => loadPipelineDonut(client, accountId),
+      setPipeline,
+      'pipeline',
+    )
+    loadSection(
+      () => loadResponseTime(client, accountId),
+      setResponseTime,
+      'responseTime',
+    )
+    loadSection(
+      () => loadActivity(client, accountId, 50),
+      setActivity,
+      'activity',
+    )
+    setLastUpdated(new Date())
+  }, [accountId, loadSection])
 
-    void loadConversationsSeries(db, 30)
-      .then((s) => setSeries((prev) => ({ ...prev, 30: s })))
-      .catch((err) => console.error('[dashboard] series failed:', err))
-      .finally(() => setSeriesLoading(false))
+  const loadHealth = useCallback(async () => {
+    if (!accountId) return
+    setHealthLoading(true)
+    try {
+      const client = db.current
+      const { data: wc } = await client
+        .from('whatsapp_config')
+        .select('status')
+        .eq('account_id', accountId)
+        .maybeSingle()
 
-    void loadPipelineDonut(db)
-      .then((p) => setPipeline(p))
-      .catch((err) => console.error('[dashboard] pipeline failed:', err))
-      .finally(() => setPipelineLoading(false))
+      const ws = wc?.status === 'connected' ? 'ok' : 'disconnected'
 
-    void loadResponseTime(db)
-      .then((r) => setResponseTime(r))
-      .catch((err) => console.error('[dashboard] response time failed:', err))
-      .finally(() => setResponseTimeLoading(false))
-
-    // Fetch up to 50 so the biggest page-size option in the feed
-    // (50 rows) is already in memory — switching sizes then becomes
-    // a pure client-side slice with no extra round trip.
-    void loadActivity(db, 50)
-      .then((a) => setActivity(a))
-      .catch((err) => console.error('[dashboard] activity failed:', err))
-      .finally(() => setActivityLoading(false))
-  }, [])
+      setHealthItems([
+        { key: 'whatsapp', label: ht('whatsapp'), icon: Wifi, status: ws, message: ws === 'ok' ? ht('whatsappConnected') : ht('whatsappDisconnected') },
+        { key: 'storage', label: ht('storage'), icon: Database, status: 'ok', message: ht('storageOk') },
+        { key: 'ai', label: ht('ai'), icon: Brain, status: 'disabled', message: ht('aiDisabled') },
+      ])
+    } catch {
+      // Health check failure is non-critical
+    } finally {
+      setHealthLoading(false)
+    }
+  }, [accountId, ht])
 
   useEffect(() => {
+    if (!accountId) return
     loadAll()
-  }, [loadAll])
+    loadHealth()
+  }, [accountId, loadAll, loadHealth])
 
-  // Range switch handler — kept in an event callback (not an effect)
-  // so the setState calls stay out of the react-hooks/set-state-in-effect
-  // rule's way. The cached bucket check means switching back to a
-  // previously-viewed range is instant and doesn't re-fetch.
+  const handleManualRefresh = useCallback(() => {
+    setRefreshing(true)
+    loadAll()
+    loadHealth()
+    setTimeout(() => setRefreshing(false), 500)
+  }, [loadAll, loadHealth])
+
   const handleRangeChange = useCallback(
     (r: RangeDays) => {
       setRange(r)
-      if (series[r] !== null) return
-      setSeriesLoading(true)
-      const db = createClient()
-      loadConversationsSeries(db, r)
-        .then((s) => setSeries((prev) => ({ ...prev, [r]: s })))
-        .catch((err) => console.error('[dashboard] series failed:', err))
-        .finally(() => setSeriesLoading(false))
+      const existing = series[r]
+      if (existing && !existing.loading && existing.data !== null) return
+      if (!accountId) return
+      loadSection(
+        () => loadConversationsSeries(db.current, accountId, r),
+        (s) => setSeries((prev) => ({ ...prev, [r]: s })),
+        `series-${r}`,
+      )
     },
-    [series],
+    [accountId, series, loadSection],
   )
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t('description')}
-        </p>
+      {/* Header with refresh */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t('description')}
+          </p>
+        </div>
+        <div className="flex flex-shrink-0 items-center gap-3">
+          {lastUpdated && (
+            <span className="hidden text-xs text-muted-foreground tabular-nums sm:inline">
+              {t('lastUpdated', { time: lastUpdated.toLocaleTimeString() })}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={handleManualRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+          >
+            <RefreshCw
+              className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')}
+            />
+            {t('refresh')}
+          </button>
+        </div>
       </div>
+
+      {/* Error banner */}
+      {errors.length > 0 && (
+        <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-400">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          <span>
+            {t('errors', { count: errors.length })}{' '}
+            <button
+              type="button"
+              onClick={handleManualRefresh}
+              className="font-medium underline underline-offset-2 hover:text-red-300"
+            >
+              {t('retry')}
+            </button>
+          </span>
+        </div>
+      )}
 
       {/* Metric cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {metricsLoading || !metrics ? (
+        {metrics.loading ? (
           Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-        ) : (
+        ) : metrics.error ? (
           <>
             <MetricCard
               title={t('activeConversations')}
-              value={metrics.activeConversations.current.toLocaleString()}
+              value="—"
+              icon={MessageSquare}
+              delta={{ sign: 0, label: t('errorState') }}
+            />
+            <MetricCard
+              title={t('newContactsToday')}
+              value="—"
+              icon={UserPlus}
+              delta={{ sign: 0, label: t('errorState') }}
+            />
+            <MetricCard
+              title={t('openDealsValue')}
+              value="—"
+              icon={DollarSign}
+              subtitle={t('errorState')}
+            />
+            <MetricCard
+              title={t('messagesSentToday')}
+              value="—"
+              icon={Send}
+              delta={{ sign: 0, label: t('errorState') }}
+            />
+          </>
+        ) : metrics.data ? (
+          <>
+            <MetricCard
+              title={t('activeConversations')}
+              value={metrics.data.activeConversations.current.toLocaleString()}
               icon={MessageSquare}
               delta={{
-                sign: metrics.activeConversations.previous,
+                sign: metrics.data.activeConversations.previous,
                 label: deltaLabel(
-                  metrics.activeConversations.previous, 
-                  t('newTodayVsYesterday'), 
-                  t('noChange', { suffix: t('newTodayVsYesterday') })
+                  metrics.data.activeConversations.previous,
+                  t('newTodayVsYesterday'),
+                  t('noChange', { suffix: t('newTodayVsYesterday') }),
                 ),
               }}
             />
             <MetricCard
               title={t('newContactsToday')}
-              value={metrics.newContactsToday.current.toLocaleString()}
+              value={metrics.data.newContactsToday.current.toLocaleString()}
               icon={UserPlus}
               delta={{
                 sign:
-                  metrics.newContactsToday.current - metrics.newContactsToday.previous,
+                  metrics.data.newContactsToday.current -
+                  metrics.data.newContactsToday.previous,
                 label: deltaLabel(
-                  metrics.newContactsToday.current - metrics.newContactsToday.previous,
+                  metrics.data.newContactsToday.current -
+                    metrics.data.newContactsToday.previous,
                   t('vsYesterday'),
-                  t('noChange', { suffix: t('vsYesterday') })
+                  t('noChange', { suffix: t('vsYesterday') }),
                 ),
               }}
             />
             <MetricCard
               title={t('openDealsValue')}
-              value={formatCurrency(metrics.openDealsValue, defaultCurrency)}
+              value={formatCurrency(
+                metrics.data.openDealsValue,
+                defaultCurrency,
+              )}
               icon={DollarSign}
-              subtitle={t('openDeals', { count: metrics.openDealsCount })}
+              subtitle={t('openDeals', {
+                count: metrics.data.openDealsCount,
+              })}
             />
             <MetricCard
               title={t('messagesSentToday')}
-              value={metrics.messagesSentToday.current.toLocaleString()}
+              value={metrics.data.messagesSentToday.current.toLocaleString()}
               icon={Send}
               delta={{
                 sign:
-                  metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
+                  metrics.data.messagesSentToday.current -
+                  metrics.data.messagesSentToday.previous,
                 label: deltaLabel(
-                  metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
+                  metrics.data.messagesSentToday.current -
+                    metrics.data.messagesSentToday.previous,
                   t('vsYesterday'),
-                  t('noChange', { suffix: t('vsYesterday') })
+                  t('noChange', { suffix: t('vsYesterday') }),
                 ),
               }}
             />
           </>
-        )}
+        ) : null}
       </div>
 
       {/* Quick actions */}
       <QuickActions />
 
       {/* Charts row */}
-      {/* items-stretch (the grid default) stretches the two columns to
-          match the tallest sibling; adding h-full on each wrapper and
-          on the inner panels makes both cards actually fill that
-          stretched height so their rounded borders line up. Without
-          this, the pipeline card rendered at its natural (shorter)
-          height while the line chart drove the row height. */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <div className="h-full lg:col-span-3">
           <ConversationsChart
-            series={series}
-            loading={seriesLoading}
+            series={
+              Object.fromEntries(
+                Object.entries(series).map(([k, v]) => [k, v.loading ? null : v.data]),
+              ) as Record<RangeDays, ConversationsSeriesPoint[] | null>
+            }
+            loading={series[range]?.loading ?? true}
             range={range}
             onRangeChange={handleRangeChange}
           />
         </div>
         <div className="h-full lg:col-span-2">
           <PipelineDonut
-            data={pipeline}
-            loading={pipelineLoading}
+            data={pipeline.loading ? null : pipeline.data}
+            loading={pipeline.loading}
             currency={defaultCurrency}
           />
         </div>
       </div>
 
       {/* Response time */}
-      <ResponseTimeChart data={responseTime} loading={responseTimeLoading} />
+      <ResponseTimeChart
+        data={responseTime.loading ? null : responseTime.data}
+        loading={responseTime.loading}
+      />
 
       {/* Activity feed */}
-      <ActivityFeed items={activity} loading={activityLoading} />
+      <ActivityFeed
+        items={activity.loading ? null : activity.data}
+        loading={activity.loading}
+      />
+
+      {/* System health */}
+      <SystemHealth
+        items={healthItems}
+        lastChecked={lastUpdated}
+        onRefresh={handleManualRefresh}
+        loading={healthLoading}
+      />
     </div>
   )
 }
 
-// ------------------------------------------------------------
-
-function deltaLabel(delta: number, suffix: string, noChangeLabel: string): string {
+function deltaLabel(
+  delta: number,
+  suffix: string,
+  noChangeLabel: string,
+): string {
   if (delta === 0) return noChangeLabel
   const sign = delta > 0 ? '+' : ''
   return `${sign}${delta.toLocaleString()} ${suffix}`

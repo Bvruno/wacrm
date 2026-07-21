@@ -1,13 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { Bell, BellOff, Loader2, Send, Check } from 'lucide-react'
+import { Bell, BellOff, Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { Card } from '@/components/ui/card'
-import { subscribeUser, unsubscribeUser, sendNotification, getSubscriptionStatus } from '@/app/(dashboard)/settings/push-actions'
+import {
+  subscribeUser,
+  unsubscribeUser,
+  getSubscriptionStatus,
+  getNotificationPreferences,
+  updateNotificationPreferences,
+} from '@/app/(dashboard)/settings/push-actions'
+import type { NotificationPreferences } from '@/types'
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
@@ -16,6 +23,14 @@ function urlBase64ToUint8Array(base64String: string) {
   return new Uint8Array(rawData.length).map((_, i) => rawData.charCodeAt(i))
 }
 
+const PREF_KEYS: (keyof NotificationPreferences)[] = [
+  'new_message',
+  'conversation_assigned',
+  'broadcast_completed',
+  'contact_imported',
+  'automation_failed',
+]
+
 export function PushNotifications() {
   const t = useTranslations('Settings.push')
   const [supported, setSupported] = useState(false)
@@ -23,9 +38,8 @@ export function PushNotifications() {
   const [configured, setConfigured] = useState(false)
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState(false)
-  const [message, setMessage] = useState('')
-  const [sending, setSending] = useState(false)
-  const [sent, setSent] = useState(false)
+  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null)
+  const [savingPref, setSavingPref] = useState<string | null>(null)
 
   useEffect(() => {
     setSupported('serviceWorker' in navigator && 'PushManager' in window)
@@ -34,6 +48,7 @@ export function PushNotifications() {
       setSubscribed(s.subscribed)
       setLoading(false)
     })
+    getNotificationPreferences().then(setPreferences)
   }, [])
 
   async function toggleSubscription() {
@@ -53,6 +68,7 @@ export function PushNotifications() {
         const serialized = JSON.parse(JSON.stringify(sub))
         await subscribeUser(serialized)
         setSubscribed(true)
+        getNotificationPreferences().then(setPreferences)
       }
     } catch (err) {
       console.error('Failed to toggle subscription:', err)
@@ -61,25 +77,23 @@ export function PushNotifications() {
     }
   }
 
-  async function handleSend() {
-    if (!message.trim()) return
-    setSending(true)
-    setSent(false)
-    try {
-      const res = await sendNotification(message)
-      if (res.success) {
-        setSent(true)
-        setMessage('')
-        setTimeout(() => setSent(false), 3000)
-      } else {
-        console.error('Push test failed:', res.error)
+  const togglePref = useCallback(
+    async (key: keyof NotificationPreferences) => {
+      if (!preferences) return
+      const next = { ...preferences, [key]: !preferences[key] }
+      setSavingPref(key)
+      setPreferences(next)
+      try {
+        await updateNotificationPreferences(next)
+      } catch (err) {
+        console.error('Failed to update preference:', err)
+        setPreferences(preferences)
+      } finally {
+        setSavingPref(null)
       }
-    } catch (err) {
-      console.error('Failed to send test notification:', err)
-    } finally {
-      setSending(false)
-    }
-  }
+    },
+    [preferences],
+  )
 
   if (loading) {
     return (
@@ -134,35 +148,29 @@ export function PushNotifications() {
         </div>
       </Card>
 
-      {subscribed && (
+      {subscribed && preferences && (
         <Card className="p-6">
-          <p className="mb-3 text-sm font-medium text-foreground">
-            {t('testTitle')}
+          <p className="mb-4 text-sm font-medium text-foreground">
+            {t('preferencesTitle')}
           </p>
-          <div className="flex items-center gap-2">
-            <Input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder={t('testPlaceholder')}
-              className="bg-muted text-foreground"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSend()
-              }}
-            />
-            <Button
-              variant="secondary"
-              onClick={handleSend}
-              disabled={sending || !message.trim()}
-            >
-              {sending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : sent ? (
-                <Check className="h-4 w-4" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              {t('send')}
-            </Button>
+          <div className="space-y-3">
+            {PREF_KEYS.map((key) => (
+              <label
+                key={key}
+                className="flex cursor-pointer items-center justify-between gap-4"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-foreground">
+                    {t(`pref_${key}`)}
+                  </p>
+                </div>
+                <Switch
+                  checked={preferences[key]}
+                  onCheckedChange={() => togglePref(key)}
+                  disabled={savingPref === key}
+                />
+              </label>
+            ))}
           </div>
         </Card>
       )}

@@ -7,8 +7,11 @@ import { buildSystemPrompt } from './defaults'
 import { buildHandoffSummary } from './handoff'
 import { logAiUsage } from './usage'
 import { latestUserMessage } from './query'
+import { buildContactProfile, formatContactProfile } from './contact-profile'
+import { AI_TOOLS, executeToolCalls } from './tools'
 import { engineSendText } from '@/lib/flows/meta-send'
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
+import { sendPushToAccount } from '@/lib/push/send-push'
 
 interface DispatchArgs {
   /** Tenancy key — drives config, contact, and whatsapp_config lookups. */
@@ -75,8 +78,8 @@ export async function dispatchInboundToAiReply(
     if (convErr || !conv) return
     if (conv.assigned_agent_id) return // a human owns this thread
     if (conv.ai_autoreply_disabled) return // handed off / turned off here
-    // Cheap early-out; the authoritative cap check is the atomic claim
-    // below (this read can race a concurrent inbound).
+    // Cheap early-out; the authoritative checks (assigned_agent_id +
+    // cap) are in the atomic claim below (these reads can race).
     if (conv.ai_reply_count >= config.autoReplyMaxPerConversation) return
 
     const messages = await buildConversationContext(db, conversationId)
@@ -106,16 +109,22 @@ export async function dispatchInboundToAiReply(
       latestUserMessage(messages),
     )
 
+    const profile = await buildContactProfile(db, contactId)
+    const contactProfile = profile ? formatContactProfile(profile) : undefined
     const systemPrompt = buildSystemPrompt({
       userPrompt: config.systemPrompt,
       mode: 'auto_reply',
       knowledge,
+      contactProfile,
     })
 
     const { text, handoff, usage } = await generateReply({
       config,
       systemPrompt,
       messages,
+      tools: AI_TOOLS,
+      executeTools: (calls) =>
+        executeToolCalls({ db, accountId, contactId }, calls),
     })
 
     // Record token spend on the account's BYO key. Fire-and-forget so it
@@ -150,18 +159,33 @@ export async function dispatchInboundToAiReply(
       }
       // Only set the assignee when a target is configured AND the thread
       // isn't already owned — never stomp an existing human assignment.
+      let didAssign = false
       if (config.handoffAgentId && !conv.assigned_agent_id) {
         update.assigned_agent_id = config.handoffAgentId
+        didAssign = true
       }
       await db.from('conversations').update(update).eq('id', conversationId)
+      if (didAssign) {
+        sendPushToAccount(
+          accountId,
+          {
+            title: 'Conversation assigned',
+            body: `AI auto-reply handed off conversation to an agent`,
+            url: `/inbox?c=${conversationId}`,
+          },
+          'conversation_assigned',
+        ).catch(() => {})
+      }
       return
     }
 
-    // Atomically claim a reply slot: the cap check + increment happen in
-    // one UPDATE, so concurrent inbounds can never overshoot the cap. If
-    // another inbound just took the last slot, `claimed` is false and we
-    // skip the send. (We consume a slot slightly before the send lands —
-    // fail-safe: under-reply rather than over-reply.)
+    // Atomically claim a reply slot: the assigned_agent_id check, cap
+    // check, and increment all happen in one UPDATE, so concurrent
+    // inbounds can never overshoot the cap and the AI can never race
+    // ahead of a human assignment. If another inbound just took the
+    // last slot (or an agent assigned themselves), `claimed` is false
+    // and we skip the send. (We consume a slot slightly before the send
+    // lands — fail-safe: under-reply rather than over-reply.)
     const { data: claimed, error: claimErr } = await db.rpc(
       'claim_ai_reply_slot',
       {

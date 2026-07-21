@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Contact, MessageTemplate } from '@/types';
+import { notifyPushEvent } from '@/app/(dashboard)/settings/push-actions';
 
 export type CustomFieldOperator = 'is' | 'is_not' | 'contains';
 
@@ -563,6 +564,16 @@ export function useBroadcastSending(): UseBroadcastSendingReturn {
         .from('broadcasts')
         .update({ status: finalStatus })
         .eq('id', broadcast.id);
+
+      notifyPushEvent(
+        accountId,
+        'broadcast_completed',
+        {
+          title: `Broadcast ${finalStatus}`,
+          body: `Broadcast "${broadcast.name ?? 'Untitled'}" completed with status ${finalStatus}`,
+          url: '/broadcasts',
+        },
+      ).catch(() => {});
 
       setProgress(100);
       return broadcast.id;

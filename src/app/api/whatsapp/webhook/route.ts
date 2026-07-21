@@ -616,6 +616,21 @@ async function processMessage(
     return
   }
 
+  // Deduplicate: Meta may retry the same webhook delivery. Check for
+  // an existing message with the same (conversation_id, message_id)
+  // pair before doing any expensive work. If found, bail out — every
+  // downstream effect (unread bump, push, automations, flows, AI reply)
+  // already fired on the first insert.
+  const { count: dupCount } = await supabaseAdmin()
+    .from('messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('conversation_id', conversation.id)
+    .eq('message_id', message.id)
+  if (dupCount && dupCount > 0) {
+    console.log('[webhook] duplicate ignored:', message.id, 'conv:', conversation.id)
+    return
+  }
+
   // Parse message content based on type
   const { contentText, mediaUrl, mediaType, interactiveReplyId } =
     await parseMessageContent(message, accessToken)
@@ -711,11 +726,15 @@ async function processMessage(
   // message arrived, even when the app is backgrounded / closed.
   console.log('[PUSH_DEBUG] About to call sendPushToAccount for account', accountId)
   try {
-    const result = await sendPushToAccount(accountId, {
-      title: contactRecord.name || contactRecord.phone || 'New message',
-      body: contentText || `[${message.type}]`,
-      url: `/inbox?c=${conversation.id}`,
-    })
+    const result = await sendPushToAccount(
+      accountId,
+      {
+        title: contactRecord.name || contactRecord.phone || 'New message',
+        body: contentText || `[${message.type}]`,
+        url: `/inbox?c=${conversation.id}`,
+      },
+      'new_message',
+    )
     if (result.sent === 0) {
       console.warn('[push] no subscriptions found for account', accountId)
     }

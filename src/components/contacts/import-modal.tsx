@@ -28,6 +28,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { notifyPushEvent } from '@/app/(dashboard)/settings/push-actions';
 import {
   Upload,
   FileText,
@@ -345,6 +346,15 @@ export function ImportModal({
       if (imported > 0) {
         toast.success(t('toastImported', { count: imported }));
         onImported();
+        notifyPushEvent(
+          accountId,
+          'contact_imported',
+          {
+            title: 'Contacts imported',
+            body: `${imported} contacts were imported successfully`,
+            url: '/contacts',
+          },
+        ).catch(() => {});
       }
       if (tagsAssigned > 0) {
         toast.success(t('toastTagsAssigned', { count: tagsAssigned }));

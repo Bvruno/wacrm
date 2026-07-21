@@ -15,6 +15,8 @@ import {
   rateLimitResponse,
   RATE_LIMITS,
 } from '@/lib/rate-limit'
+import { enforceFeatureAccess } from '@/lib/plans/enforce'
+import { ForbiddenError, toErrorResponse } from '@/lib/auth/account'
 
 interface BroadcastResult {
   phone: string
@@ -94,6 +96,14 @@ export async function POST(request: Request) {
         { error: 'Your profile is not linked to an account.' },
         { status: 403 },
       )
+    }
+
+    // Plan gate: broadcasts require the has_broadcasts feature
+    try {
+      await enforceFeatureAccess(accountId, 'has_broadcasts')
+    } catch (err) {
+      if (err instanceof ForbiddenError) return toErrorResponse(err)
+      throw err
     }
 
     const body = await request.json()

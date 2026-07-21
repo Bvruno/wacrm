@@ -9,6 +9,7 @@ export default async function RootPage() {
   } = await supabase.auth.getUser()
 
   if (user) {
+    if (user.email === process.env.SAAS_OWNER_EMAIL) redirect('/admin')
     redirect('/dashboard')
   }
 

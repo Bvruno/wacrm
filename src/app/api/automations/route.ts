@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { requireRole, toErrorResponse } from '@/lib/auth/account'
+import { requireRole, ForbiddenError, toErrorResponse } from '@/lib/auth/account'
+import { enforceFeatureAccess } from '@/lib/plans/enforce'
 import { supabaseAdmin } from '@/lib/automations/admin-client'
 import { getTemplate } from '@/lib/automations/templates'
 import { insertSteps, type BuilderStepInput } from '@/lib/automations/steps-tree'
@@ -54,6 +55,14 @@ export async function POST(request: Request) {
       { error: 'Your profile is not linked to an account.' },
       { status: 403 },
     )
+  }
+
+  // Plan gate: automations require the has_automations feature
+  try {
+    await enforceFeatureAccess(accountId, 'has_automations')
+  } catch (err) {
+    if (err instanceof ForbiddenError) return toErrorResponse(err)
+    throw err
   }
 
   const body = await request.json().catch(() => null)

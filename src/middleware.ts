@@ -75,6 +75,27 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
+  // Admin pages — must be authenticated; super-admin check is in layout
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return withRefreshedCookies(NextResponse.redirect(url))
+    }
+    return supabaseResponse
+  }
+
+  // Maintenance mode — only admin and static assets bypass
+  if (process.env.MAINTENANCE_MODE === 'true') {
+    const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
+    const isStaticAsset = request.nextUrl.pathname.startsWith('/_next/')
+    if (!isAdminRoute && !isStaticAsset) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/maintenance'
+      return NextResponse.rewrite(url)
+    }
+  }
+
   // Protected pages - redirect to login if not authenticated
   const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/broadcasts', '/automations', '/settings']
   if (!user && protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))) {

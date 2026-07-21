@@ -19,6 +19,7 @@ import { DealsSettings } from '@/components/settings/deals-settings';
 import { MembersTab } from '@/components/settings/members-tab';
 import { ApiKeysSettings } from '@/components/settings/api-keys-settings';
 import { PushNotifications } from '@/components/settings/push-notifications';
+import { BillingTab } from '@/components/settings/billing-tab';
 import {
   resolveSection,
   type SettingsSection,
@@ -73,6 +74,7 @@ function SettingsPageInner() {
   const panel: Record<SettingsSection, ReactNode> = {
     overview: <SettingsOverview onSelect={go} />,
     profile: <ProfileForm />,
+    plan: <BillingTab />,
     security: <SecurityPanel />,
     appearance: <AppearancePanel />,
     notifications: <PushNotifications />,

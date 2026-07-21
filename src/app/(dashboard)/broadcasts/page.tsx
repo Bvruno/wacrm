@@ -16,6 +16,7 @@ import {
 import { Radio, Plus, Loader2 } from 'lucide-react';
 import { useCan } from '@/hooks/use-can';
 import { GatedButton } from '@/components/ui/gated-button';
+import { PlanGate } from '@/components/plan-gate';
 import { getBroadcastStatus } from '@/lib/broadcast-status';
 import { useTranslations } from 'next-intl';
 
@@ -151,6 +152,7 @@ export default function BroadcastsPage() {
   }
 
   return (
+    <PlanGate feature="has_broadcasts">
     <div className="space-y-6">
       {/* Top indeterminate progress bar: only visible while a broadcast
           is mid-send. Pure CSS animation so no extra deps. */}
@@ -287,5 +289,6 @@ export default function BroadcastsPage() {
         </div>
       )}
     </div>
+    </PlanGate>
   );
 }

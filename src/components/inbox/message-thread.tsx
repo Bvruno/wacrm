@@ -51,6 +51,8 @@ import { TemplatePicker } from "./template-picker";
 import { AiThreadBanner } from "./ai-thread-banner";
 import { buildReplyPreview } from "./reply-quote";
 import { toast } from "sonner";
+import { usePlan } from "@/hooks/use-plan";
+import { notifyPushEvent } from "@/app/(dashboard)/settings/push-actions";
 
 interface ReplyDraft {
   id: string;
@@ -172,8 +174,9 @@ export function MessageThread({
   const tTimer = useTranslations("Inbox.sessionTimer");
   const tQuote = useTranslations("Inbox.replyQuote");
 
-  const { user } = useAuth();
+  const { user, accountId } = useAuth();
   const { getPresence, getRow, now } = usePresence();
+  const { data: planData, refresh: refreshPlan } = usePlan();
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
@@ -482,7 +485,16 @@ export function MessageThread({
         if (!res.ok) {
           const reason = payload?.error || `HTTP ${res.status}`;
           console.error("Failed to send message:", reason);
-          toast.error(`Failed to send: ${reason}`);
+
+          if (res.status === 403 && reason.toLowerCase().includes("plan limit")) {
+            toast.error(
+              "Has alcanzado el límite diario de mensajes. Actualiza tu plan en Settings → Plan.",
+              { duration: 6000 },
+            );
+          } else {
+            toast.error(`Failed to send: ${reason}`);
+          }
+
           // Mark the optimistic bubble as failed so the user sees what happened
           onUpdateMessage(tempId, { status: "failed" });
           return;
@@ -492,6 +504,9 @@ export function MessageThread({
         // with the real DB row. If realtime hasn't arrived yet, at least
         // flip status to 'sent' so the UI stops showing "sending".
         onUpdateMessage(tempId, { status: "sent" });
+
+        // Refresh plan usage so the remaining-messages counter updates
+        refreshPlan();
       } catch (err) {
         console.error("Failed to send message:", err);
         const reason = err instanceof Error ? err.message : "network error";
@@ -499,7 +514,7 @@ export function MessageThread({
         onUpdateMessage(tempId, { status: "failed" });
       }
     },
-    [conversation, onNewMessage, onUpdateMessage]
+    [conversation, onNewMessage, onUpdateMessage, refreshPlan]
   );
 
   const handleSendMedia = useCallback(
@@ -548,7 +563,16 @@ export function MessageThread({
         if (!res.ok) {
           const reason = data?.error || `HTTP ${res.status}`;
           console.error("Failed to send media:", reason);
-          toast.error(`Failed to send: ${reason}`);
+
+          if (res.status === 403 && reason.toLowerCase().includes("plan limit")) {
+            toast.error(
+              "Has alcanzado el límite diario de mensajes. Actualiza tu plan en Settings → Plan.",
+              { duration: 6000 },
+            );
+          } else {
+            toast.error(`Failed to send: ${reason}`);
+          }
+
           onUpdateMessage(tempId, { status: "failed" });
           // The upload never reached the recipient — GC the orphaned
           // object rather than leaving it in the public bucket forever.
@@ -557,6 +581,7 @@ export function MessageThread({
         }
 
         onUpdateMessage(tempId, { status: "sent" });
+        refreshPlan();
       } catch (err) {
         console.error("Failed to send media:", err);
         const reason = err instanceof Error ? err.message : "network error";
@@ -565,7 +590,7 @@ export function MessageThread({
         void deleteAccountMedia(CHAT_MEDIA_BUCKET, payload.path).catch(() => {});
       }
     },
-    [conversation, onNewMessage, onUpdateMessage],
+    [conversation, onNewMessage, onUpdateMessage, refreshPlan],
   );
 
   const handleSendInteractive = useCallback(
@@ -605,12 +630,22 @@ export function MessageThread({
         if (!res.ok) {
           const reason = data?.error || `HTTP ${res.status}`;
           console.error("Failed to send interactive message:", reason);
-          toast.error(`Failed to send: ${reason}`);
+
+          if (res.status === 403 && reason.toLowerCase().includes("plan limit")) {
+            toast.error(
+              "Has alcanzado el límite diario de mensajes. Actualiza tu plan en Settings → Plan.",
+              { duration: 6000 },
+            );
+          } else {
+            toast.error(`Failed to send: ${reason}`);
+          }
+
           onUpdateMessage(tempId, { status: "failed" });
           return;
         }
 
         onUpdateMessage(tempId, { status: "sent" });
+        refreshPlan();
       } catch (err) {
         console.error("Failed to send interactive message:", err);
         const reason = err instanceof Error ? err.message : "network error";
@@ -618,7 +653,7 @@ export function MessageThread({
         onUpdateMessage(tempId, { status: "failed" });
       }
     },
-    [conversation, onNewMessage, onUpdateMessage],
+    [conversation, onNewMessage, onUpdateMessage, refreshPlan],
   );
 
   const handleStatusChange = useCallback(
@@ -833,9 +868,21 @@ export function MessageThread({
         return;
       }
 
+      if (accountId && agentId) {
+        notifyPushEvent(
+          accountId,
+          "conversation_assigned",
+          {
+            title: "Conversation assigned",
+            body: `A conversation was assigned to an agent`,
+            url: `/inbox?c=${conversation.id}`,
+          },
+        ).catch(() => {});
+      }
+
       onAssignChange(conversation.id, agentId);
     },
-    [conversation, onAssignChange],
+    [conversation, onAssignChange, accountId],
   );
 
   // Empty state — same WhatsApp-style doodle background as the active
@@ -1159,6 +1206,14 @@ export function MessageThread({
         onOpenTemplates={handleOpenTemplates}
         replyTo={replyTo}
         onClearReply={() => setReplyTo(null)}
+        messagesRemaining={
+          planData && planData.limits.maxMessagesPerDay !== -1
+            ? planData.limits.maxMessagesPerDay - planData.usage.messagesToday
+            : null
+        }
+        maxMessagesPerDay={
+          planData?.limits.maxMessagesPerDay ?? null
+        }
       />
 
       <TemplatePicker

@@ -24,6 +24,7 @@ import { MAX_TAG_CHAIN_DEPTH, getTagChainDepth } from '@/lib/contacts/tag-chain'
 import { engineSendText, engineSendTemplate, engineSendInteractive } from './meta-send'
 import { validateInteractivePayload } from '@/lib/whatsapp/interactive'
 import { isDeliverableUrl } from '@/lib/webhooks/ssrf'
+import { sendPushToAccount } from '@/lib/push/send-push'
 
 // ------------------------------------------------------------
 // Public API
@@ -148,6 +149,15 @@ export async function resumePendingExecution(pending: {
   if (error || !automation) {
     console.error('[automations] resume: missing automation', pending.automation_id, error)
     await markPending(pending.id, 'failed')
+    sendPushToAccount(
+      pending.account_id,
+      {
+        title: 'Automation failed',
+        body: `Automation ${pending.automation_id} could not be resumed — not found`,
+        url: '/automations',
+      },
+      'automation_failed',
+    ).catch(() => {})
     return
   }
 
@@ -166,6 +176,16 @@ export async function resumePendingExecution(pending: {
   } catch (err) {
     console.error('[automations] resume failed:', err)
     await markPending(pending.id, 'failed')
+    const msg = err instanceof Error ? err.message : String(err)
+    sendPushToAccount(
+      automation.account_id,
+      {
+        title: 'Automation failed',
+        body: `Automation "${automation.name}" failed to resume: ${msg}`,
+        url: '/automations',
+      },
+      'automation_failed',
+    ).catch(() => {})
   }
 }
 
@@ -252,6 +272,15 @@ async function executeStepsFrom(args: ExecuteArgs): Promise<void> {
 
   if (stepsErr) {
     await finalizeLog(args.logId, 'failed', stepsErr.message)
+    sendPushToAccount(
+      args.automation.account_id,
+      {
+        title: 'Automation failed',
+        body: `Automation "${args.automation.name}" failed to load steps: ${stepsErr.message}`,
+        url: '/automations',
+      },
+      'automation_failed',
+    ).catch(() => {})
     return
   }
   if (!steps || steps.length === 0) {
@@ -335,6 +364,15 @@ async function executeStepsFrom(args: ExecuteArgs): Promise<void> {
       })
       status = 'failed'
       errorMessage = msg
+      sendPushToAccount(
+        args.automation.account_id,
+        {
+          title: 'Automation step failed',
+          body: `Automation "${args.automation.name}": step ${step.step_type} failed — ${msg}`,
+          url: '/automations',
+        },
+        'automation_failed',
+      ).catch(() => {})
       break
     }
   }
@@ -493,6 +531,16 @@ async function runStep(step: AutomationStep, args: ExecuteArgs): Promise<string>
         .update({ assigned_agent_id: agentId })
         .eq('account_id', args.automation.account_id)
         .eq('contact_id', args.contactId)
+      const convId = args.context.conversation_id
+      sendPushToAccount(
+        args.automation.account_id,
+        {
+          title: 'Conversation assigned',
+          body: 'An automation assigned a conversation to an agent',
+          url: convId ? `/inbox?c=${convId}` : undefined,
+        },
+        'conversation_assigned',
+      ).catch(() => {})
       return `assigned to ${agentId}`
     }
 

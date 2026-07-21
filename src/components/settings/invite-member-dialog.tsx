@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/select';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/use-auth';
+import { cn } from '@/lib/utils';
 
 type InviteRole = 'admin' | 'agent' | 'viewer';
 
@@ -53,6 +54,7 @@ const EXPIRY_OPTIONS = [
   { value: '1', labelKey: 'days1' },
   { value: '7', labelKey: 'days7' },
   { value: '30', labelKey: 'days30' },
+  { value: 'custom', labelKey: 'daysCustom' },
 ];
 
 // Server caps label at 80 chars (see src/app/api/account/invitations/route.ts).
@@ -79,25 +81,31 @@ export function InviteMemberDialog({
   const { account } = useAuth();
   const [role, setRole] = useState<InviteRole>('agent');
   const [expiry, setExpiry] = useState<string>('7');
+  const [customDays, setCustomDays] = useState<string>('14');
   const [label, setLabel] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CreatedInvite | null>(null);
+  const [multiMode, setMultiMode] = useState(false);
+  const [multiResults, setMultiResults] = useState<{ url: string; role: string }[]>([]);
+  const [counts, setCounts] = useState({ admin: 0, agent: 1, viewer: 0 });
 
   function reset() {
     setRole('agent');
     setExpiry('7');
+    setCustomDays('14');
     setLabel('');
     setResult(null);
     setSubmitting(false);
+    setMultiMode(false);
+    setCounts({ admin: 0, agent: 1, viewer: 0 });
+    setMultiResults([]);
+  }
+
+  function resolveDays(): number {
+    return expiry === 'custom' ? Math.max(1, Number(customDays) || 14) : Number(expiry);
   }
 
   async function handleCreate() {
-    // Mirror the server's max-length check so we don't ship an
-    // obviously-too-long label across the wire just to bounce off
-    // a 400. The Input also has a `maxLength={MAX_LABEL_LEN}` cap
-    // but a paste can land an over-limit string into state before
-    // the limit kicks in on the next keystroke — this is the safety
-    // net for that path.
     const trimmedLabel = label.trim();
     if (trimmedLabel.length > MAX_LABEL_LEN) {
       toast.error(t('labelTooLong', { max: MAX_LABEL_LEN }));
@@ -105,39 +113,73 @@ export function InviteMemberDialog({
     }
     setSubmitting(true);
     try {
-      const res = await fetch('/api/account/invitations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      if (multiMode) {
+        // Generate invites for each role count
+        const allResults: CreatedInvite[] = [];
+        const entries: { role: InviteRole; count: number }[] = [
+          { role: 'admin', count: counts.admin },
+          { role: 'agent', count: counts.agent },
+          { role: 'viewer', count: counts.viewer },
+        ];
+        for (const entry of entries) {
+          for (let i = 0; i < entry.count; i++) {
+            const res = await fetch('/api/account/invitations', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                role: entry.role,
+                expiresInDays: resolveDays(),
+                label: trimmedLabel || `${tRoles(entry.role)} #${i + 1}`,
+              }),
+            });
+            if (!res.ok) {
+              const payload = await res.json().catch(() => ({}));
+              toast.error(payload.error || `Failed to create ${entry.role} invite`);
+              continue;
+            }
+            const data = (await res.json()) as { url: string; expiresInDays: number };
+            allResults.push({
+              url: data.url,
+              role: entry.role,
+              expiresInDays: data.expiresInDays,
+              accountName: account?.name ?? 'our CodixIA account',
+            });
+          }
+        }
+        if (allResults.length > 0) {
+          setResult(allResults[0]);
+          onCreated();
+        }
+      } else {
+        const res = await fetch('/api/account/invitations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            role,
+            expiresInDays: resolveDays(),
+            label: trimmedLabel || undefined,
+          }),
+        });
+
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          toast.error(payload.error || 'Failed to create invitation');
+          return;
+        }
+
+        const data = (await res.json()) as {
+          url: string;
+          expiresInDays: number;
+        };
+
+        setResult({
+          url: data.url,
           role,
-          expiresInDays: Number(expiry),
-          label: trimmedLabel || undefined,
-        }),
-      });
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || 'Failed to create invitation');
-        return;
+          expiresInDays: data.expiresInDays,
+          accountName: account?.name ?? 'our CodixIA account',
+        });
+        onCreated();
       }
-
-      const data = (await res.json()) as {
-        url: string;
-        expiresInDays: number;
-      };
-
-      setResult({
-        url: data.url,
-        role,
-        expiresInDays: data.expiresInDays,
-        // Snapshot the account name into the result so the wa.me
-        // share message has team context. Falls back to a generic
-        // string if `account` hasn't loaded yet (shouldn't happen
-        // — the dialog requires admin+ which requires a loaded
-        // profile — but stay safe).
-        accountName: account?.name ?? 'our CodixIA account',
-      });
-      onCreated();
     } catch (err) {
       console.error('[InviteMemberDialog] create error:', err);
       toast.error('Could not reach the server. Try again?');
@@ -267,25 +309,67 @@ export function InviteMemberDialog({
             </DialogHeader>
 
             <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">{t('roleLabel')}</Label>
-                <Select
-                  value={role}
-                  onValueChange={(v) => v && setRole(v as InviteRole)}
+              {/* Toggle single / multi */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMultiMode(!multiMode)}
+                  className={cn(
+                    'text-xs font-medium underline-offset-2 hover:underline',
+                    multiMode ? 'text-primary' : 'text-muted-foreground',
+                  )}
                 >
-                  <SelectTrigger className="w-full bg-muted border-border text-foreground">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">{tRoles('admin')}</SelectItem>
-                    <SelectItem value="agent">{tRoles('agent')}</SelectItem>
-                    <SelectItem value="viewer">{tRoles('viewer')}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {tRoles(`${role}Hint` as 'adminHint' | 'agentHint' | 'viewerHint')}
-                </p>
+                  {t('inviteMultiple')}
+                </button>
               </div>
+
+              {multiMode ? (
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground">{t('inviteCount')}</p>
+                  {(['admin', 'agent', 'viewer'] as InviteRole[]).map((r) => (
+                    <div key={r} className="flex items-center gap-3">
+                      <Label className="w-20 text-muted-foreground text-sm">{tRoles(r)}</Label>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCounts((c) => ({ ...c, [r]: Math.max(0, c[r] - 1) }))}
+                        >
+                          -
+                        </Button>
+                        <span className="w-8 text-center text-sm tabular-nums">{counts[r]}</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCounts((c) => ({ ...c, [r]: c[r] + 1 }))}
+                        >
+                          +
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">{t('roleLabel')}</Label>
+                  <Select
+                    value={role}
+                    onValueChange={(v) => v && setRole(v as InviteRole)}
+                  >
+                    <SelectTrigger className="w-full bg-muted border-border text-foreground">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">{tRoles('admin')}</SelectItem>
+                      <SelectItem value="agent">{tRoles('agent')}</SelectItem>
+                      <SelectItem value="viewer">{tRoles('viewer')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {tRoles(`${role}Hint` as 'adminHint' | 'agentHint' | 'viewerHint')}
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label className="text-muted-foreground">{t('validForLabel')}</Label>
@@ -304,6 +388,17 @@ export function InviteMemberDialog({
                     ))}
                   </SelectContent>
                 </Select>
+                {expiry === 'custom' && (
+                  <Input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={customDays}
+                    onChange={(e) => setCustomDays(e.target.value)}
+                    placeholder={t('customDays')}
+                    className="mt-1 bg-muted text-foreground"
+                  />
+                )}
               </div>
 
               <div className="space-y-2">
@@ -334,7 +429,12 @@ export function InviteMemberDialog({
               </Button>
               <Button
                 onClick={handleCreate}
-                disabled={submitting}
+                disabled={
+                  submitting ||
+                  (multiMode
+                    ? counts.admin + counts.agent + counts.viewer === 0
+                    : false)
+                }
                 className="bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {submitting ? (
@@ -342,6 +442,8 @@ export function InviteMemberDialog({
                     <Loader2 className="size-4 animate-spin" />
                     {t('creating')}
                   </>
+                ) : multiMode ? (
+                  t('generateMultiple', { count: counts.admin + counts.agent + counts.viewer })
                 ) : (
                   t('generateLink')
                 )}

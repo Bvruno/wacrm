@@ -28,6 +28,7 @@ import {
 } from '@/lib/whatsapp/phone-utils';
 import { isMessageTemplate } from '@/lib/whatsapp/template-row-guard';
 import type { MessageTemplate } from '@/types';
+import { sendPushToAccount } from '@/lib/push/send-push';
 import { findOrCreateContact } from '@/lib/api/v1/contacts';
 
 /** Thrown by createBroadcast on a caller-visible failure; route maps it. */
@@ -64,6 +65,7 @@ interface PlannedRecipient {
 
 export interface BroadcastPlan {
   broadcastId: string;
+  accountId: string;
   templateName: string;
   templateLanguage: string;
   phoneNumberId: string;
@@ -236,6 +238,7 @@ export async function createBroadcast(
 
   return {
     broadcastId: broadcast.id,
+    accountId,
     templateName,
     templateLanguage,
     phoneNumberId: config.phone_number_id,
@@ -317,11 +320,22 @@ export async function deliverBroadcast(
   // Terminal status only — counts are trigger-owned (see the note
   // above). If nothing sent, the broadcast failed outright; a partial
   // send is still 'sent' (per-recipient failures show in failed_count).
+  const finalStatus = sentCount > 0 ? 'sent' : 'failed';
   await db
     .from('broadcasts')
     .update({
-      status: sentCount > 0 ? 'sent' : 'failed',
+      status: finalStatus,
       updated_at: new Date().toISOString(),
     })
     .eq('id', plan.broadcastId);
+
+  sendPushToAccount(
+    plan.accountId,
+    {
+      title: `Broadcast ${finalStatus}`,
+      body: `API broadcast completed with status ${finalStatus}`,
+      url: '/broadcasts',
+    },
+    'broadcast_completed',
+  ).catch(() => {});
 }

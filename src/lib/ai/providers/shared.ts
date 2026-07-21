@@ -1,8 +1,21 @@
-import { AiError, type AiUsage, type ChatMessage } from '../types'
+import {
+  AiError,
+  type AiUsage,
+  type ChatMessage,
+  type ToolCall,
+  type ToolDefinition,
+  type ToolResult,
+} from '../types'
 
 // ============================================================
 // Bits shared by the OpenAI + Anthropic adapters.
 // ============================================================
+
+export interface ToolRound {
+  assistantContent: string
+  toolCalls: ToolCall[]
+  results: ToolResult[]
+}
 
 export interface ProviderArgs {
   apiKey: string
@@ -10,6 +23,8 @@ export interface ProviderArgs {
   systemPrompt: string
   messages: ChatMessage[]
   timeoutMs: number
+  tools?: ToolDefinition[]
+  toolRound?: ToolRound
 }
 
 /**

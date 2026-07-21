@@ -2,8 +2,10 @@ import { NextResponse } from 'next/server'
 import {
   getCurrentAccount,
   requireRole,
+  ForbiddenError,
   toErrorResponse,
 } from '@/lib/auth/account'
+import { enforceFeatureAccess } from '@/lib/plans/enforce'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
 import { encrypt, decrypt } from '@/lib/whatsapp/encryption'
 import { validateAiCredentials } from '@/lib/ai/validate'
@@ -70,6 +72,14 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const { supabase, accountId, userId } = await requireRole('admin')
+
+    // Plan gate: AI assistant requires the has_ai_assistant feature
+    try {
+      await enforceFeatureAccess(accountId, 'has_ai_assistant')
+    } catch (err) {
+      if (err instanceof ForbiddenError) return toErrorResponse(err)
+      throw err
+    }
 
     const limit = checkRateLimit(`ai-config:${userId}`, RATE_LIMITS.adminAction)
     if (!limit.success) return rateLimitResponse(limit)

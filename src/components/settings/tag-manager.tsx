@@ -1,8 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Plus, Tag as TagIcon, X } from 'lucide-react';
+import {
+  Check,
+  Loader2,
+  Plus,
+  Search,
+  Tag as TagIcon,
+  X,
+} from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
@@ -56,27 +63,64 @@ export function TagManager() {
   const [newTagName, setNewTagName] = useState('');
   const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[3].value);
 
+  // Inline edit state
+  const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editColor, setEditColor] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  // Usage counters: tag_id → contact count
+  const [tagUsage, setTagUsage] = useState<Record<string, number>>({});
+
+  // Search
+  const [tagSearch, setTagSearch] = useState('');
+
+  const filteredTags = useMemo(
+    () =>
+      tags.filter((t) =>
+        t.name.toLowerCase().includes(tagSearch.toLowerCase()),
+      ),
+    [tags, tagSearch],
+  );
+
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
+    if (!accountId) {
       setLoading(false);
       return;
     }
-    fetchTags(user.id);
+    fetchTags();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user?.id]);
+  }, [authLoading, accountId]);
 
-  async function fetchTags(userId: string) {
+  async function fetchTags() {
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('tags')
         .select('*')
-        .eq('user_id', userId)
+        .eq('account_id', accountId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setTags(data || []);
+      const tags = data || [];
+      setTags(tags);
+
+      // Fetch per-tag usage counts
+      if (tags.length > 0) {
+        const ids = tags.map((t) => t.id);
+        const { data: counts } = await supabase
+          .from('contact_tags')
+          .select('tag_id')
+          .in('tag_id', ids);
+        const map: Record<string, number> = {};
+        for (const row of counts ?? []) {
+          map[row.tag_id] = (map[row.tag_id] ?? 0) + 1;
+        }
+        setTagUsage(map);
+      } else {
+        setTagUsage({});
+      }
     } catch (err) {
       console.error('Failed to fetch tags:', err);
       toast.error(t('failedToLoadTags'));
@@ -98,8 +142,6 @@ export function TagManager() {
         return;
       }
 
-      // account_id is mandatory on every account-scoped insert (NOT
-      // NULL + RLS, no DB default).
       const { error } = await supabase.from('tags').insert({
         user_id: user.id,
         account_id: accountId,
@@ -112,7 +154,7 @@ export function TagManager() {
       toast.success(t('tagCreated'));
       setNewTagName('');
       setSelectedColor(PRESET_COLORS[3].value);
-      await fetchTags(user.id);
+      await fetchTags();
     } catch (err) {
       console.error('Create error:', err);
       toast.error(t('failedToCreateTag'));
@@ -124,6 +166,42 @@ export function TagManager() {
   function confirmDelete(tag: Tag) {
     setTagToDelete(tag);
     setDeleteDialogOpen(true);
+  }
+
+  function startEdit(tag: Tag) {
+    setEditingTagId(tag.id);
+    setEditName(tag.name);
+    setEditColor(tag.color);
+  }
+
+  function cancelEdit() {
+    setEditingTagId(null);
+    setEditName('');
+    setEditColor('');
+  }
+
+  async function handleUpdate() {
+    if (!editingTagId || !editName.trim()) return;
+    setSavingEdit(true);
+    const { error } = await supabase
+      .from('tags')
+      .update({ name: editName.trim(), color: editColor })
+      .eq('id', editingTagId);
+    setSavingEdit(false);
+    if (error) {
+      console.error('Update error:', error);
+      toast.error(t('failedToUpdateTag'));
+      return;
+    }
+    toast.success(t('tagUpdated'));
+    setTags((prev) =>
+      prev.map((t) =>
+        t.id === editingTagId
+          ? { ...t, name: editName.trim(), color: editColor }
+          : t,
+      ),
+    );
+    cancelEdit();
   }
 
   async function handleDelete() {
@@ -163,39 +241,129 @@ export function TagManager() {
       </CardHeader>
       <CardContent className="space-y-4">
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="size-6 animate-spin text-primary" />
+          <div className="space-y-2 p-1">
+            <div className="h-8 animate-pulse rounded-full bg-muted" />
+            <div className="h-8 animate-pulse rounded-full bg-muted" />
+            <div className="h-8 w-3/4 animate-pulse rounded-full bg-muted" />
           </div>
         ) : (
           <>
             {tags.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className="group inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
-                    style={{
-                      backgroundColor: `${tag.color}20`,
-                      color: tag.color,
-                      border: `1px solid ${tag.color}40`,
-                    }}
-                  >
-                    <span
-                      className="size-2 rounded-full"
-                      style={{ backgroundColor: tag.color }}
-                    />
-                    {tag.name}
-                    <button
-                      type="button"
-                      onClick={() => confirmDelete(tag)}
-                      aria-label={t('deleteAria', { name: tag.name })}
-                      className="ml-0.5 rounded-full p-0.5 opacity-60 transition-opacity hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/10"
+              <>
+                {/* Search */}
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={tagSearch}
+                    onChange={(e) => setTagSearch(e.target.value)}
+                    placeholder={t('search')}
+                    className="bg-muted pl-8 text-foreground"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                {filteredTags.map((tag) =>
+                  editingTagId === tag.id ? (
+                    <div
+                      key={tag.id}
+                      className="flex w-full items-center gap-2 rounded-lg border border-border bg-muted p-2"
                     >
-                      <X className="size-3" />
-                    </button>
-                  </span>
-                ))}
+                      <Input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            void handleUpdate();
+                          }
+                          if (e.key === 'Escape') cancelEdit();
+                        }}
+                        maxLength={40}
+                        className="h-8 flex-1"
+                        autoFocus
+                      />
+                      <div className="flex gap-1">
+                        {PRESET_COLORS.map((c) => (
+                          <button
+                            key={c.value}
+                            type="button"
+                            onClick={() => setEditColor(c.value)}
+                            aria-label={t('useColor', {
+                              color: t(
+                                `colors.${c.name}` as Parameters<typeof t>[0],
+                              ),
+                            })}
+                            aria-pressed={editColor === c.value}
+                            className={cn(
+                              'size-5 rounded-md transition-transform hover:scale-110',
+                              editColor === c.value &&
+                                'outline outline-2 outline-offset-2 outline-primary',
+                            )}
+                            style={{ backgroundColor: c.value }}
+                          />
+                        ))}
+                      </div>
+                      <Button
+                        size="icon-sm"
+                        onClick={handleUpdate}
+                        disabled={savingEdit || !editName.trim()}
+                      >
+                        {savingEdit ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Check className="size-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={cancelEdit}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <span
+                      key={tag.id}
+                      className="group inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
+                      style={{
+                        backgroundColor: `${tag.color}20`,
+                        color: tag.color,
+                        border: `1px solid ${tag.color}40`,
+                      }}
+                    >
+                      <span
+                        className="size-2 rounded-full"
+                        style={{ backgroundColor: tag.color }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => startEdit(tag)}
+                        aria-label={t('editAria', { name: tag.name })}
+                        className="hover:underline"
+                      >
+                        {tag.name}
+                      </button>
+                      <span className="ml-0.5 text-[10px] tabular-nums opacity-60">
+                        {tagUsage[tag.id] ?? 0}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => confirmDelete(tag)}
+                        aria-label={t('deleteAria', { name: tag.name })}
+                        className="ml-0.5 rounded-full p-0.5 opacity-60 transition-opacity hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/10"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </span>
+                  ),
+                )}
               </div>
+                {tags.length > 0 && filteredTags.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    {t('noResults')}
+                  </p>
+                )}
+              </>
             ) : (
               <p className="text-sm text-muted-foreground">
                 {t('noTags')}

@@ -118,6 +118,8 @@ export interface Contact {
 export interface Tag {
   id: string;
   user_id: string;
+  /** Tenancy key — NOT NULL since migration 017. */
+  account_id: string;
   name: string;
   color: string;
   created_at: string;
@@ -137,6 +139,7 @@ export interface CustomField {
   field_name: string;
   field_type: string;
   field_options?: Record<string, unknown>;
+  sort_order?: number;
   created_at: string;
 }
 
@@ -188,6 +191,14 @@ export interface Conversation {
 // ============================================================
 
 export type NotificationType = 'conversation_assigned';
+
+export interface NotificationPreferences {
+  new_message: boolean;
+  conversation_assigned: boolean;
+  broadcast_completed: boolean;
+  contact_imported: boolean;
+  automation_failed: boolean;
+}
 
 export interface Notification {
   id: string;

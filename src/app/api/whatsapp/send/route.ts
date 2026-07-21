@@ -5,11 +5,13 @@ import {
   rateLimitResponse,
   RATE_LIMITS,
 } from '@/lib/rate-limit'
+import { enforcePlanLimit } from '@/lib/plans/enforce'
 import {
   sendMessageToConversation,
   validateSendMessageParams,
   SendMessageError,
 } from '@/lib/whatsapp/send-message'
+import { ForbiddenError, toErrorResponse } from '@/lib/auth/account'
 
 // The dashboard's outbound-send endpoint. It owns auth, per-user rate
 // limiting, and the two ways the UI targets a thread — an existing
@@ -167,6 +169,33 @@ export async function POST(request: Request) {
       )
     }
 
+    // Enforce plan limit: check max_messages_per_day before sending
+    await enforcePlanLimit(accountId, 'max_messages_per_day');
+
+    // Acquire the send lock to prevent two agents from messaging the
+    // same conversation simultaneously. The lock auto-releases after
+    // 30s (crashed browser) or is released explicitly below.
+    const { data: lockAcquired, error: lockErr } = await supabase.rpc(
+      'claim_send_lock',
+      {
+        p_conversation_id: conversationId,
+        p_user_id: user.id,
+      },
+    )
+    if (lockErr) {
+      console.error('[send] claim_send_lock error:', lockErr)
+      return NextResponse.json(
+        { error: 'Failed to acquire send lock' },
+        { status: 500 },
+      )
+    }
+    if (lockAcquired !== true) {
+      return NextResponse.json(
+        { error: 'Another agent is currently sending a message in this conversation' },
+        { status: 409 },
+      )
+    }
+
     // Delegate to the shared send core (validates, sends to Meta with
     // phone-variant retry, persists, pauses active flow runs). Its
     // `SendMessageError` carries a machine code + HTTP status; the
@@ -195,12 +224,24 @@ export async function POST(request: Request) {
       if (err instanceof SendMessageError) {
         return NextResponse.json(
           { error: err.message },
-          { status: err.status }
+          { status: err.status },
         )
       }
       throw err
+    } finally {
+      // Always release the lock — success, error, or anything else.
+      // Fire-and-forget: the DB auto-releases stale locks anyway.
+      supabase.rpc('release_send_lock', {
+        p_conversation_id: conversationId,
+        p_user_id: user.id,
+      }).then(({ error: releaseErr }: { error: { message: string } | null }) => {
+        if (releaseErr) console.warn('[send] release_send_lock:', releaseErr.message)
+      })
     }
   } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return toErrorResponse(error)
+    }
     console.error('Error in WhatsApp send POST:', error)
     return NextResponse.json(
       { error: 'Failed to send message' },

@@ -280,32 +280,34 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                 return (
                   <li key={item.href} className="relative">
                     <Tooltip>
-                      <TooltipTrigger>
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            "flex w-full items-center justify-center rounded-lg py-2.5 text-sm font-medium transition-colors",
-                            isActive
-                              ? "bg-primary/10 text-primary"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                          )}
-                        >
-                          <item.icon className="h-4 w-4 shrink-0" />
-                          {showUnreadDot && (
-                            <span
-                              aria-label={t("unreadConversations", { count: totalUnread })}
-                              className="absolute top-1 right-1 flex h-2 w-2"
-                            >
-                              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                            </span>
-                          )}
-                          {showNotificationBadge && (
-                            <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
-                              {unreadNotifications > 9 ? "9+" : unreadNotifications}
-                            </span>
-                          )}
-                        </Link>
+                      <TooltipTrigger
+                        render={
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "flex w-full items-center justify-center rounded-lg py-2.5 text-sm font-medium transition-colors",
+                              isActive
+                                ? "bg-primary/10 text-primary"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                            )}
+                          />
+                        }
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        {showUnreadDot && (
+                          <span
+                            aria-label={t("unreadConversations", { count: totalUnread })}
+                            className="absolute top-1 right-1 flex h-2 w-2"
+                          >
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                            <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                          </span>
+                        )}
+                        {showNotificationBadge && (
+                          <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                            {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                          </span>
+                        )}
                       </TooltipTrigger>
                       <TooltipContent side="right" sideOffset={8}>
                         {t(item.labelKey as string)}
@@ -354,18 +356,20 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                 return (
                   <li key={item.href}>
                     <Tooltip>
-                      <TooltipTrigger>
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            "flex w-full items-center justify-center rounded-lg py-2.5 text-sm font-medium transition-colors",
-                            isActive
-                              ? "bg-primary/10 text-primary"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                          )}
-                        >
-                          <item.icon className="h-4 w-4 shrink-0" />
-                        </Link>
+                      <TooltipTrigger
+                        render={
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "flex w-full items-center justify-center rounded-lg py-2.5 text-sm font-medium transition-colors",
+                              isActive
+                                ? "bg-primary/10 text-primary"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                            )}
+                          />
+                        }
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
                       </TooltipTrigger>
                       <TooltipContent side="right" sideOffset={8}>
                         {t(item.labelKey as string)}

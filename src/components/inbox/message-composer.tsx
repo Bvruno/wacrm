@@ -118,6 +118,8 @@ interface MessageComposerProps {
   onOpenTemplates: () => void;
   replyTo?: ReplyDraft | null;
   onClearReply?: () => void;
+  messagesRemaining?: number | null;
+  maxMessagesPerDay?: number | null;
 }
 
 function formatDuration(seconds: number): string {
@@ -140,6 +142,8 @@ export function MessageComposer({
   onOpenTemplates,
   replyTo,
   onClearReply,
+  messagesRemaining,
+  maxMessagesPerDay,
 }: MessageComposerProps) {
   const t = useTranslations("Inbox.composer");
 
@@ -763,13 +767,28 @@ export function MessageComposer({
         </div>
       )}
 
-      {/* Hint sits outside the flex row so its height doesn't push
-          `items-end` buttons below the textarea. Indented to line up
-          under the textarea left edge. */}
+      {/* Hint + plan usage sits outside the flex row so its height doesn't
+          push `items-end` buttons below the textarea. */}
       {!draft && !recording && (
-        <p className="mt-1 pl-[5.5rem] text-[10px] text-muted-foreground">
-          {t("draftHint")}
-        </p>
+        <div className="mt-1 flex items-center justify-between px-1">
+          <p className="text-[10px] text-muted-foreground">
+            {t("draftHint")}
+          </p>
+          {messagesRemaining !== undefined && messagesRemaining !== null && maxMessagesPerDay !== null && maxMessagesPerDay !== undefined && maxMessagesPerDay !== -1 && (
+            <span
+              className={cn(
+                "text-[10px] tabular-nums",
+                messagesRemaining <= 10
+                  ? "text-red-500 font-medium"
+                  : messagesRemaining <= 30
+                    ? "text-amber-500"
+                    : "text-muted-foreground",
+              )}
+            >
+              {messagesRemaining}/{maxMessagesPerDay}
+            </span>
+          )}
+        </div>
       )}
 
       {/* Interactive-message builder dialog. */}

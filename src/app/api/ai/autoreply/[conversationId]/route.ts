@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireRole, toErrorResponse } from '@/lib/auth/account'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
+import { sendPushToAccount } from '@/lib/push/send-push'
 
 type Params = { params: Promise<{ conversationId: string }> }
 
@@ -94,6 +95,18 @@ export async function POST(request: Request, { params }: Params) {
         { error: 'Failed to update conversation' },
         { status: 500 },
       )
+    }
+
+    if (paused && assignToMe) {
+      sendPushToAccount(
+        accountId,
+        {
+          title: 'Conversation assigned',
+          body: 'An agent took over a conversation',
+          url: `/inbox?c=${conversationId}`,
+        },
+        'conversation_assigned',
+      ).catch(() => {})
     }
 
     return NextResponse.json({ success: true, paused })

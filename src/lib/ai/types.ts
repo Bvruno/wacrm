@@ -52,6 +52,7 @@ export interface AiUsage {
 export interface ProviderResult {
   text: string
   usage: AiUsage | null
+  toolCalls?: ToolCall[]
 }
 
 /** Outcome of a generation call. */
@@ -69,6 +70,30 @@ export interface GenerateResult {
  * HTTP response in the draft route; `code` lets the UI/tests branch
  * (invalid_key vs rate_limited vs timeout, etc.).
  */
+/**
+ * Schema for a tool the model can invoke (function-calling).
+ * Uses JSON Schema for parameter validation.
+ */
+export interface ToolDefinition {
+  name: string
+  description: string
+  parameters: Record<string, unknown>
+}
+
+/** A single tool-call request from the model. */
+export interface ToolCall {
+  id: string
+  name: string
+  arguments: Record<string, unknown>
+}
+
+/** Result of executing a tool call. */
+export interface ToolResult {
+  toolCallId: string
+  name: string
+  content: string
+}
+
 export class AiError extends Error {
   readonly code: string
   readonly status: number

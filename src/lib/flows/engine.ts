@@ -42,6 +42,7 @@ import {
 import { decideFallback, resolveFallbackPolicy } from "./fallback";
 import { addContactTagAndDispatch } from "@/lib/contacts/tag-events";
 import { removeContactTag } from "@/lib/contacts/tag-write";
+import { sendPushToAccount } from "@/lib/push/send-push";
 import {
   type CollectInputNodeConfig,
   type ConditionNodeConfig,
@@ -448,6 +449,17 @@ async function executeHandoff(
       .from("conversations")
       .update(convUpdate)
       .eq("id", run.conversation_id);
+    if (cfg.assign_to) {
+      sendPushToAccount(
+        run.account_id,
+        {
+          title: "Conversation assigned",
+          body: "A flow handed off a conversation to an agent",
+          url: `/inbox?c=${run.conversation_id}`,
+        },
+        "conversation_assigned",
+      ).catch(() => {});
+    }
   }
   await logEvent(db, run.id, "handoff", node.node_key, {
     note: cfg.note ?? null,

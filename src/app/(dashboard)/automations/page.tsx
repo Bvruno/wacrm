@@ -24,6 +24,7 @@ import { useTranslations } from "next-intl"
 import type { Automation } from "@/types"
 import { Button } from "@/components/ui/button"
 import { GatedButton } from "@/components/ui/gated-button"
+import { PlanGate } from "@/components/plan-gate"
 import { Switch } from "@/components/ui/switch"
 import {
   DropdownMenu,
@@ -159,6 +160,7 @@ export default function AutomationsPage() {
   const showTemplates = automations.length < 3
 
   return (
+    <PlanGate feature="has_automations">
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -258,6 +260,7 @@ export default function AutomationsPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </PlanGate>
   )
 }
 

@@ -6,6 +6,8 @@ import { buildConversationContext } from '@/lib/ai/context'
 import { retrieveKnowledge } from '@/lib/ai/knowledge'
 import { generateReply } from '@/lib/ai/generate'
 import { buildSystemPrompt } from '@/lib/ai/defaults'
+import { buildContactProfile, formatContactProfile } from '@/lib/ai/contact-profile'
+import { AI_TOOLS, executeToolCalls } from '@/lib/ai/tools'
 import { latestUserMessage } from '@/lib/ai/query'
 import { logAiUsage } from '@/lib/ai/usage'
 import { supabaseAdmin } from '@/lib/ai/admin-client'
@@ -47,7 +49,7 @@ export async function POST(request: Request) {
     // row means "not yours / not found" either way.
     const { data: conversation, error: convErr } = await supabase
       .from('conversations')
-      .select('id')
+      .select('id, contact_id')
       .eq('id', conversationId)
       .maybeSingle()
     if (convErr) {
@@ -98,13 +100,28 @@ export async function POST(request: Request) {
       latestUserMessage(messages),
     )
 
+    const profile = conversation.contact_id
+      ? await buildContactProfile(supabase, conversation.contact_id)
+      : null
+    const contactProfile = profile ? formatContactProfile(profile) : undefined
     const systemPrompt = buildSystemPrompt({
       userPrompt: config.systemPrompt,
       mode: 'draft',
       knowledge,
+      contactProfile,
     })
 
-    const { text, usage } = await generateReply({ config, systemPrompt, messages })
+    const contactId = conversation.contact_id
+    const { text, usage } = await generateReply({
+      config,
+      systemPrompt,
+      messages,
+      tools: AI_TOOLS,
+      executeTools: contactId
+        ? (calls) =>
+            executeToolCalls({ db: supabase, accountId, contactId }, calls)
+        : undefined,
+    })
 
     // Record spend on the account's BYO key. Best-effort + via the
     // service role (the log has no `authenticated` INSERT policy). This

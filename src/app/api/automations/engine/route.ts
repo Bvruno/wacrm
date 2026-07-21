@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { requireRole, toErrorResponse } from '@/lib/auth/account'
+import { requireRole, ForbiddenError, toErrorResponse } from '@/lib/auth/account'
+import { enforceFeatureAccess } from '@/lib/plans/enforce'
 import { runAutomationsForTrigger } from '@/lib/automations/engine'
 import type { AutomationTriggerType } from '@/types'
 
@@ -17,6 +18,14 @@ export async function POST(request: Request) {
     accountId = ctx.accountId
   } catch (err) {
     return toErrorResponse(err)
+  }
+
+  // Plan gate: automations engine requires the has_automations feature
+  try {
+    await enforceFeatureAccess(accountId, 'has_automations')
+  } catch (err) {
+    if (err instanceof ForbiddenError) return toErrorResponse(err)
+    throw err
   }
 
   const body = await request.json().catch(() => null)

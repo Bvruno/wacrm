@@ -33,6 +33,7 @@ import {
   ArrowUp,
   MousePointerClick,
   List,
+  Check,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -45,6 +46,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import type {
   AccountMember,
   AutomationStepType,
@@ -357,6 +363,108 @@ function TagSelect({
         )}
       </select>
     </div>
+  )
+}
+
+/** Filterable tag combobox for the condition operand. Shows a popover with a
+ *  search input so the user can type to filter tags by name. */
+function TagCombobox({
+  value,
+  onChange,
+  t,
+}: {
+  value: string
+  onChange: (v: string) => void
+  t: ReturnType<typeof useTranslations>
+}) {
+  const { tags } = useResources()
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState("")
+
+  const selected = tags.find((tg) => tg.id === value)
+
+  if (tags.length === 0) {
+    return (
+      <Input
+        placeholder={t("tags.placeholder")}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="bg-muted text-foreground"
+      />
+    )
+  }
+
+  const filtered = search
+    ? tags.filter((tg) => tg.name.toLowerCase().includes(search.toLowerCase()))
+    : tags
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger className="flex w-full items-center gap-2 rounded-md border border-border bg-muted px-2 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none">
+        {selected ? (
+          <>
+            <span
+              className="h-3 w-3 shrink-0 rounded-full border border-border"
+              style={{ backgroundColor: selected.color }}
+              aria-hidden
+            />
+            <span className="flex-1 text-left">{selected.name}</span>
+          </>
+        ) : value ? (
+          <span className="flex-1 text-left text-muted-foreground">
+            {t("tags.unknown", { id: value })}
+          </span>
+        ) : (
+          <span className="flex-1 text-left text-muted-foreground">
+            {t("tags.select")}
+          </span>
+        )}
+        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </PopoverTrigger>
+      <PopoverContent className="w-[--anchor-width] p-0" align="start">
+        <div className="border-b border-border p-2">
+          <Input
+            placeholder="Buscar etiqueta…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 bg-muted text-sm"
+            autoFocus
+          />
+        </div>
+        <div className="max-h-48 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <p className="p-3 text-xs text-muted-foreground">
+              No se encontraron etiquetas.
+            </p>
+          ) : (
+            <div className="py-1">
+              {filtered.map((tg) => (
+                <button
+                  key={tg.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(tg.id)
+                    setOpen(false)
+                    setSearch("")
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-foreground hover:bg-accent"
+                >
+                  <span
+                    className="h-3 w-3 shrink-0 rounded-full border border-border"
+                    style={{ backgroundColor: tg.color }}
+                    aria-hidden
+                  />
+                  <span className="flex-1 text-left">{tg.name}</span>
+                  {tg.id === value && (
+                    <Check className="h-4 w-4 shrink-0 text-primary" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -1454,20 +1562,26 @@ function StepEditor({
             </select>
           </FieldBlock>
           <FieldBlock label={t("config.operandLabel")}>
-            <Input
-              placeholder={
-                cfg.subject === "time_of_day"
-                  ? t("config.placeholderTime")
-                  : cfg.subject === "contact_field"
-                  ? t("config.placeholderContact")
-                  : cfg.subject === "tag_presence"
-                  ? t("config.placeholderTag")
-                  : ""
-              }
-              value={(cfg.operand as string) ?? ""}
-              onChange={(e) => set({ operand: e.target.value })}
-              className="bg-muted text-foreground"
-            />
+            {cfg.subject === "tag_presence" ? (
+              <TagCombobox
+                value={(cfg.operand as string) ?? ""}
+                onChange={(v) => set({ operand: v })}
+                t={t}
+              />
+            ) : (
+              <Input
+                placeholder={
+                  cfg.subject === "time_of_day"
+                    ? t("config.placeholderTime")
+                    : cfg.subject === "contact_field"
+                    ? t("config.placeholderContact")
+                    : ""
+                }
+                value={(cfg.operand as string) ?? ""}
+                onChange={(e) => set({ operand: e.target.value })}
+                className="bg-muted text-foreground"
+              />
+            )}
           </FieldBlock>
           {(cfg.subject === "contact_field" || cfg.subject === "message_content") && (
             <FieldBlock label="Value">

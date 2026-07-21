@@ -3,6 +3,16 @@
 import webpush from 'web-push'
 import { supabaseAdmin } from '@/lib/automations/admin-client'
 import { createClient } from '@/lib/supabase/server'
+import type { NotificationPreferences } from '@/types'
+import { sendPushToAccount } from '@/lib/push/send-push'
+
+const DEFAULT_PREFERENCES: NotificationPreferences = {
+  new_message: true,
+  conversation_assigned: true,
+  broadcast_completed: false,
+  contact_imported: false,
+  automation_failed: false,
+}
 
 export async function subscribeUser(sub: {
   endpoint: string
@@ -103,4 +113,46 @@ export async function getSubscriptionStatus(): Promise<{
     configured: !!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
     subscribed: !!sub,
   }
+}
+
+export async function getNotificationPreferences(): Promise<NotificationPreferences> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return DEFAULT_PREFERENCES
+
+  const db = supabaseAdmin()
+  const { data: sub } = await db
+    .from('push_subscriptions')
+    .select('preferences')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!sub?.preferences) return DEFAULT_PREFERENCES
+  return { ...DEFAULT_PREFERENCES, ...(sub.preferences as Partial<NotificationPreferences>) }
+}
+
+export async function updateNotificationPreferences(
+  preferences: NotificationPreferences,
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const db = supabaseAdmin()
+  const { error } = await db
+    .from('push_subscriptions')
+    .update({ preferences })
+    .eq('user_id', user.id)
+
+  if (error) throw new Error(error.message)
+  return { success: true }
+}
+
+export async function notifyPushEvent(
+  accountId: string,
+  eventType: keyof NotificationPreferences,
+  payload: { title: string; body: string; url?: string },
+) {
+  const result = await sendPushToAccount(accountId, payload, eventType)
+  return { sent: result.sent, failed: result.failed }
 }
