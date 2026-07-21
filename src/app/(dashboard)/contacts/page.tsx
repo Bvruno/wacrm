@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import type { Contact, Tag, ContactTag } from '@/types';
+import type { Contact, Tag, ContactTag, CustomField } from '@/types';
+import { contactsToCsv, downloadCsv } from '@/lib/contacts/export-csv';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -49,6 +50,9 @@ import {
   SlidersHorizontal,
   Filter,
   X,
+  ArrowUpDown,
+  Download,
+  Printer,
 } from 'lucide-react';
 import { ContactForm } from '@/components/contacts/contact-form';
 import { ContactDetailView } from '@/components/contacts/contact-detail-view';
@@ -62,6 +66,7 @@ const PAGE_SIZE = 25;
 
 interface ContactWithTags extends Contact {
   tags?: Tag[];
+  last_activity_at?: string | null;
 }
 
 export default function ContactsPage() {
@@ -77,6 +82,15 @@ export default function ContactsPage() {
   const [totalCount, setTotalCount] = useState(0);
   // Tag filter — contacts shown must have ANY of these tags (OR).
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+
+  // Column sorting
+  const [sortColumn, setSortColumn] = useState<string>('created_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  // Custom field filter
+  const [customFieldFilters, setCustomFieldFilters] = useState<Record<string, string>>({});
+  const [allCustomFields, setAllCustomFields] = useState<CustomField[]>([]);
+  const [contactCustomValues, setContactCustomValues] = useState<Record<string, Record<string, string>>>({});
 
   // Modals
   const [formOpen, setFormOpen] = useState(false);
@@ -103,8 +117,17 @@ export default function ContactsPage() {
   // earlier request resolve last and render stale rows.
   const fetchSeq = useRef(0);
 
+  const fetchCustomFieldsList = useCallback(async () => {
+    const { data } = await supabase.from('custom_fields').select('*').order('field_name');
+    if (data) {
+      setAllCustomFields(data as CustomField[]);
+    }
+  }, [supabase]);
+
   const fetchTags = useCallback(async () => {
+    const seq = ++fetchSeq.current;
     const { data } = await supabase.from('tags').select('*');
+    if (seq !== fetchSeq.current) return;
     if (data) {
       const map: Record<string, Tag> = {};
       data.forEach((t) => (map[t.id] = t));
@@ -121,9 +144,6 @@ export default function ContactsPage() {
   const fetchContacts = useCallback(async () => {
     const seq = ++fetchSeq.current;
     setLoading(true);
-    // The visible rows are about to change — drop any selection that
-    // referred to the old page/search results so the bulk bar can't
-    // act on rows the user can no longer see.
     setSelected(new Set());
 
     const from = page * PAGE_SIZE;
@@ -133,18 +153,16 @@ export default function ContactsPage() {
     let contactRows: Contact[];
     let count: number;
 
+    const orderCol = sortColumn === 'last_activity_at' ? 'updated_at' : sortColumn;
+
     if (selectedTagIds.length > 0) {
-      // Tag filter active — resolve it server-side (join + distinct +
-      // windowed total count + pagination) so a tag covering many
-      // contacts can't silently truncate the result or overflow an IN
-      // clause. See migration 025_filter_contacts_by_tags.
       const { data, error } = await supabase.rpc('filter_contacts_by_tags', {
         p_tag_ids: selectedTagIds,
         p_search: term || null,
         p_limit: PAGE_SIZE,
         p_offset: from,
       });
-      if (seq !== fetchSeq.current) return; // superseded by a newer fetch
+      if (seq !== fetchSeq.current) return;
       if (error) {
         toast.error(t('toastFailedLoad'));
         setLoading(false);
@@ -157,7 +175,7 @@ export default function ContactsPage() {
       let query = supabase
         .from('contacts')
         .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
+        .order(orderCol, { ascending: sortDirection === 'asc' })
         .range(from, to);
 
       if (term) {
@@ -166,7 +184,7 @@ export default function ContactsPage() {
       }
 
       const { data, count: exactCount, error } = await query;
-      if (seq !== fetchSeq.current) return; // superseded by a newer fetch
+      if (seq !== fetchSeq.current) return;
       if (error) {
         toast.error(t('toastFailedLoad'));
         setLoading(false);
@@ -176,6 +194,23 @@ export default function ContactsPage() {
       count = exactCount ?? 0;
     }
 
+    // Fetch last activity for display
+    const lastActivityMap: Record<string, string | null> = {};
+    if (contactRows.length > 0) {
+      const cids = contactRows.map((c) => c.id);
+      const { data: convs } = await supabase
+        .from('conversations')
+        .select('contact_id, last_message_at')
+        .in('contact_id', cids);
+      for (const conv of convs ?? []) {
+        const existing = lastActivityMap[conv.contact_id];
+        if (!existing || (conv.last_message_at && conv.last_message_at > existing)) {
+          lastActivityMap[conv.contact_id] = conv.last_message_at;
+        }
+      }
+    }
+    if (seq !== fetchSeq.current) return;
+
     setTotalCount(count);
 
     if (contactRows.length === 0) {
@@ -184,13 +219,12 @@ export default function ContactsPage() {
       return;
     }
 
-    // Fetch tags for these contacts
     const contactIds = contactRows.map((c) => c.id);
     const { data: contactTags } = await supabase
       .from('contact_tags')
       .select('contact_id, tag_id')
       .in('contact_id', contactIds);
-    if (seq !== fetchSeq.current) return; // superseded by a newer fetch
+    if (seq !== fetchSeq.current) return;
 
     const tagsByContact: Record<string, string[]> = {};
     contactTags?.forEach((ct) => {
@@ -203,11 +237,49 @@ export default function ContactsPage() {
       tags: (tagsByContact[c.id] ?? [])
         .map((tid) => tagsMap[tid])
         .filter(Boolean),
+      last_activity_at: lastActivityMap[c.id] ?? null,
     }));
+
+    // Fetch custom field values for client-side filtering
+    if (contactIds.length > 0) {
+      const { data: cvData } = await supabase
+        .from('contact_custom_values')
+        .select('contact_id, custom_field_id, value')
+        .in('contact_id', contactIds);
+      const cvMap: Record<string, Record<string, string>> = {};
+      for (const row of cvData ?? []) {
+        if (!cvMap[row.contact_id]) cvMap[row.contact_id] = {};
+        cvMap[row.contact_id][row.custom_field_id] = row.value ?? '';
+      }
+      setContactCustomValues(cvMap);
+    }
+
+    // Client-side sort for tag-filter path
+    if (selectedTagIds.length > 0) {
+      enriched.sort((a, b) => {
+        let cmp = 0;
+        if (sortColumn === 'name') {
+          cmp = (a.name ?? '').localeCompare(b.name ?? '');
+        } else if (sortColumn === 'phone') {
+          cmp = a.phone.localeCompare(b.phone);
+        } else if (sortColumn === 'email') {
+          cmp = (a.email ?? '').localeCompare(b.email ?? '');
+        } else if (sortColumn === 'company') {
+          cmp = (a.company ?? '').localeCompare(b.company ?? '');
+        } else if (sortColumn === 'last_activity_at') {
+          const aDate = a.last_activity_at ?? '';
+          const bDate = b.last_activity_at ?? '';
+          cmp = aDate < bDate ? -1 : aDate > bDate ? 1 : 0;
+        } else {
+          cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        }
+        return sortDirection === 'desc' ? -cmp : cmp;
+      });
+    }
 
     setContacts(enriched);
     setLoading(false);
-  }, [supabase, page, search, selectedTagIds, tagsMap, t]);
+  }, [supabase, page, search, selectedTagIds, tagsMap, sortColumn, sortDirection, t]);
 
   // Load-once-on-mount-ish data fetches. Each setter inside runs
   // inside an async promise completion (Supabase await), not
@@ -217,6 +289,11 @@ export default function ContactsPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTags();
   }, [fetchTags]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchCustomFieldsList();
+  }, [fetchCustomFieldsList]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -270,10 +347,6 @@ export default function ContactsPage() {
     setDeleteTarget(null);
   }
 
-  const allOnPageSelected =
-    contacts.length > 0 && contacts.every((c) => selected.has(c.id));
-  const someOnPageSelected = contacts.some((c) => selected.has(c.id));
-
   function toggleSelectAll() {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -314,6 +387,44 @@ export default function ContactsPage() {
     setBulkDeleteOpen(false);
   }
 
+  function handleExportCsv() {
+    const csv = contactsToCsv(filteredContacts, tagsMap);
+    downloadCsv(csv, `contacts-${new Date().toISOString().split('T')[0]}.csv`);
+    toast.success(t('toastExported'));
+  }
+
+  function handlePrint() {
+    window.print();
+  }
+
+  function toggleSort(column: string) {
+    if (sortColumn === column) {
+      setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(column);
+      setSortDirection(column === 'created_at' || column === 'last_activity_at' ? 'desc' : 'asc');
+    }
+    setPage(0);
+  }
+
+  // Custom field filters — applied client-side to the loaded page.
+  const filterKeys = Object.keys(customFieldFilters);
+  const filteredContacts = filterKeys.length === 0
+    ? contacts
+    : contacts.filter((c) => {
+        const values = contactCustomValues[c.id];
+        if (!values) return false;
+        return filterKeys.every((fieldId) => {
+          const filterVal = customFieldFilters[fieldId].toLowerCase();
+          const actualVal = (values[fieldId] ?? '').toLowerCase();
+          return actualVal.includes(filterVal);
+        });
+      });
+
+  const allOnPageSelected =
+    filteredContacts.length > 0 && filteredContacts.every((c) => selected.has(c.id));
+  const someOnPageSelected = filteredContacts.some((c) => selected.has(c.id));
+
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
   const hasNext = page < totalPages - 1;
   const hasPrev = page > 0;
@@ -323,7 +434,7 @@ export default function ContactsPage() {
   const allTags = Object.values(tagsMap).sort((a, b) =>
     a.name.localeCompare(b.name)
   );
-  const hasActiveFilters = search.trim().length > 0 || selectedTagIds.length > 0;
+  const hasActiveFilters = search.trim().length > 0 || selectedTagIds.length > 0 || Object.keys(customFieldFilters).length > 0;
 
   function toggleTagFilter(tagId: string) {
     setSelectedTagIds((prev) =>
@@ -342,7 +453,7 @@ export default function ContactsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
         <div>
           <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -360,6 +471,23 @@ export default function ContactsPage() {
               {t('customFieldsBtn')}
             </Button>
           )}
+          <Button
+            variant="outline"
+            onClick={handleExportCsv}
+            disabled={contacts.length === 0}
+            className="border-border text-muted-foreground hover:bg-muted"
+          >
+            <Download className="size-4" />
+            {t('exportCsv')}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handlePrint}
+            className="border-border text-muted-foreground hover:bg-muted"
+          >
+            <Printer className="size-4" />
+            {t('print')}
+          </Button>
           <GatedButton
             variant="outline"
             canAct={canEdit}
@@ -383,7 +511,7 @@ export default function ContactsPage() {
       </div>
 
       {/* Search + tag filter */}
-      <div className="space-y-2">
+      <div className="space-y-2 print:hidden">
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -460,6 +588,69 @@ export default function ContactsPage() {
               )}
             </PopoverContent>
           </Popover>
+
+          {allCustomFields.length > 0 && (
+            <Popover>
+              <PopoverTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    className="border-border text-muted-foreground hover:bg-muted shrink-0"
+                  />
+                }
+              >
+                <SlidersHorizontal className="size-4" />
+                {t('filterByCustomFields')}
+                {Object.keys(customFieldFilters).length > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+                    {Object.keys(customFieldFilters).length}
+                  </span>
+                )}
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-72 p-3">
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-popover-foreground">
+                    {t('filterByCustomFields')}
+                  </p>
+                  {allCustomFields.map((field) => (
+                    <div key={field.id} className="space-y-1">
+                      <label className="text-xs text-muted-foreground capitalize">
+                        {field.field_name}
+                      </label>
+                      <Input
+                        value={customFieldFilters[field.id] ?? ''}
+                        onChange={(e) => {
+                          setCustomFieldFilters((prev) => {
+                            const next = { ...prev };
+                            if (e.target.value) {
+                              next[field.id] = e.target.value;
+                            } else {
+                              delete next[field.id];
+                            }
+                            return next;
+                          });
+                          setPage(0);
+                        }}
+                        placeholder={field.field_name}
+                        className="bg-muted border-border text-foreground h-8 text-sm"
+                      />
+                    </div>
+                  ))}
+                  {Object.keys(customFieldFilters).length > 0 && (
+                    <button
+                      onClick={() => {
+                        setCustomFieldFilters({});
+                        setPage(0);
+                      }}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      {t('clearAll')}
+                    </button>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
 
         {/* Active tag-filter chips */}
@@ -500,7 +691,7 @@ export default function ContactsPage() {
 
       {/* Bulk action bar */}
       {selected.size > 0 && (
-        <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted/40 px-4 py-2">
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted/40 px-4 py-2 print:hidden">
           <p className="text-sm text-foreground">
             {t('selectedCount', { count: selected.size })}
           </p>
@@ -541,19 +732,86 @@ export default function ContactsPage() {
                   aria-label="Select all contacts on this page"
                 />
               </TableHead>
-              <TableHead className="text-muted-foreground">{t('tableColumns.name')}</TableHead>
-              <TableHead className="text-muted-foreground">{t('tableColumns.phone')}</TableHead>
-              <TableHead className="text-muted-foreground hidden md:table-cell">{t('tableColumns.email')}</TableHead>
-              <TableHead className="text-muted-foreground hidden lg:table-cell">{t('tableColumns.company')}</TableHead>
+              <TableHead
+                className="text-muted-foreground cursor-pointer select-none"
+                onClick={() => toggleSort('name')}
+              >
+                <span className="inline-flex items-center gap-1">
+                  {t('tableColumns.name')}
+                  <ArrowUpDown className="size-3" />
+                  {sortColumn === 'name' && (
+                    <span className="text-xs">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </span>
+              </TableHead>
+              <TableHead
+                className="text-muted-foreground cursor-pointer select-none"
+                onClick={() => toggleSort('phone')}
+              >
+                <span className="inline-flex items-center gap-1">
+                  {t('tableColumns.phone')}
+                  <ArrowUpDown className="size-3" />
+                  {sortColumn === 'phone' && (
+                    <span className="text-xs">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </span>
+              </TableHead>
+              <TableHead
+                className="text-muted-foreground hidden md:table-cell cursor-pointer select-none"
+                onClick={() => toggleSort('email')}
+              >
+                <span className="inline-flex items-center gap-1">
+                  {t('tableColumns.email')}
+                  <ArrowUpDown className="size-3" />
+                  {sortColumn === 'email' && (
+                    <span className="text-xs">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </span>
+              </TableHead>
+              <TableHead
+                className="text-muted-foreground hidden lg:table-cell cursor-pointer select-none"
+                onClick={() => toggleSort('company')}
+              >
+                <span className="inline-flex items-center gap-1">
+                  {t('tableColumns.company')}
+                  <ArrowUpDown className="size-3" />
+                  {sortColumn === 'company' && (
+                    <span className="text-xs">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </span>
+              </TableHead>
               <TableHead className="text-muted-foreground hidden md:table-cell">{t('tableColumns.tags')}</TableHead>
-              <TableHead className="text-muted-foreground hidden lg:table-cell">{t('tableColumns.createdAt')}</TableHead>
-              <TableHead className="text-muted-foreground w-12" />
+              <TableHead
+                className="text-muted-foreground hidden lg:table-cell cursor-pointer select-none"
+                onClick={() => toggleSort('last_activity_at')}
+              >
+                <span className="inline-flex items-center gap-1">
+                  {t('tableColumns.lastActivity')}
+                  <ArrowUpDown className="size-3" />
+                  {sortColumn === 'last_activity_at' && (
+                    <span className="text-xs">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </span>
+              </TableHead>
+              <TableHead
+                className="text-muted-foreground hidden lg:table-cell cursor-pointer select-none"
+                onClick={() => toggleSort('created_at')}
+              >
+                <span className="inline-flex items-center gap-1">
+                  {t('tableColumns.createdAt')}
+                  <ArrowUpDown className="size-3" />
+                  {sortColumn === 'created_at' && (
+                    <span className="text-xs">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </span>
+              </TableHead>
+              <TableHead className="text-muted-foreground w-12 print:hidden" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow className="border-border">
-                <TableCell colSpan={8} className="text-center py-12">
+                <TableCell colSpan={9} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 className="size-6 animate-spin text-primary" />
                     <p className="text-sm text-muted-foreground">{t('loading')}</p>
@@ -562,7 +820,7 @@ export default function ContactsPage() {
               </TableRow>
             ) : contacts.length === 0 ? (
               <TableRow className="border-border">
-                <TableCell colSpan={8} className="text-center py-12">
+                <TableCell colSpan={9} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
                     <Users className="size-8 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">
@@ -586,8 +844,19 @@ export default function ContactsPage() {
                   </div>
                 </TableCell>
               </TableRow>
+            ) : filteredContacts.length === 0 ? (
+              <TableRow className="border-border">
+                <TableCell colSpan={9} className="text-center py-12">
+                  <div className="flex flex-col items-center gap-2">
+                    <Users className="size-8 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      {t('noContactsMatch')}
+                    </p>
+                  </div>
+                </TableCell>
+              </TableRow>
             ) : (
-              contacts.map((contact) => (
+              filteredContacts.map((contact) => (
                 <TableRow
                   key={contact.id}
                   className="border-border hover:bg-muted/50 cursor-pointer"
@@ -638,13 +907,24 @@ export default function ContactsPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs hidden lg:table-cell">
+                    {contact.last_activity_at
+                      ? new Date(contact.last_activity_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : <span className="text-muted-foreground">-</span>}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs hidden lg:table-cell">
                     {new Date(contact.created_at).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
                       year: 'numeric',
                     })}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="print:hidden">
                     <DropdownMenu>
                       <DropdownMenuTrigger
                         render={
@@ -695,7 +975,7 @@ export default function ContactsPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between print:hidden">
           <p className="text-xs text-muted-foreground">
             {t('showingPagination', {
               start: page * PAGE_SIZE + 1,

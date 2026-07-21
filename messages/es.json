@@ -552,7 +552,8 @@
           "email": "Email",
           "company": "Empresa",
           "tags": "Etiquetas",
-          "createdAt": "Creado"
+          "createdAt": "Creado",
+          "lastActivity": "Última actividad"
         },
         "loading": "Cargando contactos...",
         "noContactsMatch": "Ningún contacto coincide con tus filtros.",
@@ -569,11 +570,16 @@
         "deleteBtn": "Eliminar",
         "deleteBulkTitle": "Eliminar contactos",
         "deleteBulkDesc": "¿Estás seguro de que quieres eliminar {count} contactos seleccionados? Esta acción no se puede deshacer.",
+        "exportCsv": "Exportar CSV",
+        "print": "Imprimir",
+        "filterByCustomFields": "Campos personalizados",
         "toastFailedLoad": "Error al cargar contactos",
         "toastFailedDelete": "Error al eliminar contacto",
         "toastDeleted": "Contacto eliminado",
         "toastBulkFailedDelete": "Error al eliminar contactos",
-        "toastBulkDeleted": "{count} contactos eliminados"
+        "toastBulkDeleted": "{count} contactos eliminados",
+        "toastExported": "Contactos exportados",
+        "toastCsvError": "Error al exportar contactos"
     },
     "form": {
         "addTitle": "Añadir contacto",
@@ -638,7 +644,8 @@
         "enterCustomField": "Ingresar {name}...",
         "activityTab": {
           "title": "Historial de actividad",
-          "noActivity": "Sin actividad aún."
+          "noActivity": "Sin actividad aún.",
+          "created": "Conversación creada {date}"
         },
         "notesTab": {
           "title": "Notas internas",
@@ -749,6 +756,27 @@
         "search": "Buscar campos\u2026",
         "noResults": "No hay campos que coincidan con tu búsqueda."
     }
+  },
+  "NotificationsPage": {
+    "title": "Notificaciones",
+    "description": "Mantente al día de lo que ocurre en tu espacio de trabajo.",
+    "empty": "Aún no hay notificaciones",
+    "emptyDesc": "Verás una alerta aquí cuando alguien te asigne una conversación.",
+    "markAllRead": "Marcar todo como leído",
+    "retry": "Reintentar",
+    "loading": "Cargando…",
+    "filterAll": "Todas",
+    "filterUnread": "No leídas",
+    "filterRead": "Leídas",
+    "loadMore": "Cargar más",
+    "delete": "Eliminar",
+    "deleteConfirm": "¿Eliminar esta notificación?",
+    "clearRead": "Limpiar leídas",
+    "clearReadConfirm": "¿Eliminar {count} notificaciones leídas?",
+    "clearReadDone": "Se eliminaron {count} notificaciones leídas",
+    "search": "Buscar notificaciones…",
+    "actorAdded": "{actor} te agregó a una conversación",
+    "actorAssigned": "{actor} te asignó una conversación"
   },
   "pwa": {
     "title": "Instalar CodixIA",

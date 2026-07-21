@@ -93,6 +93,12 @@ export function ContactDetailView({
   const [savingCustom, setSavingCustom] = useState(false);
   const [loadingCustom, setLoadingCustom] = useState(false);
 
+  // Activity tab
+  const [activityConversations, setActivityConversations] = useState<
+    { id: string; status: string; last_message_text?: string; last_message_at?: string; created_at: string }[]
+  >([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+
   // Deals tab
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loadingDeals, setLoadingDeals] = useState(false);
@@ -180,6 +186,18 @@ export function ContactDetailView({
     setLoadingDeals(false);
   }, [contactId, supabase]);
 
+  const fetchActivity = useCallback(async () => {
+    if (!contactId) return;
+    setLoadingActivity(true);
+    const { data } = await supabase
+      .from('conversations')
+      .select('id, status, last_message_text, last_message_at, created_at')
+      .eq('contact_id', contactId)
+      .order('last_message_at', { ascending: false, nullsFirst: false });
+    setActivityConversations(data ?? []);
+    setLoadingActivity(false);
+  }, [contactId, supabase]);
+
   useEffect(() => {
     if (open && contactId) {
       fetchContact();
@@ -187,8 +205,9 @@ export function ContactDetailView({
       fetchNotes();
       fetchCustomFields();
       fetchDeals();
+      fetchActivity();
     }
-  }, [open, contactId, fetchContact, fetchTags, fetchNotes, fetchCustomFields, fetchDeals]);
+  }, [open, contactId, fetchContact, fetchTags, fetchNotes, fetchCustomFields, fetchDeals, fetchActivity]);
 
   async function copyPhone() {
     if (!contact) return;
@@ -296,12 +315,6 @@ export function ContactDetailView({
     setSavingCustom(true);
 
     try {
-      // Delete existing values and re-insert
-      await supabase
-        .from('contact_custom_values')
-        .delete()
-        .eq('contact_id', contactId);
-
       const rows = Object.entries(customValues)
         .filter(([, val]) => val.trim())
         .map(([fieldId, val]) => ({
@@ -313,7 +326,7 @@ export function ContactDetailView({
       if (rows.length > 0) {
         const { error } = await supabase
           .from('contact_custom_values')
-          .insert(rows);
+          .upsert(rows, { onConflict: 'contact_id,custom_field_id' });
         if (error) throw error;
       }
 
@@ -465,6 +478,12 @@ export function ContactDetailView({
                   {t('tabs.tags', { fallback: 'Tags' })}
                 </TabsTrigger>
                 <TabsTrigger
+                  value="activity"
+                  className="data-active:bg-muted data-active:text-primary text-muted-foreground"
+                >
+                  {t('tabs.activity')}
+                </TabsTrigger>
+                <TabsTrigger
                   value="notes"
                   className="data-active:bg-muted data-active:text-primary text-muted-foreground"
                 >
@@ -574,6 +593,59 @@ export function ContactDetailView({
                     </div>
                   )}
                 </div>
+              </TabsContent>
+
+              {/* Activity Tab */}
+              <TabsContent value="activity" className="flex-1 overflow-y-auto px-4 py-3">
+                {loadingActivity ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : activityConversations.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    {t('activityTab.noActivity')}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {activityConversations.map((conv) => (
+                      <div
+                        key={conv.id}
+                        className="rounded-lg border border-border bg-muted/50 p-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-medium text-foreground capitalize">
+                            {conv.status}
+                          </span>
+                          {conv.last_message_at && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {new Date(conv.last_message_at).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          )}
+                        </div>
+                        {conv.last_message_text && (
+                          <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                            {conv.last_message_text}
+                          </p>
+                        )}
+                        <p className="mt-1 text-[10px] text-muted-foreground/60">
+                          {t('activityTab.created', {
+                            date: new Date(conv.created_at).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            }),
+                          })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
 
               {/* Notes Tab */}

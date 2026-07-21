@@ -16,6 +16,7 @@ import { ContactSidebar } from "@/components/inbox/contact-sidebar";
 import { toast } from "sonner";
 import { WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useInboxHotkeys } from "@/app/(dashboard)/inbox/hotkeys";
 
 // Remembers the agent's show/hide choice for the desktop contact panel
 // across reloads and sessions (device-scoped, like the theme prefs).
@@ -51,6 +52,7 @@ function InboxPageInner() {
   const [whatsappConnected, setWhatsappConnected] = useState<boolean | null>(
     null
   );
+  const [focusedConvIndex, setFocusedConvIndex] = useState(0);
   /**
    * Bumped whenever we want children (ConversationList, MessageThread)
    * to refetch from the DB — used as a safety net against missed
@@ -554,6 +556,36 @@ function InboxPageInner() {
     [activeConversation]
   );
 
+  // Keyboard navigation for the conversation list
+  const handleNavigateUp = useCallback(() => {
+    if (conversations.length === 0) return
+    setFocusedConvIndex((prev) => Math.max(0, prev - 1))
+  }, [conversations.length])
+
+  const handleNavigateDown = useCallback(() => {
+    if (conversations.length === 0) return
+    setFocusedConvIndex((prev) => Math.min(conversations.length - 1, prev + 1))
+  }, [conversations.length])
+
+  const handleSelectCurrent = useCallback(() => {
+    const conv = conversations[focusedConvIndex]
+    if (conv) handleSelectConversation(conv)
+  }, [conversations, focusedConvIndex, handleSelectConversation])
+
+  const handleEscape = useCallback(() => {
+    if (activeConversation) {
+      handleCloseConversation()
+    }
+    setFocusedConvIndex(0)
+  }, [activeConversation, handleCloseConversation])
+
+  useInboxHotkeys({
+    onNavigateUp: handleNavigateUp,
+    onNavigateDown: handleNavigateDown,
+    onSelectCurrent: handleSelectCurrent,
+    onEscape: handleEscape,
+  })
+
   // On mobile (<lg) we show a SINGLE pane — either the list or the
   // thread — rather than cramming both side-by-side. Selecting a
   // conversation slides the thread in; the thread's back button pops
@@ -590,6 +622,8 @@ function InboxPageInner() {
             conversations={conversations}
             onConversationsLoaded={handleConversationsLoaded}
             resyncToken={resyncToken}
+            focusedIndex={focusedConvIndex}
+            onSetFocusedIndex={setFocusedConvIndex}
           />
         </div>
 

@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ConversationListSkeleton } from "@/components/inbox/conversation-list-skeleton";
 
 interface ConversationListProps {
   activeConversationId: string | null;
@@ -34,6 +35,10 @@ interface ConversationListProps {
    * or the tab was throttled. Optional so existing callers keep working.
    */
   resyncToken?: number;
+  /** Index of the currently focused item in the list (keyboard nav). */
+  focusedIndex?: number;
+  /** Called when the focused index changes. */
+  onSetFocusedIndex?: (index: number | ((prev: number) => number)) => void;
 }
 
 const STATUS_COLORS: Record<ConversationStatus, string> = {
@@ -52,6 +57,8 @@ export function ConversationList({
   conversations,
   onConversationsLoaded,
   resyncToken = 0,
+  focusedIndex = -1,
+  onSetFocusedIndex,
 }: ConversationListProps) {
   const t = useTranslations("Inbox.conversationList");
   
@@ -398,9 +405,7 @@ export function ConversationList({
           parent's overflow-hidden with no scrollbar (issue #229). */}
       <ScrollArea className="min-h-0 flex-1">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          </div>
+          <ConversationListSkeleton />
         ) : filtered.length === 0 ? (
           <div className="px-4 py-12 text-center">
             <p className="text-sm text-muted-foreground">{t("noConversations")}</p>
@@ -412,6 +417,7 @@ export function ConversationList({
                 key={conv.id}
                 conversation={conv}
                 isActive={conv.id === activeConversationId}
+                isFocused={filtered.indexOf(conv) === focusedIndex}
                 onSelect={handleSelect}
                 t={t}
               />
@@ -426,6 +432,7 @@ export function ConversationList({
 interface ConversationItemProps {
   conversation: Conversation;
   isActive: boolean;
+  isFocused?: boolean;
   onSelect: (conversation: Conversation) => void;
   t: ReturnType<typeof useTranslations>;
 }
@@ -433,6 +440,7 @@ interface ConversationItemProps {
 function ConversationItem({
   conversation,
   isActive,
+  isFocused,
   onSelect,
   t,
 }: ConversationItemProps) {
@@ -455,7 +463,8 @@ function ConversationItem({
       onClick={handleClick}
       className={cn(
         "flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/50",
-        isActive && "border-l-2 border-primary bg-muted/70"
+        isActive && "border-l-2 border-primary bg-muted/70",
+        isFocused && !isActive && "bg-muted/30"
       )}
     >
       {/* Avatar */}

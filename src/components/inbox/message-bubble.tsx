@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { Fragment } from "react";
 import type { Message, MessageReaction } from "@/types";
 import {
   Clock,
@@ -28,6 +29,8 @@ interface MessageBubbleProps {
   reactions?: MessageReaction[];
   currentUserId?: string;
   onToggleReaction?: (emoji: string) => void;
+  /** If set, matching substrings in content_text are highlighted. */
+  highlight?: string;
 }
 
 function StatusIcon({ status }: { status: Message["status"] }) {
@@ -119,12 +122,12 @@ function MediaImage({ url, alt }: { url: string; alt: string }) {
   );
 }
 
-function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof useTranslations> }) {
+function MessageContent({ message, t, highlight }: { message: Message, t: ReturnType<typeof useTranslations>; highlight?: string }) {
   switch (message.content_type) {
     case "text":
       return (
         <p className="whitespace-pre-wrap break-words text-sm">
-          {message.content_text}
+          <HighlightedText text={message.content_text ?? ''} highlight={highlight} />
         </p>
       );
 
@@ -138,7 +141,7 @@ function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof
           )}
           {message.content_text && (
             <p className="mt-1 whitespace-pre-wrap break-words text-sm">
-              {message.content_text}
+              <HighlightedText text={message.content_text} highlight={highlight} />
             </p>
           )}
         </div>
@@ -158,7 +161,7 @@ function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof
           )}
           {message.content_text && (
             <p className="mt-1 whitespace-pre-wrap break-words text-sm">
-              {message.content_text}
+              <HighlightedText text={message.content_text} highlight={highlight} />
             </p>
           )}
         </div>
@@ -202,7 +205,7 @@ function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof
           </span>
           {message.content_text && (
             <p className="mt-1 whitespace-pre-wrap break-words text-sm">
-              {message.content_text}
+              <HighlightedText text={message.content_text} highlight={highlight} />
             </p>
           )}
         </div>
@@ -212,7 +215,9 @@ function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof
       return (
         <div className="flex items-center gap-2 text-sm">
           <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span>{message.content_text || t("locationShared")}</span>
+          <span>
+            <HighlightedText text={message.content_text || t("locationShared")} highlight={highlight} />
+          </span>
         </div>
       );
 
@@ -258,12 +263,51 @@ function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof
   }
 }
 
+function HighlightedText({ text, highlight }: { text: string; highlight?: string }) {
+  if (!highlight || !text.toLowerCase().includes(highlight.toLowerCase())) {
+    return <>{text}</>;
+  }
+
+  const lower = text.toLowerCase();
+  const hl = highlight.toLowerCase();
+  const parts: { text: string; match: boolean }[] = [];
+  let cursor = 0;
+
+  while (cursor < text.length) {
+    const idx = lower.indexOf(hl, cursor);
+    if (idx === -1) {
+      parts.push({ text: text.slice(cursor), match: false });
+      break;
+    }
+    if (idx > cursor) {
+      parts.push({ text: text.slice(cursor, idx), match: false });
+    }
+    parts.push({ text: text.slice(idx, idx + hl.length), match: true });
+    cursor = idx + hl.length;
+  }
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.match ? (
+          <mark key={i} className="rounded-sm bg-yellow-300/40 px-0.5 text-inherit dark:bg-yellow-500/30">
+            {part.text}
+          </mark>
+        ) : (
+          <Fragment key={i}>{part.text}</Fragment>
+        ),
+      )}
+    </>
+  );
+}
+
 export function MessageBubble({
   message,
   reply,
   reactions,
   currentUserId,
   onToggleReaction,
+  highlight,
 }: MessageBubbleProps) {
   const t = useTranslations("Inbox.bubble");
 

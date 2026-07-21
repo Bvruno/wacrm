@@ -27,6 +27,8 @@ import {
   RefreshCw,
   PanelRightOpen,
   PanelRightClose,
+  Search,
+  X,
 } from "lucide-react";
 import { format, isToday, isYesterday, differenceInHours } from "date-fns";
 import { useTranslations } from "next-intl";
@@ -49,6 +51,7 @@ import {
 import { deleteAccountMedia } from "@/lib/storage/upload-media";
 import { TemplatePicker } from "./template-picker";
 import { AiThreadBanner } from "./ai-thread-banner";
+import { MessageThreadSkeleton } from "./message-thread-skeleton";
 import { buildReplyPreview } from "./reply-quote";
 import { toast } from "sonner";
 import { usePlan } from "@/hooks/use-plan";
@@ -187,6 +190,9 @@ export function MessageThread({
   // parent's resyncToken); the 700ms spin is just feedback so the click
   // doesn't feel like a no-op. Cleared via the timer ref on unmount.
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     return () => {
@@ -905,7 +911,13 @@ export function MessageThread({
   }
 
   const displayName = contact.name || contact.phone;
-  const messageGroups = groupMessagesByDate(messages);
+  const highlight = searchQuery.trim();
+  const filteredMessages = highlight
+    ? messages.filter((m) =>
+        m.content_text?.toLowerCase().includes(highlight.toLowerCase())
+      )
+    : messages;
+  const messageGroups = groupMessagesByDate(filteredMessages);
   const currentStatus = STATUS_OPTIONS.find(
     (s) => s.value === conversation.status
   );
@@ -989,6 +1001,27 @@ export function MessageThread({
               )}
             </button>
           )}
+
+          {/* Search within conversation */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowSearch((p) => !p);
+              if (!showSearch) {
+                setTimeout(() => searchInputRef.current?.focus(), 50);
+              } else {
+                setSearchQuery('');
+              }
+            }}
+            aria-label={t("searchInConversation")}
+            title={t("search")}
+            className={cn(
+              "inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-muted hover:text-foreground",
+              showSearch ? "text-primary" : "text-muted-foreground",
+            )}
+          >
+            <Search className="h-3.5 w-3.5" />
+          </button>
 
           {/* Manual refresh — forces a refetch of the messages + the
               conversation list (the parent bumps its resyncToken). Useful
@@ -1104,13 +1137,41 @@ export function MessageThread({
         </div>
       </div>
 
+      {/* Inline search input */}
+      {showSearch && (
+        <div className="flex items-center gap-2 border-b border-border bg-card px-3 py-2">
+          <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("searchInMessages")}
+            className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setShowSearch(false);
+                setSearchQuery('');
+              }
+            }}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Messages Area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          </div>
-        ) : messages.length === 0 ? (
+        {loading && messages.length === 0 ? (
+          <MessageThreadSkeleton />
+        ) : messages.length === 0 && !loading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <p className="text-sm text-muted-foreground">{t("noMessagesYet")}</p>
             <p className="text-xs text-muted-foreground">
@@ -1121,9 +1182,9 @@ export function MessageThread({
           <div className="space-y-4">
             {messageGroups.map((group) => (
               <div key={group.date}>
-                {/* Date separator */}
-                <div className="mb-4 flex items-center justify-center">
-                  <span className="rounded-full bg-muted px-3 py-1 text-[10px] font-medium text-muted-foreground">
+                {/* Date separator (sticky) */}
+                <div className="sticky top-2 z-10 mb-2 flex items-center justify-center">
+                  <span className="rounded-full bg-background/80 px-3 py-1 text-[10px] font-medium text-muted-foreground backdrop-blur-sm">
                     {formatDateSeparator(group.date, t)}
                   </span>
                 </div>
@@ -1169,6 +1230,7 @@ export function MessageThread({
                           reactions={msgReactions}
                           currentUserId={user?.id}
                           onToggleReaction={handlePillToggle}
+                          highlight={highlight || undefined}
                         />
                       </MessageActions>
                     );
