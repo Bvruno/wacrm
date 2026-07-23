@@ -228,3 +228,143 @@ html[data-theme="rose"] {
     @apply font-sans;
   }
 }
+
+@layer components {
+  .page-enter {
+    animation: fade-in-up 0.35s ease-out both;
+  }
+}
+
+/* ============================================================
+ * ANIMATIONS
+ * ============================================================ */
+
+@keyframes splash-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes splash-fade-out {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ============================================================
+ * SPLASH BRIDGE — animated logo between native splash and app
+ *
+ * Renders inline in layout.tsx before React hydrates. When React
+ * mounts, the SplashRemover component adds `data-hydrated` to the
+ * <html>, which triggers the fade-out animation below on the
+ * splash bridge and reveals the real app underneath.
+ * ============================================================ */
+
+#app-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: oklch(0.13 0.01 260);
+}
+
+#app-splash .splash-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  animation: splash-pulse 2s ease-in-out infinite;
+}
+
+#app-splash .splash-logo svg {
+  width: 80px;
+  height: 80px;
+}
+
+#app-splash .splash-brand {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: oklch(0.65 0.01 260);
+  letter-spacing: 0.02em;
+}
+
+html[data-hydrated] #app-splash {
+  animation: splash-fade-out 0.35s ease-out both;
+  pointer-events: none;
+}
+
+/* ============================================================
+ * SHIMMER SKELETONS
+ *
+ * Replaces the default animate-pulse on skeletons with a
+ * left-to-right shimmer that looks more polished.
+ *
+ * Use via the `skeleton-shimmer` class on the <Skeleton />
+ * component or any container that wraps skeleton pieces.
+ * ============================================================ */
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    oklch(from var(--muted) calc(l + 0.04) c h) 37%,
+    var(--muted) 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-shimmer-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    var(--card) 25%,
+    oklch(from var(--card) calc(l + 0.03) c h) 37%,
+    var(--card) 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ============================================================
+ * DASHBOARD LOADING — centered logo spinner for loading.tsx
+ * ============================================================ */
+
+.dashboard-loading-icon {
+  animation: splash-pulse 2s ease-in-out infinite, scale-in 0.4s ease-out both;
+}
