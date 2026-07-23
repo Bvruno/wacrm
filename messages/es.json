@@ -2038,7 +2038,17 @@
       "testSent": "Prueba enviada ({sent} entregadas, {failed} fallidas)",
       "testFailed": "Prueba fallida. Revisa la consola del navegador para más detalles.",
       "androidWarningTitle": "Optimización de batería de Android",
-      "androidWarningBody": "Algunos dispositivos Android bloquean las notificaciones push cuando el navegador está cerrado. Para garantizar la entrega, ve a Ajustes > Apps > Chrome > Batería y desactiva la optimización de batería para Chrome.",
+      "androidWarningBody": "Android bloquea las notificaciones push cuando Chrome está completamente cerrado. Configura tu dispositivo para recibir notificaciones de forma confiable.",
+      "androidStepsTitle": "Pasos requeridos:",
+      "androidStep1": "Abre Ajustes → Apps → Chrome → Batería",
+      "androidStep2": "Selecciona \"Sin restricciones\" o desactiva la optimización de batería para Chrome",
+      "androidStep3": "Activa \"Permitir actividad en segundo plano\" si está disponible",
+      "androidManufacturersTitle": "Configuración por marca:",
+      "androidXiaomi": "Xiaomi: Ajustes → Batería → Ahorro de batería → Chrome → Sin restricciones",
+      "androidHuawei": "Huawei: Ajustes → Batería → Lanzamiento de apps → Chrome → Gestionar manualmente → Activa los 3 toggles",
+      "androidSamsung": "Samsung: Ajustes → Apps → Chrome → Batería → Permitir actividad en segundo plano + Sin restricciones",
+      "androidOnePlus": "OnePlus: Ajustes → Batería → Optimización de batería → Chrome → No optimizar",
+      "androidOpenSettings": "Abrir ajustes de Chrome",
       "staleSubscription": "Tu suscripción push puede estar desactualizada. Prueba a desactivar y reactivar las notificaciones."
     },
     "security": {

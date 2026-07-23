@@ -1779,7 +1779,17 @@
       "testSent": "Test sent ({sent} delivered, {failed} failed)",
       "testFailed": "Test failed. Check the browser console for details.",
       "androidWarningTitle": "Android battery optimization",
-      "androidWarningBody": "Some Android devices block push notifications when the browser is closed. To ensure reliable delivery, go to your phone's Settings > Apps > Chrome > Battery and disable battery optimization for Chrome.",
+      "androidWarningBody": "Android blocks push notifications when Chrome is fully closed. Configure your device to receive notifications reliably.",
+      "androidStepsTitle": "Required steps:",
+      "androidStep1": "Open Android Settings → Apps → Chrome → Battery",
+      "androidStep2": "Select \"Unrestricted\" or disable battery optimization for Chrome",
+      "androidStep3": "Enable \"Allow background activity\" if available",
+      "androidManufacturersTitle": "Brand-specific settings:",
+      "androidXiaomi": "Xiaomi: Settings → Battery → App battery saver → Chrome → No restrictions",
+      "androidHuawei": "Huawei: Settings → Battery → App launch → Chrome → Manage manually → Enable all 3 toggles",
+      "androidSamsung": "Samsung: Settings → Apps → Chrome → Battery → Allow background activity + Unrestricted",
+      "androidOnePlus": "OnePlus: Settings → Battery → Battery optimization → Chrome → Don't optimize",
+      "androidOpenSettings": "Open Chrome settings",
       "staleSubscription": "Your push subscription may be out of date. Try disabling and re-enabling notifications."
     },
     "security": {

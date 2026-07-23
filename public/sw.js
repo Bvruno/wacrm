@@ -82,7 +82,7 @@ self.addEventListener('push', function (event) {
   var data
   try {
     data = event.data.json()
-  } catch (__unused) {
+  } catch {
     data = { title: 'CodixIA', body: event.data.text() }
   }
 
@@ -105,7 +105,7 @@ self.addEventListener('push', function (event) {
     vibrate: data.vibrate || [100, 50, 100],
     tag: data.tag || undefined,
     renotify: data.renotify !== undefined ? data.renotify : true,
-    requireInteraction: data.requireInteraction !== undefined ? data.requireInteraction : true,
+    requireInteraction: data.requireInteraction !== undefined ? data.requireInteraction : false,
     timestamp: data.timestamp || Date.now(),
     silent: data.sound === false,
     data: {

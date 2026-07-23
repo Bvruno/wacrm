@@ -732,6 +732,10 @@ async function processMessage(
         title: contactRecord.name || contactRecord.phone || 'New message',
         body: contentText || `[${message.type}]`,
         url: `/inbox?c=${conversation.id}`,
+        conversationId: conversation.id,
+        messageId: message.id,
+        contactId: contactRecord.id,
+        tag: conversation.id,
       },
       'new_message',
     )

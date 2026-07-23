@@ -252,13 +252,36 @@ export function PushNotifications() {
         <Card className="border-amber-500/30 bg-amber-500/5 p-4">
           <div className="flex items-start gap-3">
             <Smartphone className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-amber-200">
                 {t('androidWarningTitle')}
               </p>
               <p className="mt-1 text-xs text-amber-200/80">
                 {t('androidWarningBody')}
               </p>
+              <div className="mt-3 space-y-2 text-xs text-amber-200/90">
+                <p className="font-semibold">{t('androidStepsTitle')}</p>
+                <ol className="list-decimal list-inside space-y-1 pl-2">
+                  <li>{t('androidStep1')}</li>
+                  <li>{t('androidStep2')}</li>
+                  <li>{t('androidStep3')}</li>
+                </ol>
+                <p className="pt-2 font-semibold">{t('androidManufacturersTitle')}</p>
+                <ul className="list-disc list-inside space-y-1 pl-2">
+                  <li>{t('androidXiaomi')}</li>
+                  <li>{t('androidHuawei')}</li>
+                  <li>{t('androidSamsung')}</li>
+                  <li>{t('androidOnePlus')}</li>
+                </ul>
+              </div>
+              <a
+                href="intent://settings#Intent;scheme=android-app;package=com.android.chrome;end"
+                className="mt-3 inline-flex items-center text-xs text-amber-300 underline hover:text-amber-200"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t('androidOpenSettings')} →
+              </a>
             </div>
           </div>
         </Card>

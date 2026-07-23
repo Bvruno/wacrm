@@ -135,7 +135,7 @@ export async function sendPushToAccount(
     silent: payload.silent ?? false,
     vibrate: payload.vibrate ?? [100, 50, 100],
     renotify: payload.renotify ?? true,
-    requireInteraction: payload.requireInteraction ?? true,
+    requireInteraction: payload.requireInteraction ?? false,
     timestamp: payload.timestamp ?? Date.now(),
     sound: payload.sound,
     unreadCount: payload.unreadCount,
