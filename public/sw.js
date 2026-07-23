@@ -46,12 +46,12 @@ self.addEventListener('fetch', function (event) {
 
   event.respondWith(
     caches.match(event.request).then(function (cached) {
-      const fetched = fetch(event.request)
+      var fetched = fetch(event.request)
         .then(function (response) {
           if (!response || response.status !== 200 || response.type !== 'basic') {
             return response
           }
-          const clone = response.clone()
+          var clone = response.clone()
           caches.open(CACHE_NAME).then(function (cache) {
             cache.put(event.request, clone)
           })
@@ -66,26 +66,117 @@ self.addEventListener('fetch', function (event) {
 })
 
 self.addEventListener('push', function (event) {
-  if (event.data) {
-    var data = event.data.json()
-    var options = {
-      body: data.body,
-      icon: data.icon || '/icon-192.png',
-      badge: data.badge || '/icon-192.png',
-      vibrate: [100, 50, 100],
-      data: {
-        dateOfArrival: Date.now(),
-        primaryKey: '2',
-        url: data.url || '/',
-      },
+  if (!event.data) {
+    if (event.waitUntil) {
+      event.waitUntil(
+        self.registration.showNotification('CodixIA', {
+          body: 'New activity',
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
+        }),
+      )
     }
-    event.waitUntil(self.registration.showNotification(data.title, options))
+    return
   }
+
+  var data
+  try {
+    data = event.data.json()
+  } catch (__unused) {
+    data = { title: 'CodixIA', body: event.data.text() }
+  }
+
+  if (data && data.silent) {
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clients) {
+        clients.forEach(function (client) {
+          client.postMessage({ type: 'BACKGROUND_SYNC', payload: data.payload || {} })
+        })
+      }),
+    )
+    return
+  }
+
+  var options = {
+    body: data.body || '',
+    icon: data.icon || '/icon-192.png',
+    badge: data.badge || '/icon-192.png',
+    image: data.image || undefined,
+    vibrate: data.vibrate || [100, 50, 100],
+    tag: data.tag || undefined,
+    renotify: data.renotify !== undefined ? data.renotify : true,
+    requireInteraction: data.requireInteraction !== undefined ? data.requireInteraction : true,
+    timestamp: data.timestamp || Date.now(),
+    silent: data.sound === false,
+    data: {
+      dateOfArrival: Date.now(),
+      url: data.url || '/',
+      conversationId: data.conversationId || null,
+      messageId: data.messageId || null,
+      contactId: data.contactId || null,
+    },
+  }
+
+  if (data.actions && Array.isArray(data.actions) && data.actions.length > 0) {
+    options.actions = data.actions.slice(0, 2)
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'CodixIA', options).then(function () {
+      if ('setAppBadge' in self.navigator && typeof self.navigator.setAppBadge === 'function') {
+        var unread = data.unreadCount
+        if (typeof unread === 'number' && unread > 0) {
+          return self.navigator.setAppBadge(unread)
+        }
+      }
+    }),
+  )
 })
 
 self.addEventListener('notificationclick', function (event) {
   event.notification.close()
-  var url = event.notification.data && event.notification.data.url ? event.notification.data.url : '/'
+
+  var url = '/'
+  var action = event.action
+
+  if (event.notification.data) {
+    var data = event.notification.data
+    if (data && data.url) {
+      url = data.url
+    }
+
+    if (data && action === 'mark-read' && data.messageId) {
+      url = data.url || '/inbox'
+      event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
+          for (var i = 0; i < clientList.length; i++) {
+            var client = clientList[i]
+            if (client.url.indexOf(self.location.origin) !== -1) {
+              client.postMessage({
+                type: 'MARK_READ',
+                messageId: data.messageId,
+                conversationId: data.conversationId,
+              })
+              return client.focus()
+            }
+          }
+          if (self.clients.openWindow) {
+            return self.clients.openWindow(url)
+          }
+        }),
+      )
+      return
+    }
+
+    if (data && action === 'reply' && data.conversationId) {
+      url = data.url || '/inbox?conversation=' + data.conversationId
+    }
+
+    if (data && action === 'view-contact' && data.contactId) {
+      url = '/contacts/' + data.contactId
+    }
+  }
+
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
       for (var i = 0; i < clientList.length; i++) {
@@ -103,8 +194,28 @@ self.addEventListener('notificationclick', function (event) {
   )
 })
 
+self.addEventListener('notificationclose', function (event) {
+  if (event.notification.data && event.notification.data.messageId) {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
+      clientList.forEach(function (client) {
+        client.postMessage({
+          type: 'NOTIFICATION_DISMISSED',
+          messageId: event.notification.data.messageId,
+          conversationId: event.notification.data.conversationId,
+        })
+      })
+    })
+  }
+})
+
 self.addEventListener('message', function (event) {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting()
+  }
+
+  if (event.data && event.data.type === 'CLEAR_BADGE') {
+    if ('setAppBadge' in self.navigator && typeof self.navigator.setAppBadge === 'function') {
+      event.waitUntil(self.navigator.clearAppBadge())
+    }
   }
 })

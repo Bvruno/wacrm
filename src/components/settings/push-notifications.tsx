@@ -2,7 +2,15 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { Bell, BellOff, Loader2, AlertTriangle } from 'lucide-react'
+import {
+  Bell,
+  BellOff,
+  Loader2,
+  AlertTriangle,
+  Send,
+  CheckCircle2,
+  Smartphone,
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -13,6 +21,8 @@ import {
   getSubscriptionStatus,
   getNotificationPreferences,
   updateNotificationPreferences,
+  sendTestNotification,
+  healthCheckSubscription,
 } from '@/app/(dashboard)/settings/push-actions'
 import type { NotificationPreferences } from '@/types'
 
@@ -43,14 +53,19 @@ export function PushNotifications() {
   const [savingPref, setSavingPref] = useState<string | null>(null)
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [endpointCount, setEndpointCount] = useState(0)
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<string | null>(null)
+  const [isAndroid, setIsAndroid] = useState(false)
+  const [healthStatus, setHealthStatus] = useState<'ok' | 'stale' | null>(null)
   const localEndpoint = useRef<string | null>(null)
 
   useEffect(() => {
-    const supported =
+    const pushSupported =
       'serviceWorker' in navigator && 'PushManager' in window
-    setSupported(supported)
+    setSupported(pushSupported)
+    setIsAndroid(/android/i.test(navigator.userAgent))
 
-    if (!supported) {
+    if (!pushSupported) {
       setLoading(false)
       return
     }
@@ -74,13 +89,14 @@ export function PushNotifications() {
           localEndpoint.current = localSubEndpoint
         }
       } catch {
-        // serviceWorker.ready may reject if SW failed to register
+        /* SW registration may fail */
       }
 
       const hasLocalSub =
         !!localSubEndpoint &&
         status.endpoints.includes(localSubEndpoint)
       setSubscribed(hasLocalSub)
+      setHealthStatus(hasLocalSub ? 'ok' : null)
 
       setPermissionDenied(Notification.permission === 'denied')
       setLoading(false)
@@ -96,6 +112,21 @@ export function PushNotifications() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!subscribed || !localEndpoint.current) return
+
+    const interval = setInterval(async () => {
+      try {
+        const result = await healthCheckSubscription(localEndpoint.current!)
+        setHealthStatus(result.valid ? 'ok' : 'stale')
+      } catch {
+        /* ignore */
+      }
+    }, 30 * 60 * 1000)
+
+    return () => clearInterval(interval)
+  }, [subscribed])
+
   async function toggleSubscription() {
     setToggling(true)
     try {
@@ -104,6 +135,7 @@ export function PushNotifications() {
           localEndpoint.current ?? undefined,
         )
         setSubscribed(false)
+        setHealthStatus(null)
         const status = await getSubscriptionStatus()
         setEndpointCount(status.endpoints.length)
       } else {
@@ -123,6 +155,7 @@ export function PushNotifications() {
         localEndpoint.current = serialized.endpoint
         await subscribeUser(serialized)
         setSubscribed(true)
+        setHealthStatus('ok')
         setPermissionDenied(false)
         const status = await getSubscriptionStatus()
         setEndpointCount(status.endpoints.length)
@@ -132,6 +165,27 @@ export function PushNotifications() {
       console.error('Failed to toggle subscription:', err)
     } finally {
       setToggling(false)
+    }
+  }
+
+  async function handleTestNotification() {
+    setTesting(true)
+    setTestResult(null)
+    try {
+      const result = await sendTestNotification(
+        t('testMessage'),
+      )
+      if (result.success) {
+        setTestResult(
+          t('testSent', { sent: result.sent ?? 0, failed: result.failed ?? 0 }),
+        )
+      } else {
+        setTestResult(result.error ?? t('testFailed'))
+      }
+    } catch {
+      setTestResult(t('testFailed'))
+    } finally {
+      setTesting(false)
     }
   }
 
@@ -194,6 +248,33 @@ export function PushNotifications() {
         </Card>
       )}
 
+      {isAndroid && subscribed && (
+        <Card className="border-amber-500/30 bg-amber-500/5 p-4">
+          <div className="flex items-start gap-3">
+            <Smartphone className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-amber-200">
+                {t('androidWarningTitle')}
+              </p>
+              <p className="mt-1 text-xs text-amber-200/80">
+                {t('androidWarningBody')}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {healthStatus === 'stale' && (
+        <Card className="border-destructive/30 bg-destructive/5 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
+            <p className="text-sm text-destructive-foreground">
+              {t('staleSubscription')}
+            </p>
+          </div>
+        </Card>
+      )}
+
       <Card className="p-6">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0 flex-1">
@@ -226,6 +307,37 @@ export function PushNotifications() {
             {subscribed ? t('unsubscribe') : t('subscribe')}
           </Button>
         </div>
+
+        {subscribed && (
+          <div className="mt-4 border-t border-border pt-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">
+                  {t('testDescription')}
+                </p>
+                {testResult && (
+                  <p className="mt-1 flex items-center gap-1 text-xs text-green-400">
+                    <CheckCircle2 className="h-3 w-3" />
+                    {testResult}
+                  </p>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTestNotification}
+                disabled={testing}
+              >
+                {testing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+                <span className="ml-1.5">{t('sendTest')}</span>
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {preferences && (

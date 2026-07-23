@@ -2031,7 +2031,15 @@
       "pref_contact_imported": "Importación de contactos completada",
       "pref_automation_failed": "Error de automatización",
       "permissionDenied": "Las notificaciones están bloqueadas para este sitio. Ve a la configuración del navegador y permite las notificaciones para activar push.",
-      "devicesSubscribed": "{count, plural, =0 {Ningún dispositivo suscrito} one {# dispositivo suscrito} other {# dispositivos suscritos}}"
+      "devicesSubscribed": "{count, plural, =0 {Ningún dispositivo suscrito} one {# dispositivo suscrito} other {# dispositivos suscritos}}",
+      "testDescription": "Verifica que las notificaciones funcionan en este dispositivo.",
+      "sendTest": "Enviar prueba",
+      "testMessage": "Esta es una notificación de prueba de CodixIA.",
+      "testSent": "Prueba enviada ({sent} entregadas, {failed} fallidas)",
+      "testFailed": "Prueba fallida. Revisa la consola del navegador para más detalles.",
+      "androidWarningTitle": "Optimización de batería de Android",
+      "androidWarningBody": "Algunos dispositivos Android bloquean las notificaciones push cuando el navegador está cerrado. Para garantizar la entrega, ve a Ajustes > Apps > Chrome > Batería y desactiva la optimización de batería para Chrome.",
+      "staleSubscription": "Tu suscripción push puede estar desactualizada. Prueba a desactivar y reactivar las notificaciones."
     },
     "security": {
       "title": "Inicio de sesión y seguridad",

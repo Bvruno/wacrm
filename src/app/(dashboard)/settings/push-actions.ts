@@ -62,7 +62,7 @@ export async function unsubscribeUser(endpoint?: string) {
   return { success: true }
 }
 
-export async function sendNotification(message: string) {
+export async function sendTestNotification(message?: string) {
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
   const privateKey = process.env.VAPID_PRIVATE_KEY
   if (!publicKey || !privateKey) {
@@ -82,7 +82,7 @@ export async function sendNotification(message: string) {
     .eq('user_id', user.id)
 
   if (!subs || subs.length === 0) {
-    return { success: false, error: 'No subscription — subscribe first' }
+    return { success: false, error: 'No subscription' }
   }
 
   webpush.setVapidDetails('mailto:support@wacrm.app', publicKey, privateKey)
@@ -98,15 +98,24 @@ export async function sendNotification(message: string) {
         },
         JSON.stringify({
           title: 'CodixIA',
-          body: message,
-          icon: '/codixia-icon.svg',
-          badge: '/codixia-icon.svg',
+          body: message || 'This is a test notification.',
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
           url: '/',
+          tag: 'test-notification',
+          renotify: true,
+          requireInteraction: false,
+          timestamp: Date.now(),
         }),
+        {
+          TTL: 300,
+          urgency: 'high',
+          topic: 'test-notification',
+        },
       )
       sent++
     } catch (error) {
-      console.error('[push] sendNotification failed:', error)
+      console.error('[push] sendTestNotification failed:', error)
       if (
         error instanceof webpush.WebPushError &&
         (error.statusCode === 410 || error.statusCode === 404)
@@ -128,6 +137,7 @@ export async function getSubscriptionStatus(): Promise<{
   configured: boolean
   subscribed: boolean
   endpoints: string[]
+  staleEndpoints: string[]
 }> {
   const supabase = await createClient()
   const {
@@ -138,6 +148,7 @@ export async function getSubscriptionStatus(): Promise<{
       configured: !!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
       subscribed: false,
       endpoints: [],
+      staleEndpoints: [],
     }
   }
 
@@ -151,7 +162,55 @@ export async function getSubscriptionStatus(): Promise<{
     configured: !!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
     subscribed: (subs?.length ?? 0) > 0,
     endpoints: subs?.map((s) => s.endpoint) ?? [],
+    staleEndpoints: [],
   }
+}
+
+export async function healthCheckSubscription(localEndpoint: string): Promise<{
+  valid: boolean
+  reason?: string
+}> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { valid: false, reason: 'Unauthorized' }
+
+  const db = supabaseAdmin()
+  const { data: subs } = await db
+    .from('push_subscriptions')
+    .select('endpoint')
+    .eq('user_id', user.id)
+    .eq('endpoint', localEndpoint)
+
+  if (!subs || subs.length === 0) {
+    return { valid: false, reason: 'Subscription not found on server' }
+  }
+
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  const privateKey = process.env.VAPID_PRIVATE_KEY
+  if (!publicKey || !privateKey) {
+    return { valid: false, reason: 'VAPID keys not configured' }
+  }
+
+  return { valid: true }
+}
+
+export async function clearStaleSubscription(localEndpoint: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const db = supabaseAdmin()
+  await db
+    .from('push_subscriptions')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('endpoint', localEndpoint)
+
+  return { success: true }
 }
 
 export async function getNotificationPreferences(): Promise<NotificationPreferences> {
@@ -196,7 +255,18 @@ export async function updateNotificationPreferences(
 export async function notifyPushEvent(
   accountId: string,
   eventType: keyof NotificationPreferences,
-  payload: { title: string; body: string; url?: string },
+  payload: {
+    title: string
+    body: string
+    url?: string
+    conversationId?: string
+    messageId?: string
+    contactId?: string
+    image?: string
+    actions?: { action: string; title: string }[]
+    tag?: string
+    unreadCount?: number
+  },
 ) {
   const result = await sendPushToAccount(accountId, payload, eventType)
   return { sent: result.sent, failed: result.failed }

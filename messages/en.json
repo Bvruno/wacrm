@@ -1772,7 +1772,15 @@
       "pref_contact_imported": "Contact import completed",
       "pref_automation_failed": "Automation error",
       "permissionDenied": "Notifications are blocked for this site. Go to your browser settings and allow notifications to enable push.",
-      "devicesSubscribed": "{count, plural, =0 {No devices subscribed} one {# device subscribed} other {# devices subscribed}}"
+      "devicesSubscribed": "{count, plural, =0 {No devices subscribed} one {# device subscribed} other {# devices subscribed}}",
+      "testDescription": "Verify that notifications are working on this device.",
+      "sendTest": "Send test",
+      "testMessage": "This is a test notification from CodixIA.",
+      "testSent": "Test sent ({sent} delivered, {failed} failed)",
+      "testFailed": "Test failed. Check the browser console for details.",
+      "androidWarningTitle": "Android battery optimization",
+      "androidWarningBody": "Some Android devices block push notifications when the browser is closed. To ensure reliable delivery, go to your phone's Settings > Apps > Chrome > Battery and disable battery optimization for Chrome.",
+      "staleSubscription": "Your push subscription may be out of date. Try disabling and re-enabling notifications."
     },
     "security": {
       "title": "Login & security",
