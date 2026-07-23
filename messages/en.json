@@ -1922,7 +1922,12 @@
     "installHint": "Add this app to your home screen for the best experience.",
     "iosHint": "Tap the share button and select \"Add to Home Screen\".",
     "install": "Install app",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "updateAvailable": "Update available",
+    "updateReady": "A new version is ready. Refresh to get the latest features.",
+    "refresh": "Refresh",
+    "offlineTitle": "You're offline",
+    "offlineBody": "Check your internet connection and try again."
   },
   "LandingPage": {
     "meta": {

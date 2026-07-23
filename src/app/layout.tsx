@@ -27,9 +27,13 @@ export const metadata: Metadata = {
     template: "%s — CodixIA",
   },
   description: "Self-hostable CRM template for WhatsApp.",
+  applicationName: "CodixIA",
   icons: {
     icon: [{ url: "/icon" }],
-    apple: [{ url: "/codixia-icon.svg" }],
+    apple: [
+      { url: "/icon-192.png", sizes: "192x192" },
+      { url: "/icon-512.png", sizes: "512x512" },
+    ],
   },
   appleWebApp: {
     capable: true,
@@ -43,24 +47,23 @@ export const metadata: Metadata = {
   },
   other: {
     "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#020617",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#020617" },
+    { media: "(prefers-color-scheme: dark)", color: "#020617" },
+  ],
   colorScheme: "dark light",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
-// Inline boot script — runs before React hydrates so the user's
-// chosen accent (data-theme) AND mode (data-mode) are on the <html>
-// element before first paint. Without this every page load flashes
-// the server-rendered defaults for a frame before the React tree
-// mounts and applies the picked values.
-//
-// Kept dependency-free (no imports, no JSX) — must be a string the
-// browser can run as a single <script>. Knowledge of valid ids is
-// sourced from the THEME_IDS / MODES constants so adding one doesn't
-// silently break the boot path.
 const THEME_BOOT_SCRIPT = `
 (function(){
   var d = document.documentElement;
@@ -83,6 +86,30 @@ const THEME_BOOT_SCRIPT = `
 })();
 `;
 
+const APPLE_SPLASH_SCREENS = [
+  '(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)',
+  '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)',
+  '(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)',
+  '(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)',
+  '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)',
+  '(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)',
+  '(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)',
+  '(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)',
+  '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)',
+] as const
+
+const APPLE_SPLASH_SIZES = [
+  '640x1136',
+  '750x1334',
+  '1242x2208',
+  '1125x2436',
+  '828x1792',
+  '1170x2532',
+  '1284x2778',
+  '1536x2048',
+  '2048x2732',
+] as const
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -97,13 +124,6 @@ export default async function RootLayout({
       data-theme={DEFAULT_THEME}
       data-mode={DEFAULT_MODE}
       className={`${inter.variable} h-full antialiased`}
-      // The `theme-boot` script below rewrites `data-theme` and
-      // `data-mode` on <html> from localStorage before React hydrates,
-      // so for any non-default choice the client DOM intentionally
-      // differs from the server-rendered defaults. suppressHydration-
-      // Warning silences the expected mismatch — it only applies to
-      // this element's own attributes, so genuine mismatches in
-      // children still surface.
       suppressHydrationWarning
     >
       <head>
@@ -112,6 +132,15 @@ export default async function RootLayout({
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
         />
+        <meta name="apple-mobile-web-app-title" content="CodixIA" />
+        {APPLE_SPLASH_SCREENS.map((media, i) => (
+          <link
+            key={`splash-${i}`}
+            rel="apple-touch-startup-image"
+            media={`${media}`}
+            href={`/splash-${APPLE_SPLASH_SIZES[i]}.png`}
+          />
+        ))}
       </head>
       <body className="min-h-full bg-background text-foreground font-sans">
         <NextIntlClientProvider messages={messages} locale={locale}>

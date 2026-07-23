@@ -849,7 +849,12 @@
     "installHint": "Añade esta app a tu pantalla de inicio para la mejor experiencia.",
     "iosHint": "Toca el botón de compartir y selecciona \"Añadir a pantalla de inicio\".",
     "install": "Instalar app",
-    "dismiss": "Descartar"
+    "dismiss": "Descartar",
+    "updateAvailable": "Actualización disponible",
+    "updateReady": "Una nueva versión está lista. Refresca para obtener las últimas funciones.",
+    "refresh": "Refrescar",
+    "offlineTitle": "Sin conexión",
+    "offlineBody": "Verifica tu conexión a internet e intenta de nuevo."
   },
   "Pipelines": {
     "page": {
