@@ -56,13 +56,16 @@ export async function sendPushToAccount(
   const privateKey = process.env.VAPID_PRIVATE_KEY
   if (!publicKey || !privateKey) {
     console.warn('[push] VAPID keys missing in environment')
+    console.warn('[push] publicKey:', !!publicKey, 'privateKey:', !!privateKey)
     return { sent: 0, failed: 0 }
   }
 
   webpush.setVapidDetails('mailto:support@wacrm.app', publicKey, privateKey)
 
   const db = supabaseAdmin()
-  console.log('[push] looking up subscriptions for account', accountId)
+  console.log(
+    `[push] sendPushToAccount called: accountId=${accountId} eventType=${eventType ?? 'none'}`,
+  )
 
   const { data: direct, error: directErr } = await db
     .from('push_subscriptions')
@@ -71,35 +74,53 @@ export async function sendPushToAccount(
 
   if (directErr) {
     console.error('[push] query by account_id failed:', directErr.message)
+    console.error('[push] full error:', JSON.stringify(directErr))
     return { sent: 0, failed: 0 }
   }
 
   let subs = direct ?? []
+  console.log(
+    `[push] direct query returned ${subs.length} subscription(s)`,
+  )
 
   if (subs.length === 0) {
-    console.log('[push] no direct matches, trying via profiles')
+    console.log(
+      `[push] no subscriptions with account_id=${accountId}, trying via profiles`,
+    )
     const { data: members } = await db
       .from('profiles')
       .select('user_id')
       .eq('account_id', accountId)
 
+    console.log(
+      `[push] profiles for account found: ${members?.length ?? 0}`,
+    )
+
     if (members && members.length > 0) {
       const userIds = members.map((m: { user_id: string }) => m.user_id)
+      console.log(`[push] looking up subs for userIds: ${userIds.join(', ')}`)
       const { data: viaMembers } = await db
         .from('push_subscriptions')
         .select('user_id, endpoint, keys_p256dh, keys_auth, preferences')
         .in('user_id', userIds)
       subs = viaMembers ?? []
+      console.log(
+        `[push] via-profiles query returned ${subs.length} subscription(s)`,
+      )
     }
   }
 
-  console.log(
-    `[push] found ${subs.length} subscription(s) for account ${accountId}`,
-  )
+  if (subs.length === 0) {
+    console.warn(
+      `[push] ZERO subscriptions found for account ${accountId}. ` +
+      `Push notification will NOT be sent. Check that: ` +
+      `(1) a user in this account has enabled push notifications via Settings, ` +
+      `(2) the push_subscriptions.account_id column matches this account_id.`,
+    )
+    return { sent: 0, failed: 0 }
+  }
 
-  if (subs.length === 0) return { sent: 0, failed: 0 }
-
-  const message = JSON.stringify({
+  const messageObj = {
     title: payload.title,
     body: payload.body,
     icon: payload.icon ?? '/icon-192.png',
@@ -119,7 +140,12 @@ export async function sendPushToAccount(
     sound: payload.sound,
     unreadCount: payload.unreadCount,
     payload: payload.payload,
-  })
+  }
+
+  const message = JSON.stringify(messageObj)
+  console.log(
+    `[push] payload: title="${messageObj.title}" body="${messageObj.body.substring(0, 80)}" url="${messageObj.url}"`,
+  )
 
   const options = { ...DEFAULT_OPTIONS, ...sendOpts }
 
@@ -127,14 +153,28 @@ export async function sendPushToAccount(
   let failed = 0
 
   for (const sub of subs) {
-    if (eventType && sub.preferences) {
-      const prefs = sub.preferences as Partial<NotificationPreferences>
-      if (prefs[eventType] === false) {
-        continue
+    if (eventType) {
+      const prefsObj = sub.preferences as Partial<NotificationPreferences> | null
+      if (!prefsObj || typeof prefsObj !== 'object') {
+        console.log(
+          `[push] subscription for user ${sub.user_id} has no preferences object (${JSON.stringify(sub.preferences)}), sending anyway`,
+        )
+      } else {
+        const prefValue = prefsObj[eventType]
+        console.log(
+          `[push] user ${sub.user_id}: eventType=${eventType} pref=${prefValue}`,
+        )
+        if (prefValue === false) {
+          console.log(
+            `[push] skipping user ${sub.user_id}: ${eventType} preference is false`,
+          )
+          continue
+        }
       }
     }
 
     try {
+      console.log(`[push] sending to user ${sub.user_id} at endpoint ${sub.endpoint.substring(0, 60)}...`)
       await webpush.sendNotification(
         {
           endpoint: sub.endpoint,
@@ -148,12 +188,22 @@ export async function sendPushToAccount(
         },
       )
       sent++
+      console.log(`[push] sent successfully to user ${sub.user_id}`)
     } catch (err) {
-      console.error(`[push] send failed for user ${sub.user_id}:`, err)
+      const status =
+        err instanceof webpush.WebPushError
+          ? err.statusCode
+          : 'unknown'
+      console.error(
+        `[push] send failed for user ${sub.user_id}: status=${status} body=${err instanceof Error ? err.message : String(err)}`,
+      )
       if (
         err instanceof webpush.WebPushError &&
         (err.statusCode === 410 || err.statusCode === 404)
       ) {
+        console.log(
+          `[push] removing stale subscription for user ${sub.user_id}`,
+        )
         await db
           .from('push_subscriptions')
           .delete()
@@ -164,6 +214,6 @@ export async function sendPushToAccount(
     }
   }
 
-  console.log(`[push] sent=${sent} failed=${failed}`)
+  console.log(`[push] done: sent=${sent} failed=${failed}`)
   return { sent, failed }
 }
