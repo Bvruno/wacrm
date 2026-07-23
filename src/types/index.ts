@@ -657,3 +657,61 @@ export interface QuickReply {
   created_at: string;
   updated_at: string;
 }
+
+// ============================================================
+// Courses (capacitaciones para la venta por WhatsApp)
+// ============================================================
+
+export interface Course {
+  id: string;
+  account_id: string;
+  user_id: string;
+  title: string;
+  description?: string;
+  price_pen?: number;
+  external_id?: string;
+  hours?: string;
+  image_url?: string;
+  external_data?: Record<string, unknown>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type PaymentLinkStatus = 'pending' | 'paid' | 'expired';
+
+export interface PaymentLink {
+  id: string;
+  account_id: string;
+  course_id: string;
+  code: string;
+  amount_pen: number;
+  contact_id?: string;
+  contact_name?: string;
+  status: PaymentLinkStatus;
+  expires_at?: string;
+  created_at: string;
+  paid_at?: string;
+  course?: Course;
+}
+
+export type PaymentOrderStatus = 'pending' | 'paid' | 'failed' | 'expired' | 'refunded';
+export type PaymentMethod = 'card' | 'yape' | 'plin';
+
+export interface PaymentOrder {
+  id: string;
+  account_id: string;
+  payment_link_id: string;
+  culqi_order_id?: string;
+  amount_pen: number;
+  currency: string;
+  status: PaymentOrderStatus;
+  payment_method?: PaymentMethod;
+  cip_code?: string;
+  cip_qr_url?: string;
+  customer_email?: string;
+  customer_name?: string;
+  paid_at?: string;
+  created_at: string;
+  updated_at: string;
+}
