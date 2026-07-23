@@ -19,7 +19,9 @@ export async function subscribeUser(sub: {
   keys: { p256dh: string; auth: string }
 }) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
 
   const { data: profile } = await supabase
@@ -38,19 +40,25 @@ export async function subscribeUser(sub: {
       keys_p256dh: sub.keys.p256dh,
       keys_auth: sub.keys.auth,
     },
-    { onConflict: 'user_id' },
+    { onConflict: 'user_id,endpoint' },
   )
   if (error) throw new Error(error.message)
   return { success: true }
 }
 
-export async function unsubscribeUser() {
+export async function unsubscribeUser(endpoint?: string) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
 
   const db = supabaseAdmin()
-  await db.from('push_subscriptions').delete().eq('user_id', user.id)
+  let query = db.from('push_subscriptions').delete().eq('user_id', user.id)
+  if (endpoint) {
+    query = query.eq('endpoint', endpoint)
+  }
+  await query
   return { success: true }
 }
 
@@ -62,80 +70,117 @@ export async function sendNotification(message: string) {
   }
 
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Unauthorized' }
 
   const db = supabaseAdmin()
-  const { data: sub } = await db
+  const { data: subs } = await db
     .from('push_subscriptions')
     .select('endpoint, keys_p256dh, keys_auth')
     .eq('user_id', user.id)
-    .maybeSingle()
 
-  if (!sub) return { success: false, error: 'No subscription — subscribe first' }
+  if (!subs || subs.length === 0) {
+    return { success: false, error: 'No subscription — subscribe first' }
+  }
 
   webpush.setVapidDetails('mailto:support@wacrm.app', publicKey, privateKey)
 
-  try {
-    await webpush.sendNotification(
-      { endpoint: sub.endpoint, keys: { p256dh: sub.keys_p256dh, auth: sub.keys_auth } },
-      JSON.stringify({
-        title: 'CodixIA',
-        body: message,
-        icon: '/codixia-icon.svg',
-        badge: '/codixia-icon.svg',
-        url: '/',
-      }),
-    )
-    return { success: true }
-  } catch (error) {
-    console.error('Error sending push notification:', error)
-    return { success: false, error: 'Failed to send notification' }
+  let sent = 0
+  let failed = 0
+  for (const sub of subs) {
+    try {
+      await webpush.sendNotification(
+        {
+          endpoint: sub.endpoint,
+          keys: { p256dh: sub.keys_p256dh, auth: sub.keys_auth },
+        },
+        JSON.stringify({
+          title: 'CodixIA',
+          body: message,
+          icon: '/codixia-icon.svg',
+          badge: '/codixia-icon.svg',
+          url: '/',
+        }),
+      )
+      sent++
+    } catch (error) {
+      console.error('[push] sendNotification failed:', error)
+      if (
+        error instanceof webpush.WebPushError &&
+        (error.statusCode === 410 || error.statusCode === 404)
+      ) {
+        await db
+          .from('push_subscriptions')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('endpoint', sub.endpoint)
+      }
+      failed++
+    }
   }
+
+  return { success: true, sent, failed }
 }
 
 export async function getSubscriptionStatus(): Promise<{
   configured: boolean
   subscribed: boolean
+  endpoints: string[]
 }> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { configured: !!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, subscribed: false }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return {
+      configured: !!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      subscribed: false,
+      endpoints: [],
+    }
+  }
 
   const db = supabaseAdmin()
-  const { data: sub } = await db
+  const { data: subs } = await db
     .from('push_subscriptions')
-    .select('id')
+    .select('endpoint')
     .eq('user_id', user.id)
-    .maybeSingle()
 
   return {
     configured: !!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-    subscribed: !!sub,
+    subscribed: (subs?.length ?? 0) > 0,
+    endpoints: subs?.map((s) => s.endpoint) ?? [],
   }
 }
 
 export async function getNotificationPreferences(): Promise<NotificationPreferences> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) return DEFAULT_PREFERENCES
 
   const db = supabaseAdmin()
-  const { data: sub } = await db
+  const { data: subs } = await db
     .from('push_subscriptions')
     .select('preferences')
     .eq('user_id', user.id)
-    .maybeSingle()
+    .not('preferences', 'is', null)
+    .limit(1)
 
-  if (!sub?.preferences) return DEFAULT_PREFERENCES
-  return { ...DEFAULT_PREFERENCES, ...(sub.preferences as Partial<NotificationPreferences>) }
+  const prefs = subs?.[0]?.preferences
+  if (!prefs) return DEFAULT_PREFERENCES
+  return { ...DEFAULT_PREFERENCES, ...(prefs as Partial<NotificationPreferences>) }
 }
 
 export async function updateNotificationPreferences(
   preferences: NotificationPreferences,
 ) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
 
   const db = supabaseAdmin()

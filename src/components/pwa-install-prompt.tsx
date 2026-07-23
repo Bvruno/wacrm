@@ -20,8 +20,8 @@ export function PwaInstallPrompt() {
       navigator.serviceWorker.register('/sw.js', {
         scope: '/',
         updateViaCache: 'none',
-      }).catch(() => {
-        // SW registration failed — not critical
+      }).catch((err) => {
+        console.error('[pwa] ServiceWorker registration failed:', err)
       })
     }
 

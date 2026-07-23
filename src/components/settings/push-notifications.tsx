@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { Bell, BellOff, Loader2 } from 'lucide-react'
+import { Bell, BellOff, Loader2, AlertTriangle } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -38,36 +38,94 @@ export function PushNotifications() {
   const [configured, setConfigured] = useState(false)
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState(false)
-  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null)
+  const [preferences, setPreferences] =
+    useState<NotificationPreferences | null>(null)
   const [savingPref, setSavingPref] = useState<string | null>(null)
+  const [permissionDenied, setPermissionDenied] = useState(false)
+  const [endpointCount, setEndpointCount] = useState(0)
+  const localEndpoint = useRef<string | null>(null)
 
   useEffect(() => {
-    setSupported('serviceWorker' in navigator && 'PushManager' in window)
-    getSubscriptionStatus().then((s) => {
-      setConfigured(s.configured)
-      setSubscribed(s.subscribed)
+    const supported =
+      'serviceWorker' in navigator && 'PushManager' in window
+    setSupported(supported)
+
+    if (!supported) {
       setLoading(false)
+      return
+    }
+
+    let cancelled = false
+    async function init() {
+      const status = await getSubscriptionStatus()
+      if (cancelled) return
+      setConfigured(status.configured)
+      setEndpointCount(status.endpoints.length)
+
+      let localSubEndpoint: string | null = null
+      try {
+        const registration = await navigator.serviceWorker.ready
+        const sub = await registration.pushManager.getSubscription()
+        if (sub) {
+          const serialized = JSON.parse(JSON.stringify(sub)) as {
+            endpoint: string
+          }
+          localSubEndpoint = serialized.endpoint
+          localEndpoint.current = localSubEndpoint
+        }
+      } catch {
+        // serviceWorker.ready may reject if SW failed to register
+      }
+
+      const hasLocalSub =
+        !!localSubEndpoint &&
+        status.endpoints.includes(localSubEndpoint)
+      setSubscribed(hasLocalSub)
+
+      setPermissionDenied(Notification.permission === 'denied')
+      setLoading(false)
+    }
+
+    init()
+    getNotificationPreferences().then((p) => {
+      if (!cancelled) setPreferences(p)
     })
-    getNotificationPreferences().then(setPreferences)
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   async function toggleSubscription() {
     setToggling(true)
     try {
       if (subscribed) {
-        await unsubscribeUser()
+        await unsubscribeUser(
+          localEndpoint.current ?? undefined,
+        )
         setSubscribed(false)
+        const status = await getSubscriptionStatus()
+        setEndpointCount(status.endpoints.length)
       } else {
-        const registration = await navigator.serviceWorker.ready
-        const sub = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(
-            process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-          ),
-        })
-        const serialized = JSON.parse(JSON.stringify(sub))
+        const registration =
+          await navigator.serviceWorker.ready
+        const sub =
+          await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(
+              process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+            ),
+          })
+        const serialized = JSON.parse(JSON.stringify(sub)) as {
+          endpoint: string
+          keys: { p256dh: string; auth: string }
+        }
+        localEndpoint.current = serialized.endpoint
         await subscribeUser(serialized)
         setSubscribed(true)
+        setPermissionDenied(false)
+        const status = await getSubscriptionStatus()
+        setEndpointCount(status.endpoints.length)
         getNotificationPreferences().then(setPreferences)
       }
     } catch (err) {
@@ -106,7 +164,9 @@ export function PushNotifications() {
   if (!supported) {
     return (
       <Card className="p-6">
-        <p className="text-sm text-muted-foreground">{t('notSupported')}</p>
+        <p className="text-sm text-muted-foreground">
+          {t('notSupported')}
+        </p>
       </Card>
     )
   }
@@ -114,27 +174,47 @@ export function PushNotifications() {
   if (!configured) {
     return (
       <Card className="p-6">
-        <p className="text-sm text-muted-foreground">{t('notConfigured')}</p>
+        <p className="text-sm text-muted-foreground">
+          {t('notConfigured')}
+        </p>
       </Card>
     )
   }
 
   return (
     <div className="space-y-6">
+      {permissionDenied && (
+        <Card className="border-amber-500/30 bg-amber-500/5 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
+            <p className="text-sm text-amber-200">
+              {t('permissionDenied')}
+            </p>
+          </div>
+        </Card>
+      )}
+
       <Card className="p-6">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-foreground">
-              {subscribed ? t('subscribedTitle') : t('unsubscribedTitle')}
+              {subscribed
+                ? t('subscribedTitle')
+                : t('unsubscribedTitle')}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {subscribed ? t('subscribedDesc') : t('unsubscribedDesc')}
+              {subscribed
+                ? t('subscribedDesc')
+                : t('unsubscribedDesc')}
+            </p>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {t('devicesSubscribed', { count: endpointCount })}
             </p>
           </div>
           <Button
             variant={subscribed ? 'outline' : 'default'}
             onClick={toggleSubscription}
-            disabled={toggling}
+            disabled={toggling || permissionDenied}
           >
             {toggling ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -148,7 +228,7 @@ export function PushNotifications() {
         </div>
       </Card>
 
-      {subscribed && preferences && (
+      {preferences && (
         <Card className="p-6">
           <p className="mb-4 text-sm font-medium text-foreground">
             {t('preferencesTitle')}

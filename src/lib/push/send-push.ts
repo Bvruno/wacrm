@@ -107,7 +107,7 @@ export async function sendPushToAccount(
           .from('push_subscriptions')
           .delete()
           .eq('user_id', sub.user_id)
-          .eq('account_id', accountId)
+          .eq('endpoint', sub.endpoint)
       }
       failed++
     }
