@@ -22,7 +22,6 @@ import {
   Plus,
   MessageSquareDashed,
   Zap,
-  History,
   Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

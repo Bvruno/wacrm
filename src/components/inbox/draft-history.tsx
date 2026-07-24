@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { History, Clock, Loader2 } from 'lucide-react'
 import {
   Sheet,
@@ -34,15 +34,33 @@ export function DraftHistory({ conversationId, onSelectDraft }: DraftHistoryProp
   const [loading, setLoading] = useState(false)
   const t = useTranslations('Inbox.composer')
 
-  useEffect(() => {
-    if (!open) return
-    setLoading(true)
-    fetch(`/api/ai/drafts?conversation_id=${conversationId}&limit=20`)
-      .then((res) => res.json())
-      .then((data) => setDrafts(data.drafts || []))
-      .catch(() => setDrafts([]))
-      .finally(() => setLoading(false))
-  }, [open, conversationId])
+  const fetchDrafts = useCallback(
+    async (convId: string) => {
+      setLoading(true)
+      try {
+        const res = await fetch(
+          `/api/ai/drafts?conversation_id=${convId}&limit=20`,
+        )
+        const data = await res.json()
+        setDrafts(data.drafts || [])
+      } catch {
+        setDrafts([])
+      } finally {
+        setLoading(false)
+      }
+    },
+    [],
+  )
+
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      setOpen(nextOpen)
+      if (nextOpen) {
+        void fetchDrafts(conversationId)
+      }
+    },
+    [conversationId, fetchDrafts],
+  )
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr)
@@ -71,7 +89,7 @@ export function DraftHistory({ conversationId, onSelectDraft }: DraftHistoryProp
   }
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary">
         <History className="h-4 w-4" />
       </SheetTrigger>

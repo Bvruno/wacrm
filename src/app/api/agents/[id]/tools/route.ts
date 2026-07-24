@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireRole, toErrorResponse } from '@/lib/auth/account'
-import { createClient } from '@/lib/supabase/server'
 
 export async function GET(
   _req: NextRequest,

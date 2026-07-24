@@ -7,7 +7,6 @@ import {
   BarChart3,
   MessageSquare,
   ArrowUpRight,
-  Clock,
   ThumbsUp,
   ThumbsDown,
   Minus,

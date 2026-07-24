@@ -1,22 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { Bot, Sparkles, BarChart3, Users } from 'lucide-react';
+import { Bot, Sparkles, BarChart3, Users, DollarSign } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AiPlayground } from '@/components/agents/ai-playground';
 import { AiUsageCard } from '@/components/agents/ai-usage';
 import { AgentList } from '@/components/agents/agent-list';
+import { MetaCostsDashboard } from '@/components/settings/meta-costs-dashboard';
 import { PlanGate } from '@/components/plan-gate';
 import { useAuth } from '@/hooks/use-auth';
 import { canEditSettings } from '@/lib/auth/roles';
 import { useTranslations } from 'next-intl';
 
-type Tab = 'agents' | 'playground' | 'usage';
+type Tab = 'agents' | 'playground' | 'usage' | 'costs';
 
 function getInitialTab(): Tab {
   if (typeof window === 'undefined') return 'agents';
   const savedTab = localStorage.getItem('agents-tab') as Tab | null;
-  if (savedTab && ['agents', 'playground', 'usage'].includes(savedTab)) {
+  if (savedTab && ['agents', 'playground', 'usage', 'costs'].includes(savedTab)) {
     return savedTab;
   }
   return 'agents';
@@ -60,9 +61,14 @@ export default function AgentsPage() {
               <Sparkles className="mr-1.5 h-4 w-4" /> {t('playground')}
             </TabsTrigger>
             {canViewUsage && (
-              <TabsTrigger value="usage">
-                <BarChart3 className="mr-1.5 h-4 w-4" /> {t('usage')}
-              </TabsTrigger>
+              <>
+                <TabsTrigger value="usage">
+                  <BarChart3 className="mr-1.5 h-4 w-4" /> {t('usage')}
+                </TabsTrigger>
+                <TabsTrigger value="costs">
+                  <DollarSign className="mr-1.5 h-4 w-4" /> {t('costs') || 'Costs'}
+                </TabsTrigger>
+              </>
             )}
           </TabsList>
 
@@ -75,9 +81,14 @@ export default function AgentsPage() {
           </TabsContent>
 
           {canViewUsage && (
-            <TabsContent value="usage" className="mt-4">
-              <AiUsageCard />
-            </TabsContent>
+            <>
+              <TabsContent value="usage" className="mt-4">
+                <AiUsageCard />
+              </TabsContent>
+              <TabsContent value="costs" className="mt-4">
+                <MetaCostsDashboard />
+              </TabsContent>
+            </>
           )}
         </Tabs>
       </div>

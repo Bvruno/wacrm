@@ -8,7 +8,6 @@ import {
   Trash2,
   Wrench,
   Pencil,
-  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,7 +28,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { useTranslations } from 'next-intl'
 
 interface AgentTool {
   id: string
@@ -56,7 +54,6 @@ export function AgentToolsManager({ agentId, canEdit }: AgentToolsManagerProps) 
   const [parametersJson, setParametersJson] = useState('{}')
   const [endpoint, setEndpoint] = useState('')
   const [saving, setSaving] = useState(false)
-  const t = useTranslations('Agents')
 
   const fetchTools = useCallback(async () => {
     setLoading(true)

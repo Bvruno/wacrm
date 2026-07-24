@@ -1,6 +1,6 @@
 'use client'
 
-import { Bot, Send, Eye, Ban } from 'lucide-react'
+import { Send, Eye, Ban } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import {
   Select,
