@@ -10,6 +10,8 @@ import {
 import { HANDOFF_SENTINEL, aiRequestTimeoutMs } from './defaults'
 import { generateOpenAi } from './providers/openai'
 import { generateAnthropic } from './providers/anthropic'
+import { generateOpenAiStream } from './providers/openai-stream'
+import { generateAnthropicStream } from './providers/anthropic-stream'
 import type { ProviderArgs } from './providers/shared'
 
 /** Max tool-call rounds to prevent infinite loops. */
@@ -135,4 +137,45 @@ export function parseGeneration(
   const handoff = raw.includes(HANDOFF_SENTINEL)
   const text = raw.split(HANDOFF_SENTINEL).join('').trim()
   return { text, handoff, usage }
+}
+
+export interface StreamCallbacks {
+  onToken: (token: string) => void
+  onToolCall?: (toolCalls: ToolCall[]) => void
+  onEnd: (usage: AiUsage | null) => void
+  onError: (error: Error) => void
+}
+
+export async function generateReplyStream(
+  args: GenerateArgs,
+  callbacks: StreamCallbacks,
+): Promise<void> {
+  const { config, systemPrompt, messages, temperature, topP, frequencyPenalty, presencePenalty, maxTokens } = args
+  const timeoutMs = aiRequestTimeoutMs()
+  const provider = config.provider
+
+  const providerArgs: ProviderArgs = {
+    apiKey: config.apiKey,
+    model: config.model,
+    systemPrompt,
+    messages,
+    timeoutMs,
+    temperature,
+    topP,
+    frequencyPenalty,
+    presencePenalty,
+    maxTokens,
+  }
+
+  switch (provider) {
+    case 'openai':
+      return generateOpenAiStream(providerArgs, callbacks)
+    case 'anthropic':
+      return generateAnthropicStream(providerArgs, callbacks)
+    default:
+      throw new AiError(`Unsupported AI provider: ${provider}`, {
+        code: 'unsupported_provider',
+        status: 400,
+      })
+  }
 }

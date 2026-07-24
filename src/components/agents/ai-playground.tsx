@@ -31,37 +31,93 @@ export function AiPlayground({ onGoToSetup }: { onGoToSetup?: () => void }) {
     setTurns(next);
     setInput('');
     setSending(true);
+
+    let assistantContent = '';
+
     try {
       const res = await fetch('/api/ai/playground', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Send only role+content — the server ignores anything else.
         body: JSON.stringify({
           messages: next.map((t) => ({ role: t.role, content: t.content })),
+          stream: true,
         }),
       });
-      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
         if (data.code === 'ai_not_configured') {
           toast.error('No agent configured yet — finish Setup first.');
         } else {
           toast.error(data.error ?? "Couldn't get a reply.");
         }
-        // Roll the unsent user turn back so the transcript stays clean.
         setTurns(turns);
         setInput(text);
+        setSending(false);
         return;
       }
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        toast.error("Couldn't read the response stream.");
+        setTurns(turns);
+        setInput(text);
+        setSending(false);
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let handoff = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data: ')) continue;
+
+          const data = trimmed.slice(6);
+          try {
+            const parsed = JSON.parse(data) as {
+              type: string;
+              content?: string;
+              tool_calls?: unknown[];
+              handoff?: boolean;
+              usage?: unknown;
+              error?: string;
+            };
+
+            if (parsed.type === 'token' && parsed.content) {
+              assistantContent += parsed.content;
+              setTurns([
+                ...next,
+                { role: 'assistant', content: assistantContent, handoff: false },
+              ]);
+            } else if (parsed.type === 'end') {
+              handoff = parsed.handoff ?? false;
+            } else if (parsed.type === 'error') {
+              toast.error(parsed.error ?? 'Stream error');
+            }
+          } catch {
+            // Skip malformed JSON
+          }
+        }
+      }
+
+      if (assistantContent.includes('[[HANDOFF]]')) {
+        handoff = true;
+        assistantContent = assistantContent.replace('[[HANDOFF]]', '').trim();
+      }
+
       setTurns([
         ...next,
-        {
-          role: 'assistant',
-          content:
-            typeof data.reply === 'string' && data.reply.trim()
-              ? data.reply
-              : '',
-          handoff: Boolean(data.handoff),
-        },
+        { role: 'assistant', content: assistantContent, handoff },
       ]);
     } catch {
       toast.error("Couldn't reach the agent.");

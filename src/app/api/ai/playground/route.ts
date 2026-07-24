@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { requireRole, toErrorResponse } from '@/lib/auth/account'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
 import { getDefaultAgent } from '@/lib/agents/agents'
 import { retrieveKnowledge } from '@/lib/ai/knowledge'
-import { generateReply } from '@/lib/ai/generate'
+import { generateReply, generateReplyStream } from '@/lib/ai/generate'
 import { buildSystemPrompt } from '@/lib/ai/defaults'
 import { latestUserMessage } from '@/lib/ai/query'
 import { AiError, type ChatMessage } from '@/lib/ai/types'
@@ -11,7 +11,7 @@ import { getToneInstructions } from '@/lib/ai/tone-presets'
 
 const MAX_TURNS = 20
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { supabase, accountId, userId } = await requireRole('agent')
 
@@ -23,6 +23,8 @@ export async function POST(request: Request) {
     if (!rawMessages) {
       return NextResponse.json({ error: 'messages is required' }, { status: 400 })
     }
+
+    const stream = body?.stream === true
 
     const messages: ChatMessage[] = rawMessages
       .filter(
@@ -91,7 +93,7 @@ export async function POST(request: Request) {
       customToneInstructions: config.customToneInstructions,
     })
 
-    const { text, handoff } = await generateReply({
+    const generateArgs = {
       config: aiConfig,
       systemPrompt,
       messages,
@@ -100,7 +102,52 @@ export async function POST(request: Request) {
       frequencyPenalty: config.frequencyPenalty,
       presencePenalty: config.presencePenalty,
       maxTokens: config.maxTokens,
-    })
+    }
+
+    if (stream) {
+      const encoder = new TextEncoder()
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            await generateReplyStream(generateArgs, {
+              onToken: (token) => {
+                const data = `data: ${JSON.stringify({ type: 'token', content: token })}\n\n`
+                controller.enqueue(encoder.encode(data))
+              },
+              onToolCall: (toolCalls) => {
+                const data = `data: ${JSON.stringify({ type: 'tool_calls', tool_calls: toolCalls })}\n\n`
+                controller.enqueue(encoder.encode(data))
+              },
+              onEnd: (usage) => {
+                const data = `data: ${JSON.stringify({ type: 'end', usage })}\n\n`
+                controller.enqueue(encoder.encode(data))
+                controller.close()
+              },
+              onError: (error) => {
+                const data = `data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`
+                controller.enqueue(encoder.encode(data))
+                controller.close()
+              },
+            })
+          } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+            const data = `data: ${JSON.stringify({ type: 'error', error: errorMessage })}\n\n`
+            controller.enqueue(encoder.encode(data))
+            controller.close()
+          }
+        },
+      })
+
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        },
+      })
+    }
+
+    const { text, handoff } = await generateReply(generateArgs)
     return NextResponse.json({ reply: text, handoff })
   } catch (err) {
     if (err instanceof AiError) {
