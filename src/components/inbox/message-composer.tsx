@@ -22,6 +22,8 @@ import {
   Plus,
   MessageSquareDashed,
   Zap,
+  History,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GatedButton } from "@/components/ui/gated-button";
@@ -55,6 +57,8 @@ import {
 import { validateInteractivePayload } from "@/lib/whatsapp/interactive";
 import type { InteractiveMessagePayload, QuickReply } from "@/types";
 import { QuickReplyPicker } from "./quick-reply-picker";
+import { DraftHistory } from "./draft-history";
+import { DraftVariations } from "./draft-variations";
 
 /** Media content types an agent can send from the composer. */
 export type ComposerMediaKind = "image" | "video" | "document" | "audio";
@@ -150,6 +154,7 @@ export function MessageComposer({
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [drafting, setDrafting] = useState(false);
+  const [variationsOpen, setVariationsOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Interactive-message builder dialog + quick-reply picker.
@@ -712,6 +717,49 @@ export function MessageComposer({
           >
             <LayoutTemplate className="h-4 w-4" />
           </GatedButton>
+
+          <DraftHistory
+            conversationId={conversationId}
+            onSelectDraft={(text) => {
+              setText(text);
+              requestAnimationFrame(() => {
+                adjustHeight();
+                const el = textareaRef.current;
+                if (el) {
+                  el.focus();
+                  el.setSelectionRange(el.value.length, el.value.length);
+                }
+              });
+            }}
+          />
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 w-9 shrink-0 p-0 text-muted-foreground hover:text-primary"
+            title="Generate variations"
+            onClick={() => setVariationsOpen(true)}
+            disabled={readOnly || sessionExpired}
+          >
+            <Layers className="h-4 w-4" />
+          </Button>
+
+          <DraftVariations
+            conversationId={conversationId}
+            open={variationsOpen}
+            onOpenChange={setVariationsOpen}
+            onSelectVariation={(text) => {
+              setText(text);
+              requestAnimationFrame(() => {
+                adjustHeight();
+                const el = textareaRef.current;
+                if (el) {
+                  el.focus();
+                  el.setSelectionRange(el.value.length, el.value.length);
+                }
+              });
+            }}
+          />
 
           <GatedButton
             variant="ghost"

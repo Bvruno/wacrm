@@ -161,6 +161,37 @@ export async function POST(request: Request) {
       console.error('[ai/draft] usage log skipped:', logErr)
     }
 
+    try {
+      await supabase.from('ai_drafts').insert({
+        account_id: accountId,
+        conversation_id: conversationId,
+        created_by: userId,
+        draft_text: text,
+        context_used: {
+          knowledge_count: knowledge.length,
+          contact_profile: contactProfile || null,
+          tone_preset: config.tonePreset || null,
+        },
+        parameters: {
+          temperature: config.temperature,
+          top_p: config.topP,
+          max_tokens: config.maxTokens,
+          tone_preset: config.tonePreset || null,
+        },
+      })
+
+      try {
+        await supabase.rpc('cleanup_old_drafts', {
+          p_conversation_id: conversationId,
+          p_keep: 50,
+        })
+      } catch {
+        // Best-effort cleanup
+      }
+    } catch (draftErr) {
+      console.error('[ai/draft] draft save skipped:', draftErr)
+    }
+
     return NextResponse.json({ draft: text })
   } catch (err) {
     if (err instanceof AiError) {
