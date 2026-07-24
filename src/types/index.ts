@@ -172,18 +172,41 @@ export interface Conversation {
   created_at: string;
   updated_at: string;
   contact?: Contact;
-  /**
-   * AI auto-reply state for this thread (migration 029 + 033):
-   *  - `ai_autoreply_disabled` — the bot is paused here (a human took
-   *    over, or the model handed off). Sticky until re-enabled.
-   *  - `ai_reply_count` — how many times the bot has auto-replied,
-   *    checked against the account's per-conversation cap.
-   *  - `ai_handoff_summary` — short internal note the bot wrote when it
-   *    handed off, shown to whoever takes the thread over.
-   */
   ai_autoreply_disabled?: boolean;
   ai_reply_count?: number;
   ai_handoff_summary?: string | null;
+  agent_id?: string | null;
+  agent?: Agent;
+}
+
+export type AiProvider = 'openai' | 'anthropic';
+export type TonePreset = 'formal' | 'casual' | 'friendly' | 'professional' | 'empathetic' | 'technical';
+
+export interface Agent {
+  id: string;
+  account_id: string;
+  created_by?: string | null;
+  name: string;
+  description?: string | null;
+  avatar_url?: string | null;
+  provider: AiProvider;
+  model: string;
+  system_prompt?: string | null;
+  temperature: number;
+  top_p: number;
+  frequency_penalty: number;
+  presence_penalty: number;
+  max_tokens: number;
+  tone_preset?: TonePreset | null;
+  custom_tone_instructions?: string | null;
+  language?: string | null;
+  is_active: boolean;
+  auto_reply_enabled: boolean;
+  auto_reply_max_per_conversation: number;
+  handoff_agent_id?: string | null;
+  embeddings_api_key?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // ============================================================

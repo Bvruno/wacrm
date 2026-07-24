@@ -6,13 +6,10 @@
 // whether the account is on OpenAI or Anthropic.
 // ============================================================
 
+import type { TonePreset } from '@/types'
+
 export type AiProvider = 'openai' | 'anthropic'
 
-/**
- * Account AI setup, decrypted and ready to use. Produced by
- * `loadAiConfig` — `apiKey` is the plaintext BYO provider key
- * (stored AES-256-GCM-encrypted at rest).
- */
 export interface AiConfig {
   provider: AiProvider
   model: string
@@ -21,13 +18,29 @@ export interface AiConfig {
   isActive: boolean
   autoReplyEnabled: boolean
   autoReplyMaxPerConversation: number
-  /** Where auto-reply hands a conversation off when the model bails: an
-   *  agent's `auth.users.id`, or null to leave it unassigned (drop into
-   *  the shared queue). */
   handoffAgentId: string | null
-  /** Optional OpenAI-compatible key for embeddings. When set, the
-   *  knowledge base is embedded and semantic retrieval turns on; when
-   *  null, retrieval falls back to lexical full-text search. */
+  embeddingsApiKey: string | null
+}
+
+export interface AgentConfig {
+  id: string
+  accountId: string
+  provider: AiProvider
+  model: string
+  apiKey: string
+  systemPrompt: string | null
+  temperature: number
+  topP: number
+  frequencyPenalty: number
+  presencePenalty: number
+  maxTokens: number
+  tonePreset: TonePreset | null
+  customToneInstructions: string | null
+  language: string | null
+  isActive: boolean
+  autoReplyEnabled: boolean
+  autoReplyMaxPerConversation: number
+  handoffAgentId: string | null
   embeddingsApiKey: string | null
 }
 
