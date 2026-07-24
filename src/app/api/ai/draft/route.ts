@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireRole, toErrorResponse } from '@/lib/auth/account'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
-import { loadAiConfig } from '@/lib/ai/config'
+import { getDefaultAgent } from '@/lib/agents/agents'
 import { buildConversationContext } from '@/lib/ai/context'
 import { retrieveKnowledge } from '@/lib/ai/knowledge'
 import { generateReply } from '@/lib/ai/generate'
@@ -12,6 +12,7 @@ import { latestUserMessage } from '@/lib/ai/query'
 import { logAiUsage } from '@/lib/ai/usage'
 import { supabaseAdmin } from '@/lib/ai/admin-client'
 import { AiError } from '@/lib/ai/types'
+import { getToneInstructions } from '@/lib/ai/tone-presets'
 
 /**
  * POST /api/ai/draft  (agent+)
@@ -60,9 +61,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
     }
 
-    const config = await loadAiConfig(supabase, accountId).catch((err) => {
-      // Decrypt failure — surface distinctly from "not configured".
-      console.error('[ai/draft] loadAiConfig error:', err)
+    const config = await getDefaultAgent(supabase, accountId).catch((err) => {
+      console.error('[ai/draft] getDefaultAgent error:', err)
       throw new AiError('Stored API key could not be decrypted.', {
         code: 'key_decrypt_failed',
         status: 400,
@@ -79,8 +79,6 @@ export async function POST(request: Request) {
     }
 
     const messages = await buildConversationContext(supabase, conversationId)
-    // Nothing to draft from — a brand-new thread with no customer text
-    // would otherwise produce a nonsensical reply-to-nothing.
     if (messages.length === 0) {
       return NextResponse.json(
         {
@@ -91,12 +89,22 @@ export async function POST(request: Request) {
       )
     }
 
-    // Ground the draft in the account's knowledge base (best-effort —
-    // returns [] when there's no KB or retrieval fails).
+    const aiConfig = {
+      provider: config.provider,
+      model: config.model,
+      apiKey: config.apiKey,
+      systemPrompt: config.systemPrompt,
+      isActive: config.isActive,
+      autoReplyEnabled: config.autoReplyEnabled,
+      autoReplyMaxPerConversation: config.autoReplyMaxPerConversation,
+      handoffAgentId: config.handoffAgentId,
+      embeddingsApiKey: config.embeddingsApiKey,
+    }
+
     const knowledge = await retrieveKnowledge(
       supabase,
       accountId,
-      config,
+      aiConfig,
       latestUserMessage(messages),
     )
 
@@ -104,16 +112,21 @@ export async function POST(request: Request) {
       ? await buildContactProfile(supabase, conversation.contact_id)
       : null
     const contactProfile = profile ? formatContactProfile(profile) : undefined
+
+    const toneInstructions = getToneInstructions(config.tonePreset)
+
     const systemPrompt = buildSystemPrompt({
       userPrompt: config.systemPrompt,
       mode: 'draft',
       knowledge,
       contactProfile,
+      toneInstructions,
+      customToneInstructions: config.customToneInstructions,
     })
 
     const contactId = conversation.contact_id
     const { text, usage } = await generateReply({
-      config,
+      config: aiConfig,
       systemPrompt,
       messages,
       tools: AI_TOOLS,
@@ -121,6 +134,11 @@ export async function POST(request: Request) {
         ? (calls) =>
             executeToolCalls({ db: supabase, accountId, contactId }, calls)
         : undefined,
+      temperature: config.temperature,
+      topP: config.topP,
+      frequencyPenalty: config.frequencyPenalty,
+      presencePenalty: config.presencePenalty,
+      maxTokens: config.maxTokens,
     })
 
     // Record spend on the account's BYO key. Best-effort + via the

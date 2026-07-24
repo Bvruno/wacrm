@@ -25,6 +25,11 @@ export interface ProviderArgs {
   timeoutMs: number
   tools?: ToolDefinition[]
   toolRound?: ToolRound
+  temperature?: number
+  topP?: number
+  frequencyPenalty?: number
+  presencePenalty?: number
+  maxTokens?: number
 }
 
 /**

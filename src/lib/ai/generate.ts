@@ -17,19 +17,15 @@ const MAX_TOOL_ROUNDS = 5
 
 export interface GenerateArgs {
   config: AiConfig
-  /** Fully-built system prompt (see `buildSystemPrompt`). */
   systemPrompt: string
-  /** Recent conversation turns, oldest first. */
   messages: ProviderArgs['messages']
-  /** Tool definitions for function-calling. */
   tools?: ToolDefinition[]
-  /**
-   * Execute a batch of tool calls. Called after the model requests tools;
-   * results are fed back for another turn. If not provided but `tools`
-   * is set, tool-use is disabled (definitions are still sent for
-   * structured output but calls are ignored — configure consistently).
-   */
   executeTools?: (calls: ToolCall[]) => Promise<ToolResult[]>
+  temperature?: number
+  topP?: number
+  frequencyPenalty?: number
+  presencePenalty?: number
+  maxTokens?: number
 }
 
 /**
@@ -40,7 +36,7 @@ export interface GenerateArgs {
  * up to `MAX_TOOL_ROUNDS` rounds, then returns the final text reply.
  */
 export async function generateReply(args: GenerateArgs): Promise<GenerateResult> {
-  const { config, systemPrompt, messages, tools, executeTools } = args
+  const { config, systemPrompt, messages, tools, executeTools, temperature, topP, frequencyPenalty, presencePenalty, maxTokens } = args
   const timeoutMs = aiRequestTimeoutMs()
   const provider = config.provider
 
@@ -51,6 +47,11 @@ export async function generateReply(args: GenerateArgs): Promise<GenerateResult>
     messages,
     timeoutMs,
     tools,
+    temperature,
+    topP,
+    frequencyPenalty,
+    presencePenalty,
+    maxTokens,
   }
 
   let result = await callProvider(provider, baseArgs)

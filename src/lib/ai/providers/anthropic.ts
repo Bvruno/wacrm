@@ -75,7 +75,7 @@ function parseAnthropicToolCalls(
  * Supports tool-use when `tools` is provided.
  */
 export async function generateAnthropic(args: ProviderArgs): Promise<ProviderResult> {
-  const { apiKey, model, systemPrompt, messages, timeoutMs, tools, toolRound } = args
+  const { apiKey, model, systemPrompt, messages, timeoutMs, tools, toolRound, temperature, topP, maxTokens } = args
 
   const bodyMessages: unknown[] = normalizeForAnthropic(messages)
 
@@ -107,12 +107,14 @@ export async function generateAnthropic(args: ProviderArgs): Promise<ProviderRes
   const body: Record<string, unknown> = {
     model,
     system: systemPrompt,
-    max_tokens: MAX_OUTPUT_TOKENS,
+    max_tokens: maxTokens ?? MAX_OUTPUT_TOKENS,
     messages: bodyMessages,
   }
   if (tools && tools.length > 0) {
     body.tools = toAnthropicTools(tools)
   }
+  if (temperature !== undefined) body.temperature = temperature
+  if (topP !== undefined) body.top_p = topP
 
   let res: Response
   try {

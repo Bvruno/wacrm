@@ -52,12 +52,12 @@ export function aiContextMessageLimit(): number {
 export function buildSystemPrompt(args: {
   userPrompt: string | null
   mode: 'draft' | 'auto_reply'
-  /** Knowledge-base excerpts retrieved for the current question. */
   knowledge?: string[]
-  /** Contact profile (name, email, company, tags, custom fields). */
   contactProfile?: string | null
+  toneInstructions?: string | null
+  customToneInstructions?: string | null
 }): string {
-  const { userPrompt, mode, knowledge, contactProfile } = args
+  const { userPrompt, mode, knowledge, contactProfile, toneInstructions, customToneInstructions } = args
   const parts: string[] = [
     'You are a customer-messaging assistant for a business that uses a WhatsApp CRM. ' +
       'You are shown the recent WhatsApp conversation between the business (assistant) and a customer (user). ' +
@@ -76,6 +76,14 @@ export function buildSystemPrompt(args: {
 
   if (userPrompt && userPrompt.trim()) {
     parts.push(`Business context and instructions:\n${userPrompt.trim()}`)
+  }
+
+  if (toneInstructions && toneInstructions.trim()) {
+    parts.push(`Tone and style instructions:\n${toneInstructions.trim()}`)
+  }
+
+  if (customToneInstructions && customToneInstructions.trim()) {
+    parts.push(`Additional tone/style notes:\n${customToneInstructions.trim()}`)
   }
 
   if (contactProfile && contactProfile.trim()) {

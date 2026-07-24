@@ -65,7 +65,7 @@ function parseToolCalls(raw: OpenAiToolCall[]): ToolCall[] {
  * Supports tool-use (function-calling) when `tools` is provided.
  */
 export async function generateOpenAi(args: ProviderArgs): Promise<ProviderResult> {
-  const { apiKey, model, systemPrompt, messages, timeoutMs, tools, toolRound } = args
+  const { apiKey, model, systemPrompt, messages, timeoutMs, tools, toolRound, temperature, topP, frequencyPenalty, presencePenalty, maxTokens } = args
 
   const bodyMessages: Record<string, unknown>[] = [
     { role: 'system', content: systemPrompt },
@@ -97,11 +97,15 @@ export async function generateOpenAi(args: ProviderArgs): Promise<ProviderResult
   const body: Record<string, unknown> = {
     model,
     messages: bodyMessages,
-    max_completion_tokens: MAX_OUTPUT_TOKENS,
+    max_completion_tokens: maxTokens ?? MAX_OUTPUT_TOKENS,
   }
   if (tools && tools.length > 0) {
     body.tools = toOpenAiTools(tools)
   }
+  if (temperature !== undefined) body.temperature = temperature
+  if (topP !== undefined) body.top_p = topP
+  if (frequencyPenalty !== undefined) body.frequency_penalty = frequencyPenalty
+  if (presencePenalty !== undefined) body.presence_penalty = presencePenalty
 
   let res: Response
   try {

@@ -1,26 +1,16 @@
 import { NextResponse } from 'next/server'
 import { requireRole, toErrorResponse } from '@/lib/auth/account'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
-import { loadAiConfig } from '@/lib/ai/config'
+import { getDefaultAgent } from '@/lib/agents/agents'
 import { retrieveKnowledge } from '@/lib/ai/knowledge'
 import { generateReply } from '@/lib/ai/generate'
 import { buildSystemPrompt } from '@/lib/ai/defaults'
 import { latestUserMessage } from '@/lib/ai/query'
 import { AiError, type ChatMessage } from '@/lib/ai/types'
+import { getToneInstructions } from '@/lib/ai/tone-presets'
 
-// Keep the tested transcript bounded, mirroring the live context window.
 const MAX_TURNS = 20
 
-/**
- * POST /api/ai/playground  (agent+)
- *
- * Test-chat with the account's agent WITHOUT touching WhatsApp. Runs the
- * exact same path the auto-reply bot uses — knowledge-base retrieval +
- * `auto_reply` system prompt + the configured provider — so what you see
- * here is what a real customer would get. Reads the config even when the
- * master switch is off (requireActive:false) so you can try it before
- * going live. Stateless: the client sends the running transcript each turn.
- */
 export async function POST(request: Request) {
   try {
     const { supabase, accountId, userId } = await requireRole('agent')
@@ -53,10 +43,10 @@ export async function POST(request: Request) {
       )
     }
 
-    const config = await loadAiConfig(supabase, accountId, {
+    const config = await getDefaultAgent(supabase, accountId, {
       requireActive: false,
     }).catch((err) => {
-      console.error('[ai/playground] loadAiConfig error:', err)
+      console.error('[ai/playground] getDefaultAgent error:', err)
       throw new AiError('Stored API key could not be decrypted.', {
         code: 'key_decrypt_failed',
         status: 400,
@@ -72,19 +62,45 @@ export async function POST(request: Request) {
       )
     }
 
+    const aiConfig = {
+      provider: config.provider,
+      model: config.model,
+      apiKey: config.apiKey,
+      systemPrompt: config.systemPrompt,
+      isActive: config.isActive,
+      autoReplyEnabled: config.autoReplyEnabled,
+      autoReplyMaxPerConversation: config.autoReplyMaxPerConversation,
+      handoffAgentId: config.handoffAgentId,
+      embeddingsApiKey: config.embeddingsApiKey,
+    }
+
     const knowledge = await retrieveKnowledge(
       supabase,
       accountId,
-      config,
+      aiConfig,
       latestUserMessage(messages),
     )
+
+    const toneInstructions = getToneInstructions(config.tonePreset)
+
     const systemPrompt = buildSystemPrompt({
       userPrompt: config.systemPrompt,
       mode: 'auto_reply',
       knowledge,
+      toneInstructions,
+      customToneInstructions: config.customToneInstructions,
     })
 
-    const { text, handoff } = await generateReply({ config, systemPrompt, messages })
+    const { text, handoff } = await generateReply({
+      config: aiConfig,
+      systemPrompt,
+      messages,
+      temperature: config.temperature,
+      topP: config.topP,
+      frequencyPenalty: config.frequencyPenalty,
+      presencePenalty: config.presencePenalty,
+      maxTokens: config.maxTokens,
+    })
     return NextResponse.json({ reply: text, handoff })
   } catch (err) {
     if (err instanceof AiError) {

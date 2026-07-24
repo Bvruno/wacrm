@@ -1,5 +1,5 @@
 import { supabaseAdmin } from './admin-client'
-import { loadAiConfig } from './config'
+import { getDefaultAgent } from '@/lib/agents/agents'
 import { buildConversationContext } from './context'
 import { retrieveKnowledge } from './knowledge'
 import { generateReply } from './generate'
@@ -12,6 +12,7 @@ import { AI_TOOLS, executeToolCalls } from './tools'
 import { engineSendText } from '@/lib/flows/meta-send'
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { sendPushToAccount } from '@/lib/push/send-push'
+import { getToneInstructions } from './tone-presets'
 
 interface DispatchArgs {
   /** Tenancy key — drives config, contact, and whatsapp_config lookups. */
@@ -50,8 +51,30 @@ export async function dispatchInboundToAiReply(
   try {
     const db = supabaseAdmin()
 
-    const config = await loadAiConfig(db, accountId)
-    if (!config || !config.autoReplyEnabled) return
+    const agentConfig = await getDefaultAgent(db, accountId)
+    if (!agentConfig || !agentConfig.autoReplyEnabled) return
+
+    const config = {
+      provider: agentConfig.provider,
+      model: agentConfig.model,
+      apiKey: agentConfig.apiKey,
+      systemPrompt: agentConfig.systemPrompt,
+      isActive: agentConfig.isActive,
+      autoReplyEnabled: agentConfig.autoReplyEnabled,
+      autoReplyMaxPerConversation: agentConfig.autoReplyMaxPerConversation,
+      handoffAgentId: agentConfig.handoffAgentId,
+      embeddingsApiKey: agentConfig.embeddingsApiKey,
+    }
+
+    const autoReplyMaxPerConversation = agentConfig.autoReplyMaxPerConversation
+    const handoffAgentId = agentConfig.handoffAgentId
+    const tonePreset = agentConfig.tonePreset
+    const customToneInstructions = agentConfig.customToneInstructions
+    const temperature = agentConfig.temperature
+    const topP = agentConfig.topP
+    const frequencyPenalty = agentConfig.frequencyPenalty
+    const presencePenalty = agentConfig.presencePenalty
+    const maxTokens = agentConfig.maxTokens
 
     // Deterministic, user-configured responders win over the LLM — the
     // caller already excludes messages a Flow consumed. Message-level
@@ -80,7 +103,7 @@ export async function dispatchInboundToAiReply(
     if (conv.ai_autoreply_disabled) return // handed off / turned off here
     // Cheap early-out; the authoritative checks (assigned_agent_id +
     // cap) are in the atomic claim below (these reads can race).
-    if (conv.ai_reply_count >= config.autoReplyMaxPerConversation) return
+    if (conv.ai_reply_count >= autoReplyMaxPerConversation) return
 
     const messages = await buildConversationContext(db, conversationId)
     if (messages.length === 0) return
@@ -111,11 +134,16 @@ export async function dispatchInboundToAiReply(
 
     const profile = await buildContactProfile(db, contactId)
     const contactProfile = profile ? formatContactProfile(profile) : undefined
+
+    const toneInstructions = getToneInstructions(tonePreset)
+
     const systemPrompt = buildSystemPrompt({
       userPrompt: config.systemPrompt,
       mode: 'auto_reply',
       knowledge,
       contactProfile,
+      toneInstructions,
+      customToneInstructions,
     })
 
     const { text, handoff, usage } = await generateReply({
@@ -125,6 +153,11 @@ export async function dispatchInboundToAiReply(
       tools: AI_TOOLS,
       executeTools: (calls) =>
         executeToolCalls({ db, accountId, contactId }, calls),
+      temperature,
+      topP,
+      frequencyPenalty,
+      presencePenalty,
+      maxTokens,
     })
 
     // Record token spend on the account's BYO key. Fire-and-forget so it
@@ -160,8 +193,8 @@ export async function dispatchInboundToAiReply(
       // Only set the assignee when a target is configured AND the thread
       // isn't already owned — never stomp an existing human assignment.
       let didAssign = false
-      if (config.handoffAgentId && !conv.assigned_agent_id) {
-        update.assigned_agent_id = config.handoffAgentId
+      if (handoffAgentId && !conv.assigned_agent_id) {
+        update.assigned_agent_id = handoffAgentId
         didAssign = true
       }
       await db.from('conversations').update(update).eq('id', conversationId)
@@ -190,7 +223,7 @@ export async function dispatchInboundToAiReply(
       'claim_ai_reply_slot',
       {
         conversation_id: conversationId,
-        max_replies: config.autoReplyMaxPerConversation,
+        max_replies: autoReplyMaxPerConversation,
       },
     )
     if (claimErr) {
