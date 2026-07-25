@@ -103,7 +103,9 @@ export async function createCulqiCharge(params: {
   return res.json();
 }
 
-export async function getCulqiOrder(orderId: string): Promise<CulqiOrderResponse> {
+export async function getCulqiOrder(
+  orderId: string
+): Promise<CulqiOrderResponse> {
   const res = await fetch(`${CULQI_API}/orders/${orderId}`, {
     headers: getHeaders(),
   });

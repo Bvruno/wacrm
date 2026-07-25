@@ -123,7 +123,7 @@ export function SessionsCard() {
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         toast.error(
-          body?.error ?? t('sessionsLoadFailed') ?? 'Failed to load sessions',
+          body?.error ?? t('sessionsLoadFailed') ?? 'Failed to load sessions'
         );
         return;
       }
@@ -131,7 +131,7 @@ export function SessionsCard() {
       const body = await res.json();
       const list: SessionRow[] = Array.isArray(body)
         ? body
-        : body.sessions ?? [];
+        : (body.sessions ?? []);
       setSessions(list);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
@@ -155,7 +155,7 @@ export function SessionsCard() {
         const body = await res.json().catch(() => null);
         toast.error(
           body?.error ??
-            t('signOutFailed', { message: 'Failed to revoke session' }),
+            t('signOutFailed', { message: 'Failed to revoke session' })
         );
         return;
       }
@@ -205,15 +205,15 @@ export function SessionsCard() {
 
   const SessionIcon = ({ icon }: { icon: typeof Smartphone }) => {
     const IconComponent = icon;
-    return <IconComponent className="size-4 shrink-0 text-muted-foreground" />;
+    return <IconComponent className="text-muted-foreground size-4 shrink-0" />;
   };
 
   return (
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-foreground">
-            <LogOut className="size-4 text-primary" />
+          <CardTitle className="text-foreground flex items-center gap-2">
+            <LogOut className="text-primary size-4" />
             {t('sessionsTitle')}
           </CardTitle>
           <CardDescription className="text-muted-foreground">
@@ -223,10 +223,10 @@ export function SessionsCard() {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="size-5 animate-spin text-muted-foreground" />
+              <Loader2 className="text-muted-foreground size-5 animate-spin" />
             </div>
           ) : sessions.length === 0 ? (
-            <p className="py-4 text-sm text-muted-foreground">
+            <p className="text-muted-foreground py-4 text-sm">
               {t('noSessions') ?? 'No active sessions'}
             </p>
           ) : (
@@ -239,7 +239,7 @@ export function SessionsCard() {
                 return (
                   <div
                     key={session.id}
-                    className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50"
+                    className="hover:bg-muted/50 flex items-center gap-3 rounded-lg border p-3 transition-colors"
                   >
                     <SessionIcon icon={icon} />
 
@@ -249,16 +249,18 @@ export function SessionsCard() {
                           {label}
                         </span>
                         {isCurrent && (
-                          <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                          <span className="bg-primary/10 text-primary inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium">
                             {t('currentSession') ?? 'Current'}
                           </span>
                         )}
                       </div>
-                      <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                      <div className="text-muted-foreground mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
                         {session.ip && <span>IP: {session.ip}</span>}
                         <span>
                           {t('lastActive') ?? 'Active'}:{' '}
-                          {formatDate(session.refreshed_at ?? session.updated_at)}
+                          {formatDate(
+                            session.refreshed_at ?? session.updated_at
+                          )}
                         </span>
                         <span className="hidden sm:inline">
                           {t('created') ?? 'Created'}:{' '}
@@ -273,7 +275,9 @@ export function SessionsCard() {
                       size="sm"
                       disabled={isRevoking}
                       onClick={() =>
-                        isCurrent ? signOutThisDevice() : revokeSession(session.id)
+                        isCurrent
+                          ? signOutThisDevice()
+                          : revokeSession(session.id)
                       }
                     >
                       {isRevoking ? (
@@ -283,8 +287,8 @@ export function SessionsCard() {
                       )}
                       <span className="ml-1.5 hidden sm:inline">
                         {isCurrent
-                          ? t('signOutThisDevice') ?? 'Sign out'
-                          : t('signOut') ?? 'Sign out'}
+                          ? (t('signOutThisDevice') ?? 'Sign out')
+                          : (t('signOut') ?? 'Sign out')}
                       </span>
                     </Button>
                   </div>
@@ -325,9 +329,7 @@ export function SessionsCard() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('signOutConfirmTitle')}</DialogTitle>
-            <DialogDescription>
-              {t('signOutConfirmDesc')}
-            </DialogDescription>
+            <DialogDescription>{t('signOutConfirmDesc')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button

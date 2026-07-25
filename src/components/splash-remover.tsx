@@ -1,13 +1,13 @@
-'use client'
+'use client';
 
-import { useEffect } from 'react'
+import { useEffect } from 'react';
 
 export function SplashRemover() {
   useEffect(() => {
     requestAnimationFrame(() => {
-      document.documentElement.setAttribute('data-hydrated', '')
-    })
-  }, [])
+      document.documentElement.setAttribute('data-hydrated', '');
+    });
+  }, []);
 
-  return null
+  return null;
 }

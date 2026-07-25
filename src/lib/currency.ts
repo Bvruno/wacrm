@@ -11,7 +11,7 @@
  */
 
 /** App-wide fallback when no account/deal currency is available. */
-export const DEFAULT_CURRENCY = "USD";
+export const DEFAULT_CURRENCY = 'USD';
 
 export interface CurrencyOption {
   /** ISO-4217 code, e.g. "USD". Stored verbatim in the DB. */
@@ -28,8 +28,8 @@ export interface CurrencyOption {
  * list to offer more — nothing else needs to change.
  */
 export const CURRENCIES: CurrencyOption[] = [
-  { code: "USD", label: "US Dollar", symbol: "$" },
-  { code: "PEN", label: "Nuevo Sol", symbol: "/S" },
+  { code: 'USD', label: 'US Dollar', symbol: '$' },
+  { code: 'PEN', label: 'Nuevo Sol', symbol: '/S' },
   /**{ code: "EUR", label: "Euro", symbol: "€" },
   { code: "GBP", label: "British Pound", symbol: "£" },
   { code: "INR", label: "Indian Rupee", symbol: "₹" },
@@ -61,13 +61,13 @@ export const CURRENCIES: CurrencyOption[] = [
  */
 export function formatCurrency(
   value: number,
-  currency: string = DEFAULT_CURRENCY,
+  currency: string = DEFAULT_CURRENCY
 ): string {
   const code = (currency || DEFAULT_CURRENCY).trim();
   const amount = Number(value) || 0;
   try {
     return new Intl.NumberFormat(undefined, {
-      style: "currency",
+      style: 'currency',
       currency: code,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
@@ -88,7 +88,7 @@ export function formatCurrency(
  */
 export function formatCurrencyShort(
   value: number,
-  currency: string = DEFAULT_CURRENCY,
+  currency: string = DEFAULT_CURRENCY
 ): string {
   const code = currency || DEFAULT_CURRENCY;
   const symbol = CURRENCIES.find((c) => c.code === code)?.symbol ?? `${code} `;

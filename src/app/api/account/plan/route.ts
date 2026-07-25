@@ -1,37 +1,37 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextResponse } from 'next/server'
-import { requireRole, toErrorResponse } from '@/lib/auth/account'
-import { getAdminClient } from '@/lib/supabase/admin'
+import { NextResponse } from 'next/server';
+import { requireRole, toErrorResponse } from '@/lib/auth/account';
+import { getAdminClient } from '@/lib/supabase/admin';
 
 export async function GET() {
   try {
-    const ctx = await requireRole('viewer')
-    const admin = getAdminClient()
+    const ctx = await requireRole('viewer');
+    const admin = getAdminClient();
 
     const { data: accountPlan, error: planError } = await admin
       .from('account_plans')
       .select('*, plan:plan_id(*)')
       .eq('account_id', ctx.accountId)
-      .maybeSingle()
+      .maybeSingle();
 
     if (planError) {
-      console.error('[account/plan] fetch ERROR:', planError)
+      console.error('[account/plan] fetch ERROR:', planError);
     }
 
-    const plan = (accountPlan as any)?.plan
-    const features = (plan?.features as any) ?? {}
+    const plan = (accountPlan as any)?.plan;
+    const features = (plan?.features as any) ?? {};
 
     const { count: agents } = await admin
       .from('profiles')
       .select('*', { count: 'exact', head: true })
-      .eq('account_id', ctx.accountId)
+      .eq('account_id', ctx.accountId);
 
-    const today = new Date().toISOString().split('T')[0]
+    const today = new Date().toISOString().split('T')[0];
     const { count: messagesToday } = await admin
       .from('messages')
       .select('*', { count: 'exact', head: true })
       .eq('account_id', ctx.accountId)
-      .gte('created_at', today)
+      .gte('created_at', today);
 
     const response = {
       plan: {
@@ -53,11 +53,11 @@ export async function GET() {
         agents: agents ?? 0,
         messagesToday: messagesToday ?? 0,
       },
-    }
+    };
 
-    return NextResponse.json(response)
+    return NextResponse.json(response);
   } catch (err) {
-    console.error('[account/plan] CATCH error:', err)
-    return toErrorResponse(err)
+    console.error('[account/plan] CATCH error:', err);
+    return toErrorResponse(err);
   }
 }

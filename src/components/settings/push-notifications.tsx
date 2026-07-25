@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react'
-import { useTranslations } from 'next-intl'
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Bell,
   BellOff,
@@ -10,11 +10,11 @@ import {
   Send,
   CheckCircle2,
   Smartphone,
-} from 'lucide-react'
+} from 'lucide-react';
 
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Card } from '@/components/ui/card';
 import {
   subscribeUser,
   unsubscribeUser,
@@ -23,14 +23,14 @@ import {
   updateNotificationPreferences,
   sendTestNotification,
   healthCheckSubscription,
-} from '@/app/(dashboard)/settings/push-actions'
-import type { NotificationPreferences } from '@/types'
+} from '@/app/(dashboard)/settings/push-actions';
+import type { NotificationPreferences } from '@/types';
 
 function urlBase64ToUint8Array(base64String: string) {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
-  const rawData = window.atob(base64)
-  return new Uint8Array(rawData.length).map((_, i) => rawData.charCodeAt(i))
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return new Uint8Array(rawData.length).map((_, i) => rawData.charCodeAt(i));
 }
 
 const PREF_KEYS: (keyof NotificationPreferences)[] = [
@@ -39,200 +39,192 @@ const PREF_KEYS: (keyof NotificationPreferences)[] = [
   'broadcast_completed',
   'contact_imported',
   'automation_failed',
-]
+];
 
 export function PushNotifications() {
-  const t = useTranslations('Settings.push')
-  const [supported, setSupported] = useState(false)
-  const [subscribed, setSubscribed] = useState(false)
-  const [configured, setConfigured] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [toggling, setToggling] = useState(false)
+  const t = useTranslations('Settings.push');
+  const [supported, setSupported] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+  const [configured, setConfigured] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [toggling, setToggling] = useState(false);
   const [preferences, setPreferences] =
-    useState<NotificationPreferences | null>(null)
-  const [savingPref, setSavingPref] = useState<string | null>(null)
-  const [permissionDenied, setPermissionDenied] = useState(false)
-  const [endpointCount, setEndpointCount] = useState(0)
-  const [testing, setTesting] = useState(false)
-  const [testResult, setTestResult] = useState<string | null>(null)
-  const [isAndroid, setIsAndroid] = useState(false)
-  const [healthStatus, setHealthStatus] = useState<'ok' | 'stale' | null>(null)
-  const localEndpoint = useRef<string | null>(null)
+    useState<NotificationPreferences | null>(null);
+  const [savingPref, setSavingPref] = useState<string | null>(null);
+  const [permissionDenied, setPermissionDenied] = useState(false);
+  const [endpointCount, setEndpointCount] = useState(0);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
+  const [isAndroid, setIsAndroid] = useState(false);
+  const [healthStatus, setHealthStatus] = useState<'ok' | 'stale' | null>(null);
+  const localEndpoint = useRef<string | null>(null);
 
   useEffect(() => {
     const pushSupported =
-      'serviceWorker' in navigator && 'PushManager' in window
-    setSupported(pushSupported)
-    setIsAndroid(/android/i.test(navigator.userAgent))
+      'serviceWorker' in navigator && 'PushManager' in window;
+    setSupported(pushSupported);
+    setIsAndroid(/android/i.test(navigator.userAgent));
 
     if (!pushSupported) {
-      setLoading(false)
-      return
+      setLoading(false);
+      return;
     }
 
-    let cancelled = false
+    let cancelled = false;
     async function init() {
-      const status = await getSubscriptionStatus()
-      if (cancelled) return
-      setConfigured(status.configured)
-      setEndpointCount(status.endpoints.length)
+      const status = await getSubscriptionStatus();
+      if (cancelled) return;
+      setConfigured(status.configured);
+      setEndpointCount(status.endpoints.length);
 
-      let localSubEndpoint: string | null = null
+      let localSubEndpoint: string | null = null;
       try {
-        const registration = await navigator.serviceWorker.ready
-        const sub = await registration.pushManager.getSubscription()
+        const registration = await navigator.serviceWorker.ready;
+        const sub = await registration.pushManager.getSubscription();
         if (sub) {
           const serialized = JSON.parse(JSON.stringify(sub)) as {
-            endpoint: string
-          }
-          localSubEndpoint = serialized.endpoint
-          localEndpoint.current = localSubEndpoint
+            endpoint: string;
+          };
+          localSubEndpoint = serialized.endpoint;
+          localEndpoint.current = localSubEndpoint;
         }
       } catch {
         /* SW registration may fail */
       }
 
       const hasLocalSub =
-        !!localSubEndpoint &&
-        status.endpoints.includes(localSubEndpoint)
-      setSubscribed(hasLocalSub)
-      setHealthStatus(hasLocalSub ? 'ok' : null)
+        !!localSubEndpoint && status.endpoints.includes(localSubEndpoint);
+      setSubscribed(hasLocalSub);
+      setHealthStatus(hasLocalSub ? 'ok' : null);
 
-      setPermissionDenied(Notification.permission === 'denied')
-      setLoading(false)
+      setPermissionDenied(Notification.permission === 'denied');
+      setLoading(false);
     }
 
-    init()
+    init();
     getNotificationPreferences().then((p) => {
-      if (!cancelled) setPreferences(p)
-    })
+      if (!cancelled) setPreferences(p);
+    });
 
     return () => {
-      cancelled = true
-    }
-  }, [])
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
-    if (!subscribed || !localEndpoint.current) return
+    if (!subscribed || !localEndpoint.current) return;
 
-    const interval = setInterval(async () => {
-      try {
-        const result = await healthCheckSubscription(localEndpoint.current!)
-        setHealthStatus(result.valid ? 'ok' : 'stale')
-      } catch {
-        /* ignore */
-      }
-    }, 30 * 60 * 1000)
+    const interval = setInterval(
+      async () => {
+        try {
+          const result = await healthCheckSubscription(localEndpoint.current!);
+          setHealthStatus(result.valid ? 'ok' : 'stale');
+        } catch {
+          /* ignore */
+        }
+      },
+      30 * 60 * 1000
+    );
 
-    return () => clearInterval(interval)
-  }, [subscribed])
+    return () => clearInterval(interval);
+  }, [subscribed]);
 
   async function toggleSubscription() {
-    setToggling(true)
+    setToggling(true);
     try {
       if (subscribed) {
-        await unsubscribeUser(
-          localEndpoint.current ?? undefined,
-        )
-        setSubscribed(false)
-        setHealthStatus(null)
-        const status = await getSubscriptionStatus()
-        setEndpointCount(status.endpoints.length)
+        await unsubscribeUser(localEndpoint.current ?? undefined);
+        setSubscribed(false);
+        setHealthStatus(null);
+        const status = await getSubscriptionStatus();
+        setEndpointCount(status.endpoints.length);
       } else {
-        const registration =
-          await navigator.serviceWorker.ready
-        const sub =
-          await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(
-              process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-            ),
-          })
+        const registration = await navigator.serviceWorker.ready;
+        const sub = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(
+            process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
+          ),
+        });
         const serialized = JSON.parse(JSON.stringify(sub)) as {
-          endpoint: string
-          keys: { p256dh: string; auth: string }
-        }
-        localEndpoint.current = serialized.endpoint
-        await subscribeUser(serialized)
-        setSubscribed(true)
-        setHealthStatus('ok')
-        setPermissionDenied(false)
-        const status = await getSubscriptionStatus()
-        setEndpointCount(status.endpoints.length)
-        getNotificationPreferences().then(setPreferences)
+          endpoint: string;
+          keys: { p256dh: string; auth: string };
+        };
+        localEndpoint.current = serialized.endpoint;
+        await subscribeUser(serialized);
+        setSubscribed(true);
+        setHealthStatus('ok');
+        setPermissionDenied(false);
+        const status = await getSubscriptionStatus();
+        setEndpointCount(status.endpoints.length);
+        getNotificationPreferences().then(setPreferences);
       }
     } catch (err) {
-      console.error('Failed to toggle subscription:', err)
+      console.error('Failed to toggle subscription:', err);
     } finally {
-      setToggling(false)
+      setToggling(false);
     }
   }
 
   async function handleTestNotification() {
-    setTesting(true)
-    setTestResult(null)
+    setTesting(true);
+    setTestResult(null);
     try {
-      const result = await sendTestNotification(
-        t('testMessage'),
-      )
+      const result = await sendTestNotification(t('testMessage'));
       if (result.success) {
         setTestResult(
-          t('testSent', { sent: result.sent ?? 0, failed: result.failed ?? 0 }),
-        )
+          t('testSent', { sent: result.sent ?? 0, failed: result.failed ?? 0 })
+        );
       } else {
-        setTestResult(result.error ?? t('testFailed'))
+        setTestResult(result.error ?? t('testFailed'));
       }
     } catch {
-      setTestResult(t('testFailed'))
+      setTestResult(t('testFailed'));
     } finally {
-      setTesting(false)
+      setTesting(false);
     }
   }
 
   const togglePref = useCallback(
     async (key: keyof NotificationPreferences) => {
-      if (!preferences) return
-      const next = { ...preferences, [key]: !preferences[key] }
-      setSavingPref(key)
-      setPreferences(next)
+      if (!preferences) return;
+      const next = { ...preferences, [key]: !preferences[key] };
+      setSavingPref(key);
+      setPreferences(next);
       try {
-        await updateNotificationPreferences(next)
+        await updateNotificationPreferences(next);
       } catch (err) {
-        console.error('Failed to update preference:', err)
-        setPreferences(preferences)
+        console.error('Failed to update preference:', err);
+        setPreferences(preferences);
       } finally {
-        setSavingPref(null)
+        setSavingPref(null);
       }
     },
-    [preferences],
-  )
+    [preferences]
+  );
 
   if (loading) {
     return (
       <div className="flex h-32 items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
       </div>
-    )
+    );
   }
 
   if (!supported) {
     return (
       <Card className="p-6">
-        <p className="text-sm text-muted-foreground">
-          {t('notSupported')}
-        </p>
+        <p className="text-muted-foreground text-sm">{t('notSupported')}</p>
       </Card>
-    )
+    );
   }
 
   if (!configured) {
     return (
       <Card className="p-6">
-        <p className="text-sm text-muted-foreground">
-          {t('notConfigured')}
-        </p>
+        <p className="text-muted-foreground text-sm">{t('notConfigured')}</p>
       </Card>
-    )
+    );
   }
 
   return (
@@ -241,9 +233,7 @@ export function PushNotifications() {
         <Card className="border-amber-500/30 bg-amber-500/5 p-4">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
-            <p className="text-sm text-amber-200">
-              {t('permissionDenied')}
-            </p>
+            <p className="text-sm text-amber-200">{t('permissionDenied')}</p>
           </div>
         </Card>
       )}
@@ -261,13 +251,15 @@ export function PushNotifications() {
               </p>
               <div className="mt-3 space-y-2 text-xs text-amber-200/90">
                 <p className="font-semibold">{t('androidStepsTitle')}</p>
-                <ol className="list-decimal list-inside space-y-1 pl-2">
+                <ol className="list-inside list-decimal space-y-1 pl-2">
                   <li>{t('androidStep1')}</li>
                   <li>{t('androidStep2')}</li>
                   <li>{t('androidStep3')}</li>
                 </ol>
-                <p className="pt-2 font-semibold">{t('androidManufacturersTitle')}</p>
-                <ul className="list-disc list-inside space-y-1 pl-2">
+                <p className="pt-2 font-semibold">
+                  {t('androidManufacturersTitle')}
+                </p>
+                <ul className="list-inside list-disc space-y-1 pl-2">
                   <li>{t('androidXiaomi')}</li>
                   <li>{t('androidHuawei')}</li>
                   <li>{t('androidSamsung')}</li>
@@ -290,8 +282,8 @@ export function PushNotifications() {
       {healthStatus === 'stale' && (
         <Card className="border-destructive/30 bg-destructive/5 p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
-            <p className="text-sm text-destructive-foreground">
+            <AlertTriangle className="text-destructive mt-0.5 h-4 w-4 flex-shrink-0" />
+            <p className="text-destructive-foreground text-sm">
               {t('staleSubscription')}
             </p>
           </div>
@@ -301,17 +293,13 @@ export function PushNotifications() {
       <Card className="p-6">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-foreground">
-              {subscribed
-                ? t('subscribedTitle')
-                : t('unsubscribedTitle')}
+            <p className="text-foreground text-sm font-medium">
+              {subscribed ? t('subscribedTitle') : t('unsubscribedTitle')}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {subscribed
-                ? t('subscribedDesc')
-                : t('unsubscribedDesc')}
+            <p className="text-muted-foreground mt-1 text-xs">
+              {subscribed ? t('subscribedDesc') : t('unsubscribedDesc')}
             </p>
-            <p className="mt-1.5 text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-1.5 text-xs">
               {t('devicesSubscribed', { count: endpointCount })}
             </p>
           </div>
@@ -332,10 +320,10 @@ export function PushNotifications() {
         </div>
 
         {subscribed && (
-          <div className="mt-4 border-t border-border pt-4">
+          <div className="border-border mt-4 border-t pt-4">
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   {t('testDescription')}
                 </p>
                 {testResult && (
@@ -365,7 +353,7 @@ export function PushNotifications() {
 
       {preferences && (
         <Card className="p-6">
-          <p className="mb-4 text-sm font-medium text-foreground">
+          <p className="text-foreground mb-4 text-sm font-medium">
             {t('preferencesTitle')}
           </p>
           <div className="space-y-3">
@@ -375,9 +363,7 @@ export function PushNotifications() {
                 className="flex cursor-pointer items-center justify-between gap-4"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-foreground">
-                    {t(`pref_${key}`)}
-                  </p>
+                  <p className="text-foreground text-sm">{t(`pref_${key}`)}</p>
                 </div>
                 <Switch
                   checked={preferences[key]}
@@ -390,5 +376,5 @@ export function PushNotifications() {
         </Card>
       )}
     </div>
-  )
+  );
 }

@@ -17,7 +17,10 @@ type Tab = 'agents' | 'playground' | 'usage' | 'costs';
 function getInitialTab(): Tab {
   if (typeof window === 'undefined') return 'agents';
   const savedTab = localStorage.getItem('agents-tab') as Tab | null;
-  if (savedTab && ['agents', 'playground', 'usage', 'costs'].includes(savedTab)) {
+  if (
+    savedTab &&
+    ['agents', 'playground', 'usage', 'costs'].includes(savedTab)
+  ) {
     return savedTab;
   }
   return 'agents';
@@ -39,20 +42,14 @@ export default function AgentsPage() {
     <PlanGate feature="has_ai_assistant">
       <div>
         <div className="flex items-center gap-2">
-          <Bot className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <Bot className="text-primary h-6 w-6" />
+          <h1 className="text-foreground text-2xl font-bold tracking-tight">
             {t('title')}
           </h1>
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t('description')}
-        </p>
+        <p className="text-muted-foreground mt-1 text-sm">{t('description')}</p>
 
-        <Tabs
-          value={tab}
-          onValueChange={handleTabChange}
-          className="mt-6"
-        >
+        <Tabs value={tab} onValueChange={handleTabChange} className="mt-6">
           <TabsList>
             <TabsTrigger value="agents">
               <Users className="mr-1.5 h-4 w-4" /> {t('agents')}
@@ -66,7 +63,8 @@ export default function AgentsPage() {
                   <BarChart3 className="mr-1.5 h-4 w-4" /> {t('usage')}
                 </TabsTrigger>
                 <TabsTrigger value="costs">
-                  <DollarSign className="mr-1.5 h-4 w-4" /> {t('costs') || 'Costs'}
+                  <DollarSign className="mr-1.5 h-4 w-4" />{' '}
+                  {t('costs') || 'Costs'}
                 </TabsTrigger>
               </>
             )}

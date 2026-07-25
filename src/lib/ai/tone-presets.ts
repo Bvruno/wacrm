@@ -1,11 +1,11 @@
-import type { TonePreset } from '@/types'
+import type { TonePreset } from '@/types';
 
 export interface TonePresetConfig {
-  value: TonePreset
-  label: string
-  labelEs: string
-  instructions: string
-  temperature: number
+  value: TonePreset;
+  label: string;
+  labelEs: string;
+  instructions: string;
+  temperature: number;
 }
 
 export const TONE_PRESETS: Record<TonePreset, TonePresetConfig> = {
@@ -57,14 +57,14 @@ export const TONE_PRESETS: Record<TonePreset, TonePresetConfig> = {
       'Use precise technical terminology. Be detailed and specific in explanations. Provide thorough answers with technical accuracy as priority.',
     temperature: 0.4,
   },
-}
+};
 
 export function getToneInstructions(preset: TonePreset | null): string {
-  if (!preset) return ''
-  return TONE_PRESETS[preset]?.instructions ?? ''
+  if (!preset) return '';
+  return TONE_PRESETS[preset]?.instructions ?? '';
 }
 
 export function getToneTemperature(preset: TonePreset | null): number | null {
-  if (!preset) return null
-  return TONE_PRESETS[preset]?.temperature ?? null
+  if (!preset) return null;
+  return TONE_PRESETS[preset]?.temperature ?? null;
 }

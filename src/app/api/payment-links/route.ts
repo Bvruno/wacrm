@@ -8,14 +8,20 @@ function generateCode(): string {
 
 export async function POST(request: Request) {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user?.id)
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   const json = await request.json();
   const { course_id, amount_pen, contact_id, contact_name } = json;
 
   if (!course_id || !amount_pen) {
-    return NextResponse.json({ error: 'Faltan campos (course_id, amount_pen)' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Faltan campos (course_id, amount_pen)' },
+      { status: 400 }
+    );
   }
 
   // Verify course belongs to user's account
@@ -26,7 +32,10 @@ export async function POST(request: Request) {
     .single();
 
   if (!profile?.account_id) {
-    return NextResponse.json({ error: 'Cuenta no encontrada' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Cuenta no encontrada' },
+      { status: 400 }
+    );
   }
 
   const { data: course } = await supabase
@@ -68,6 +77,7 @@ export async function POST(request: Request) {
     .select('*, course:courses(*)')
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data, { status: 201 });
 }

@@ -1,75 +1,75 @@
-'use client'
+'use client';
 
-import { useCallback, useEffect, useState } from 'react'
-import { toast } from 'sonner'
-import { Loader2, Plus, Bot, Search } from 'lucide-react'
-import { useAuth } from '@/hooks/use-auth'
-import { canEditSettings } from '@/lib/auth/roles'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { AgentCard } from './agent-card'
-import { AgentForm } from './agent-form'
-import type { Agent } from '@/types'
-import { useTranslations } from 'next-intl'
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { Loader2, Plus, Bot, Search } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { canEditSettings } from '@/lib/auth/roles';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { AgentCard } from './agent-card';
+import { AgentForm } from './agent-form';
+import type { Agent } from '@/types';
+import { useTranslations } from 'next-intl';
 
 export function AgentList() {
-  const { accountId, accountRole } = useAuth()
-  const canEdit = accountRole ? canEditSettings(accountRole) : false
-  const t = useTranslations('Agents')
+  const { accountId, accountRole } = useAuth();
+  const canEdit = accountRole ? canEditSettings(accountRole) : false;
+  const t = useTranslations('Agents');
 
-  const [loading, setLoading] = useState(true)
-  const [agents, setAgents] = useState<Agent[]>([])
-  const [showForm, setShowForm] = useState(false)
-  const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
-  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
+  const [search, setSearch] = useState('');
 
   const fetchAgents = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch('/api/agents')
-      const data = await res.json()
+      const res = await fetch('/api/agents');
+      const data = await res.json();
       if (res.ok) {
-        setAgents(data.agents || [])
+        setAgents(data.agents || []);
       } else {
-        toast.error(data.error || t('loadFailed'))
+        toast.error(data.error || t('loadFailed'));
       }
     } catch {
-      toast.error(t('loadFailed'))
+      toast.error(t('loadFailed'));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [t])
+  }, [t]);
 
   useEffect(() => {
     if (accountId) {
-      void fetchAgents()
+      void fetchAgents();
     }
-  }, [accountId, fetchAgents])
+  }, [accountId, fetchAgents]);
 
   const handleCreate = () => {
-    setEditingAgent(null)
-    setShowForm(true)
-  }
+    setEditingAgent(null);
+    setShowForm(true);
+  };
 
   const handleEdit = (agent: Agent) => {
-    setEditingAgent(agent)
-    setShowForm(true)
-  }
+    setEditingAgent(agent);
+    setShowForm(true);
+  };
 
   const handleDelete = async (agentId: string) => {
     try {
-      const res = await fetch(`/api/agents/${agentId}`, { method: 'DELETE' })
+      const res = await fetch(`/api/agents/${agentId}`, { method: 'DELETE' });
       if (res.ok) {
-        toast.success(t('deleteSuccess'))
-        await fetchAgents()
+        toast.success(t('deleteSuccess'));
+        await fetchAgents();
       } else {
-        const data = await res.json()
-        toast.error(data.error || t('deleteFailed'))
+        const data = await res.json();
+        toast.error(data.error || t('deleteFailed'));
       }
     } catch {
-      toast.error(t('deleteFailed'))
+      toast.error(t('deleteFailed'));
     }
-  }
+  };
 
   const handleToggleActive = async (agentId: string, isActive: boolean) => {
     try {
@@ -77,36 +77,36 @@ export function AgentList() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: isActive }),
-      })
+      });
       if (res.ok) {
-        toast.success(isActive ? t('activated') : t('deactivated'))
-        await fetchAgents()
+        toast.success(isActive ? t('activated') : t('deactivated'));
+        await fetchAgents();
       } else {
-        const data = await res.json()
-        toast.error(data.error || t('updateFailed'))
+        const data = await res.json();
+        toast.error(data.error || t('updateFailed'));
       }
     } catch {
-      toast.error(t('updateFailed'))
+      toast.error(t('updateFailed'));
     }
-  }
+  };
 
   const handleFormClose = () => {
-    setShowForm(false)
-    setEditingAgent(null)
-    void fetchAgents()
-  }
+    setShowForm(false);
+    setEditingAgent(null);
+    void fetchAgents();
+  };
 
   const filteredAgents = agents.filter((agent) =>
-    agent.name.toLowerCase().includes(search.toLowerCase()),
-  )
+    agent.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
+      <div className="text-muted-foreground flex items-center justify-center py-16">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         {t('loading')}
       </div>
-    )
+    );
   }
 
   if (showForm) {
@@ -116,14 +116,14 @@ export function AgentList() {
         onClose={handleFormClose}
         canEdit={canEdit}
       />
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="relative max-w-sm flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
             placeholder={t('searchAgents')}
             value={search}
@@ -141,9 +141,9 @@ export function AgentList() {
 
       {filteredAgents.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Bot className="mb-4 h-12 w-12 text-muted-foreground" />
+          <Bot className="text-muted-foreground mb-4 h-12 w-12" />
           <h3 className="mb-2 text-lg font-semibold">{t('noAgents')}</h3>
-          <p className="mb-4 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mb-4 text-sm">
             {t('noAgentsDescription')}
           </p>
           {canEdit && (
@@ -168,5 +168,5 @@ export function AgentList() {
         </div>
       )}
     </div>
-  )
+  );
 }

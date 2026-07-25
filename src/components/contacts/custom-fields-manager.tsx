@@ -69,7 +69,9 @@ export function CustomFieldsManager({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="border-border bg-popover text-popover-foreground sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-popover-foreground">{t('title')}</DialogTitle>
+          <DialogTitle className="text-popover-foreground">
+            {t('title')}
+          </DialogTitle>
           <DialogDescription className="text-muted-foreground">
             {t('desc')}
           </DialogDescription>
@@ -122,15 +124,15 @@ export function CustomFieldsPanel() {
   const [usageCounts, setUsageCounts] = useState<Record<string, number>>({});
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
   const filteredFields = useMemo(
     () =>
       fields.filter((f) =>
-        f.field_name.toLowerCase().includes(search.toLowerCase()),
+        f.field_name.toLowerCase().includes(search.toLowerCase())
       ),
-    [fields, search],
+    [fields, search]
   );
 
   async function handleReorder(event: DragEndEvent) {
@@ -159,7 +161,10 @@ export function CustomFieldsPanel() {
       sort_order: i,
     }));
     for (const u of updates) {
-      await supabase.from('custom_fields').update({ sort_order: u.sort_order }).eq('id', u.id);
+      await supabase
+        .from('custom_fields')
+        .update({ sort_order: u.sort_order })
+        .eq('id', u.id);
     }
   }
 
@@ -320,8 +325,13 @@ export function CustomFieldsPanel() {
             placeholder={t('fieldName')}
             className="bg-muted text-foreground"
           />
-          <Select value={newType} onValueChange={(v) => { if (v) setNewType(v); }}>
-            <SelectTrigger className="w-[130px] shrink-0 bg-muted">
+          <Select
+            value={newType}
+            onValueChange={(v) => {
+              if (v) setNewType(v);
+            }}
+          >
+            <SelectTrigger className="bg-muted w-[130px] shrink-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -346,16 +356,18 @@ export function CustomFieldsPanel() {
           </Button>
         </div>
         {newType === 'select' && (
-          <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-border bg-muted/50 p-2">
+          <div className="border-border bg-muted/50 flex flex-wrap items-center gap-1.5 rounded-md border p-2">
             {newOptions.map((opt) => (
               <span
                 key={opt}
-                className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground"
+                className="bg-muted text-foreground inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium"
               >
                 {opt}
                 <button
                   type="button"
-                  onClick={() => setNewOptions((prev) => prev.filter((o) => o !== opt))}
+                  onClick={() =>
+                    setNewOptions((prev) => prev.filter((o) => o !== opt))
+                  }
                   aria-label={t('removeOption', { option: opt })}
                   className="text-muted-foreground hover:text-foreground"
                 >
@@ -378,7 +390,7 @@ export function CustomFieldsPanel() {
                   }
                 }}
                 placeholder={t('optionPlaceholder')}
-                className="h-7 w-28 bg-background text-xs"
+                className="bg-background h-7 w-28 text-xs"
               />
               <Button
                 variant="ghost"
@@ -402,30 +414,30 @@ export function CustomFieldsPanel() {
       {/* Search */}
       {fields.length > 0 && (
         <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('search')}
-            className="bg-muted pl-8 text-foreground"
+            className="bg-muted text-foreground pl-8"
           />
         </div>
       )}
 
       {/* List */}
-      <div className="overflow-y-auto rounded-md border border-border">
+      <div className="border-border overflow-y-auto rounded-md border">
         {loading ? (
           <div className="space-y-1 p-3">
-            <div className="h-8 animate-pulse rounded-md bg-muted" />
-            <div className="h-8 animate-pulse rounded-md bg-muted" />
-            <div className="h-8 animate-pulse rounded-md bg-muted" />
+            <div className="bg-muted h-8 animate-pulse rounded-md" />
+            <div className="bg-muted h-8 animate-pulse rounded-md" />
+            <div className="bg-muted h-8 animate-pulse rounded-md" />
           </div>
         ) : fields.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
+          <p className="text-muted-foreground py-8 text-center text-sm">
             {t('empty')}
           </p>
         ) : filteredFields.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
+          <p className="text-muted-foreground py-8 text-center text-sm">
             {t('noResults')}
           </p>
         ) : (
@@ -438,7 +450,7 @@ export function CustomFieldsPanel() {
               items={filteredFields.map((f) => f.id)}
               strategy={verticalListSortingStrategy}
             >
-              <ul className="divide-y divide-border">
+              <ul className="divide-border divide-y">
                 {filteredFields.map((field) => (
                   <FieldRow
                     key={field.id}
@@ -462,7 +474,9 @@ export function CustomFieldsPanel() {
           <DialogHeader>
             <DialogTitle>{t('deleteTitle')}</DialogTitle>
             <DialogDescription>
-              {fieldToDelete ? t('deleteConfirm', { name: fieldToDelete.field_name }) : null}
+              {fieldToDelete
+                ? t('deleteConfirm', { name: fieldToDelete.field_name })
+                : null}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -530,11 +544,10 @@ function FieldRow({
     if (!ok) setName(field.field_name);
   }
 
-  const selectOptions = (
+  const selectOptions =
     field.field_type === 'select' && field.field_options
       ? (field.field_options as { options?: string[] }).options
-      : undefined
-  );
+      : undefined;
 
   return (
     <li
@@ -544,9 +557,9 @@ function FieldRow({
         transition: transition ?? 'transform 200ms ease',
       }}
       className={cn(
-        'animate-in fade-in-50 slide-in-from-top-2 duration-200 group px-3 py-2',
+        'animate-in fade-in-50 slide-in-from-top-2 group px-3 py-2 duration-200',
         isDragging && 'z-10 opacity-50',
-        highlighted && 'bg-primary/5',
+        highlighted && 'bg-primary/5'
       )}
     >
       <div className="flex items-center gap-1.5">
@@ -554,7 +567,7 @@ function FieldRow({
           type="button"
           {...attributes}
           {...listeners}
-          className="cursor-grab touch-none text-muted-foreground/40 hover:text-muted-foreground active:cursor-grabbing"
+          className="text-muted-foreground/40 hover:text-muted-foreground cursor-grab touch-none active:cursor-grabbing"
           aria-label="Drag to reorder"
         >
           <GripVertical className="size-4" />
@@ -568,19 +581,19 @@ function FieldRow({
             if (e.key === 'Enter') e.currentTarget.blur();
           }}
           aria-label={t('renameAria', { name: field.field_name })}
-          className="focus:border-primary h-8 border-transparent bg-transparent text-foreground hover:border-border"
+          className="focus:border-primary text-foreground hover:border-border h-8 border-transparent bg-transparent"
         />
-        <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        <span className="bg-muted text-muted-foreground shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium tracking-wider uppercase">
           {t(`fieldTypes.${field.field_type}`)}
         </span>
-        <span className="shrink-0 text-xs text-muted-foreground/60">
+        <span className="text-muted-foreground/60 shrink-0 text-xs">
           {usageCount}
         </span>
         {selectOptions && (
           <button
             type="button"
             onClick={() => setOptionsExpanded(!optionsExpanded)}
-            className="shrink-0 text-[10px] text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground shrink-0 text-[10px] underline decoration-dotted underline-offset-2"
           >
             {selectOptions.length} opt{selectOptions.length !== 1 ? 's' : ''}
           </button>
@@ -591,7 +604,7 @@ function FieldRow({
           disabled={busy}
           onClick={() => onDelete(field)}
           title={t('deleteTitle')}
-          className="shrink-0 text-muted-foreground hover:text-red-400"
+          className="text-muted-foreground shrink-0 hover:text-red-400"
         >
           {busy ? (
             <Loader2 className="size-4 animate-spin" />
@@ -605,7 +618,7 @@ function FieldRow({
           {selectOptions.map((opt) => (
             <span
               key={opt}
-              className="inline-flex items-center gap-1 rounded-md bg-muted/70 px-2 py-0.5 text-xs text-muted-foreground"
+              className="bg-muted/70 text-muted-foreground inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs"
             >
               {opt}
             </span>

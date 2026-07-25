@@ -86,7 +86,9 @@ export function InviteMemberDialog({
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CreatedInvite | null>(null);
   const [multiMode, setMultiMode] = useState(false);
-  const [multiResults, setMultiResults] = useState<{ url: string; role: string }[]>([]);
+  const [multiResults, setMultiResults] = useState<
+    { url: string; role: string }[]
+  >([]);
   const [counts, setCounts] = useState({ admin: 0, agent: 1, viewer: 0 });
 
   function reset() {
@@ -102,7 +104,9 @@ export function InviteMemberDialog({
   }
 
   function resolveDays(): number {
-    return expiry === 'custom' ? Math.max(1, Number(customDays) || 14) : Number(expiry);
+    return expiry === 'custom'
+      ? Math.max(1, Number(customDays) || 14)
+      : Number(expiry);
   }
 
   async function handleCreate() {
@@ -134,10 +138,15 @@ export function InviteMemberDialog({
             });
             if (!res.ok) {
               const payload = await res.json().catch(() => ({}));
-              toast.error(payload.error || `Failed to create ${entry.role} invite`);
+              toast.error(
+                payload.error || `Failed to create ${entry.role} invite`
+              );
               continue;
             }
-            const data = (await res.json()) as { url: string; expiresInDays: number };
+            const data = (await res.json()) as {
+              url: string;
+              expiresInDays: number;
+            };
             allResults.push({
               url: data.url,
               role: entry.role,
@@ -204,10 +213,14 @@ export function InviteMemberDialog({
   function whatsappShareUrl(url: string): string {
     // Include the account name so the recipient knows which team
     // they're being invited to before clicking through. This matters
-                  // for users in multi-team contexts where "our CodixIA account"
+    // for users in multi-team contexts where "our CodixIA account"
     // wouldn't be enough to disambiguate.
     const accountName = result?.accountName ?? 'our CodixIA account';
-    const message = t('whatsappMessage', { accountName, expiresInDays: result?.expiresInDays ?? 0, url });
+    const message = t('whatsappMessage', {
+      accountName,
+      expiresInDays: result?.expiresInDays ?? 0,
+      url,
+    });
     return `https://wa.me/?text=${encodeURIComponent(message)}`;
   }
 
@@ -226,15 +239,15 @@ export function InviteMemberDialog({
         {result ? (
           <>
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-popover-foreground">
-                <Sparkles className="size-4 text-primary" />
+              <DialogTitle className="text-popover-foreground flex items-center gap-2">
+                <Sparkles className="text-primary size-4" />
                 {t('inviteCreated')}
               </DialogTitle>
               <DialogDescription className="text-muted-foreground">
                 {t.rich('inviteCreatedDesc', {
                   role: tRoles(result.role),
                   days: result.expiresInDays,
-                  bold: (chunks: React.ReactNode) => <strong>{chunks}</strong>
+                  bold: (chunks: React.ReactNode) => <strong>{chunks}</strong>,
                 })}
               </DialogDescription>
             </DialogHeader>
@@ -282,7 +295,7 @@ export function InviteMemberDialog({
                 className={buttonVariants({
                   variant: 'outline',
                   className:
-                    'w-full border-border text-muted-foreground hover:bg-muted',
+                    'border-border text-muted-foreground hover:bg-muted w-full',
                 })}
               >
                 <MessageCircle className="size-4" />
@@ -302,7 +315,9 @@ export function InviteMemberDialog({
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle className="text-popover-foreground">{t('dialogTitle')}</DialogTitle>
+              <DialogTitle className="text-popover-foreground">
+                {t('dialogTitle')}
+              </DialogTitle>
               <DialogDescription className="text-muted-foreground">
                 {t('dialogDesc')}
               </DialogDescription>
@@ -316,7 +331,7 @@ export function InviteMemberDialog({
                   onClick={() => setMultiMode(!multiMode)}
                   className={cn(
                     'text-xs font-medium underline-offset-2 hover:underline',
-                    multiMode ? 'text-primary' : 'text-muted-foreground',
+                    multiMode ? 'text-primary' : 'text-muted-foreground'
                   )}
                 >
                   {t('inviteMultiple')}
@@ -325,23 +340,36 @@ export function InviteMemberDialog({
 
               {multiMode ? (
                 <div className="space-y-3">
-                  <p className="text-xs text-muted-foreground">{t('inviteCount')}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {t('inviteCount')}
+                  </p>
                   {(['admin', 'agent', 'viewer'] as InviteRole[]).map((r) => (
                     <div key={r} className="flex items-center gap-3">
-                      <Label className="w-20 text-muted-foreground text-sm">{tRoles(r)}</Label>
+                      <Label className="text-muted-foreground w-20 text-sm">
+                        {tRoles(r)}
+                      </Label>
                       <div className="flex items-center gap-1">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setCounts((c) => ({ ...c, [r]: Math.max(0, c[r] - 1) }))}
+                          onClick={() =>
+                            setCounts((c) => ({
+                              ...c,
+                              [r]: Math.max(0, c[r] - 1),
+                            }))
+                          }
                         >
                           -
                         </Button>
-                        <span className="w-8 text-center text-sm tabular-nums">{counts[r]}</span>
+                        <span className="w-8 text-center text-sm tabular-nums">
+                          {counts[r]}
+                        </span>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setCounts((c) => ({ ...c, [r]: c[r] + 1 }))}
+                          onClick={() =>
+                            setCounts((c) => ({ ...c, [r]: c[r] + 1 }))
+                          }
                         >
                           +
                         </Button>
@@ -351,12 +379,14 @@ export function InviteMemberDialog({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <Label className="text-muted-foreground">{t('roleLabel')}</Label>
+                  <Label className="text-muted-foreground">
+                    {t('roleLabel')}
+                  </Label>
                   <Select
                     value={role}
                     onValueChange={(v) => v && setRole(v as InviteRole)}
                   >
-                    <SelectTrigger className="w-full bg-muted border-border text-foreground">
+                    <SelectTrigger className="bg-muted border-border text-foreground w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -365,19 +395,20 @@ export function InviteMemberDialog({
                       <SelectItem value="viewer">{tRoles('viewer')}</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {tRoles(`${role}Hint` as 'adminHint' | 'agentHint' | 'viewerHint')}
+                  <p className="text-muted-foreground text-xs">
+                    {tRoles(
+                      `${role}Hint` as 'adminHint' | 'agentHint' | 'viewerHint'
+                    )}
                   </p>
                 </div>
               )}
 
               <div className="space-y-2">
-                <Label className="text-muted-foreground">{t('validForLabel')}</Label>
-                <Select
-                  value={expiry}
-                  onValueChange={(v) => v && setExpiry(v)}
-                >
-                  <SelectTrigger className="w-full bg-muted border-border text-foreground">
+                <Label className="text-muted-foreground">
+                  {t('validForLabel')}
+                </Label>
+                <Select value={expiry} onValueChange={(v) => v && setExpiry(v)}>
+                  <SelectTrigger className="bg-muted border-border text-foreground w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -396,7 +427,7 @@ export function InviteMemberDialog({
                     value={customDays}
                     onChange={(e) => setCustomDays(e.target.value)}
                     placeholder={t('customDays')}
-                    className="mt-1 bg-muted text-foreground"
+                    className="bg-muted text-foreground mt-1"
                   />
                 )}
               </div>
@@ -404,7 +435,9 @@ export function InviteMemberDialog({
               <div className="space-y-2">
                 <Label className="text-muted-foreground">
                   {t('labelTitle')}{' '}
-                  <span className="text-xs text-muted-foreground">{t('optional')}</span>
+                  <span className="text-muted-foreground text-xs">
+                    {t('optional')}
+                  </span>
                 </Label>
                 <Input
                   placeholder={t('labelPlaceholder')}
@@ -413,7 +446,7 @@ export function InviteMemberDialog({
                   maxLength={MAX_LABEL_LEN}
                   className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   {t('labelHint')}
                 </p>
               </div>
@@ -443,7 +476,9 @@ export function InviteMemberDialog({
                     {t('creating')}
                   </>
                 ) : multiMode ? (
-                  t('generateMultiple', { count: counts.admin + counts.agent + counts.viewer })
+                  t('generateMultiple', {
+                    count: counts.admin + counts.agent + counts.viewer,
+                  })
                 ) : (
                   t('generateLink')
                 )}

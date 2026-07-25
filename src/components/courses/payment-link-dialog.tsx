@@ -35,10 +35,15 @@ function PaymentLinkInner({
 }) {
   const t = useTranslations('Courses.paymentLink');
 
-  const [amount, setAmount] = useState(course.price_pen ? (course.price_pen / 100).toFixed(2) : '');
+  const [amount, setAmount] = useState(
+    course.price_pen ? (course.price_pen / 100).toFixed(2) : ''
+  );
   const [contactName, setContactName] = useState('');
   const [generating, setGenerating] = useState(false);
-  const [generatedLink, setGeneratedLink] = useState<{ code: string; url: string } | null>(null);
+  const [generatedLink, setGeneratedLink] = useState<{
+    code: string;
+    url: string;
+  } | null>(null);
 
   async function handleGenerate() {
     const priceNum = parseFloat(amount);
@@ -80,7 +85,9 @@ function PaymentLinkInner({
   return (
     <DialogContent className="bg-popover border-border text-popover-foreground sm:max-w-md">
       <DialogHeader>
-        <DialogTitle className="text-popover-foreground">{t('title')}</DialogTitle>
+        <DialogTitle className="text-popover-foreground">
+          {t('title')}
+        </DialogTitle>
         <DialogDescription className="text-muted-foreground">
           {t('desc', { course: course.title })}
         </DialogDescription>
@@ -89,36 +96,44 @@ function PaymentLinkInner({
       {!generatedLink ? (
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-muted-foreground text-xs">{t('amount')} (S/)</Label>
+            <Label className="text-muted-foreground text-xs">
+              {t('amount')} (S/)
+            </Label>
             <Input
               type="number"
               step="0.01"
               min="0.50"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="bg-muted border-border text-foreground h-9 text-sm font-mono text-lg"
+              className="bg-muted border-border text-foreground h-9 font-mono text-lg text-sm"
             />
-            <p className="text-[10px] text-muted-foreground">{t('amountHint')}</p>
+            <p className="text-muted-foreground text-[10px]">
+              {t('amountHint')}
+            </p>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-muted-foreground text-xs">{t('contactName')}</Label>
+            <Label className="text-muted-foreground text-xs">
+              {t('contactName')}
+            </Label>
             <Input
               value={contactName}
               onChange={(e) => setContactName(e.target.value)}
               placeholder={t('contactPlaceholder')}
               className="bg-muted border-border text-foreground h-9 text-sm"
             />
-            <p className="text-[10px] text-muted-foreground">{t('contactHint')}</p>
+            <p className="text-muted-foreground text-[10px]">
+              {t('contactHint')}
+            </p>
           </div>
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="rounded-lg border border-border bg-muted/30 p-4 text-center space-y-2">
-            <p className="text-xs text-muted-foreground">{t('linkReady')}</p>
-            <p className="text-sm font-mono text-foreground break-all bg-muted rounded-md px-3 py-2 border border-border">
+          <div className="border-border bg-muted/30 space-y-2 rounded-lg border p-4 text-center">
+            <p className="text-muted-foreground text-xs">{t('linkReady')}</p>
+            <p className="text-foreground bg-muted border-border rounded-md border px-3 py-2 font-mono text-sm break-all">
               {generatedLink.url}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {t('sendToCustomer')}
             </p>
           </div>
@@ -148,7 +163,9 @@ function PaymentLinkInner({
           <>
             <Button
               variant="outline"
-              onClick={() => { setGeneratedLink(null); }}
+              onClick={() => {
+                setGeneratedLink(null);
+              }}
               className="border-border text-muted-foreground hover:bg-muted"
             >
               {t('newLink')}

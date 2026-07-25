@@ -1,15 +1,15 @@
-import { readFileSync, writeFileSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import sharp from 'sharp'
+import { readFileSync, writeFileSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import sharp from 'sharp';
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const publicDir = resolve(__dirname, '..', 'public')
-const svgPath = resolve(publicDir, 'codixia-icon.svg')
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const publicDir = resolve(__dirname, '..', 'public');
+const svgPath = resolve(publicDir, 'codixia-icon.svg');
 
-const svgBuffer = readFileSync(svgPath)
+const svgBuffer = readFileSync(svgPath);
 
-const BG = '#020617'
+const BG = '#020617';
 
 async function generateIcon(size) {
   const png = await sharp({
@@ -22,20 +22,22 @@ async function generateIcon(size) {
   })
     .composite([
       {
-        input: await sharp(svgBuffer).resize(Math.round(size * 0.7), Math.round(size * 0.7)).toBuffer(),
+        input: await sharp(svgBuffer)
+          .resize(Math.round(size * 0.7), Math.round(size * 0.7))
+          .toBuffer(),
         gravity: 'centre',
       },
     ])
     .png()
-    .toBuffer()
+    .toBuffer();
 
-  const outPath = resolve(publicDir, `icon-${size}.png`)
-  writeFileSync(outPath, png)
-  console.log(`Generated ${outPath}`)
+  const outPath = resolve(publicDir, `icon-${size}.png`);
+  writeFileSync(outPath, png);
+  console.log(`Generated ${outPath}`);
 }
 
 async function generateSplash(width, height) {
-  const iconSize = Math.round(Math.min(width, height) * 0.2)
+  const iconSize = Math.round(Math.min(width, height) * 0.2);
   const png = await sharp({
     create: {
       width,
@@ -51,16 +53,16 @@ async function generateSplash(width, height) {
       },
     ])
     .png()
-    .toBuffer()
+    .toBuffer();
 
-  const outPath = resolve(publicDir, `splash-${width}x${height}.png`)
-  writeFileSync(outPath, png)
-  console.log(`Generated ${outPath}`)
+  const outPath = resolve(publicDir, `splash-${width}x${height}.png`);
+  writeFileSync(outPath, png);
+  console.log(`Generated ${outPath}`);
 }
 
 async function main() {
-  await generateIcon(192)
-  await generateIcon(512)
+  await generateIcon(192);
+  await generateIcon(512);
 
   const splashes = [
     { width: 640, height: 1136, label: 'iPhone SE' },
@@ -71,13 +73,13 @@ async function main() {
     { width: 1284, height: 2778, label: 'iPhone 12/13/14 Pro Max' },
     { width: 1536, height: 2048, label: 'iPad' },
     { width: 2048, height: 2732, label: 'iPad Pro' },
-  ]
+  ];
 
   for (const s of splashes) {
-    await generateSplash(s.width, s.height)
+    await generateSplash(s.width, s.height);
   }
 
-  console.log('\nAll PWA assets generated.')
+  console.log('\nAll PWA assets generated.');
 }
 
-main().catch(console.error)
+main().catch(console.error);

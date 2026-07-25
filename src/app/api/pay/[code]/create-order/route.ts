@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createCulqiOrder } from '@/lib/culqi/client';
 
-export async function POST(request: Request, { params }: { params: Promise<{ code: string }> }) {
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ code: string }> }
+) {
   const { code } = await params;
   const supabase = await createClient();
 
@@ -13,9 +16,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
     .eq('code', code)
     .maybeSingle();
 
-  if (linkError) return NextResponse.json({ error: linkError.message }, { status: 500 });
-  if (!link) return NextResponse.json({ error: 'Enlace no encontrado' }, { status: 404 });
-  if (link.status !== 'pending') return NextResponse.json({ error: 'Enlace ya procesado' }, { status: 410 });
+  if (linkError)
+    return NextResponse.json({ error: linkError.message }, { status: 500 });
+  if (!link)
+    return NextResponse.json(
+      { error: 'Enlace no encontrado' },
+      { status: 404 }
+    );
+  if (link.status !== 'pending')
+    return NextResponse.json({ error: 'Enlace ya procesado' }, { status: 410 });
 
   try {
     const culqiOrder = await createCulqiOrder({

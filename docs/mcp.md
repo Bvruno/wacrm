@@ -29,10 +29,10 @@ other API call.
          "args": ["-y", "codixia-mcp"],
          "env": {
            "CODIXIA_BASE_URL": "https://crm.example.com",
-           "CODIXIA_API_KEY": "wacrm_live_xxxxxxxxxxxxxxxxxxxxxxxx"
-         }
-       }
-     }
+           "CODIXIA_API_KEY": "wacrm_live_xxxxxxxxxxxxxxxxxxxxxxxx",
+         },
+       },
+     },
    }
    ```
 

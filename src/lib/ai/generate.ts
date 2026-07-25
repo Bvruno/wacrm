@@ -6,28 +6,28 @@ import {
   type ToolCall,
   type ToolDefinition,
   type ToolResult,
-} from './types'
-import { HANDOFF_SENTINEL, aiRequestTimeoutMs } from './defaults'
-import { generateOpenAi } from './providers/openai'
-import { generateAnthropic } from './providers/anthropic'
-import { generateOpenAiStream } from './providers/openai-stream'
-import { generateAnthropicStream } from './providers/anthropic-stream'
-import type { ProviderArgs } from './providers/shared'
+} from './types';
+import { HANDOFF_SENTINEL, aiRequestTimeoutMs } from './defaults';
+import { generateOpenAi } from './providers/openai';
+import { generateAnthropic } from './providers/anthropic';
+import { generateOpenAiStream } from './providers/openai-stream';
+import { generateAnthropicStream } from './providers/anthropic-stream';
+import type { ProviderArgs } from './providers/shared';
 
 /** Max tool-call rounds to prevent infinite loops. */
-const MAX_TOOL_ROUNDS = 5
+const MAX_TOOL_ROUNDS = 5;
 
 export interface GenerateArgs {
-  config: AiConfig
-  systemPrompt: string
-  messages: ProviderArgs['messages']
-  tools?: ToolDefinition[]
-  executeTools?: (calls: ToolCall[]) => Promise<ToolResult[]>
-  temperature?: number
-  topP?: number
-  frequencyPenalty?: number
-  presencePenalty?: number
-  maxTokens?: number
+  config: AiConfig;
+  systemPrompt: string;
+  messages: ProviderArgs['messages'];
+  tools?: ToolDefinition[];
+  executeTools?: (calls: ToolCall[]) => Promise<ToolResult[]>;
+  temperature?: number;
+  topP?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+  maxTokens?: number;
 }
 
 /**
@@ -37,10 +37,23 @@ export interface GenerateArgs {
  * tool-calling loop: model → tool calls → execute → feed back → model,
  * up to `MAX_TOOL_ROUNDS` rounds, then returns the final text reply.
  */
-export async function generateReply(args: GenerateArgs): Promise<GenerateResult> {
-  const { config, systemPrompt, messages, tools, executeTools, temperature, topP, frequencyPenalty, presencePenalty, maxTokens } = args
-  const timeoutMs = aiRequestTimeoutMs()
-  const provider = config.provider
+export async function generateReply(
+  args: GenerateArgs
+): Promise<GenerateResult> {
+  const {
+    config,
+    systemPrompt,
+    messages,
+    tools,
+    executeTools,
+    temperature,
+    topP,
+    frequencyPenalty,
+    presencePenalty,
+    maxTokens,
+  } = args;
+  const timeoutMs = aiRequestTimeoutMs();
+  const provider = config.provider;
 
   const baseArgs: ProviderArgs = {
     apiKey: config.apiKey,
@@ -54,28 +67,30 @@ export async function generateReply(args: GenerateArgs): Promise<GenerateResult>
     frequencyPenalty,
     presencePenalty,
     maxTokens,
-  }
+  };
 
-  let result = await callProvider(provider, baseArgs)
-  let allUsage = result.usage
+  let result = await callProvider(provider, baseArgs);
+  let allUsage = result.usage;
 
   // Breadcrumb string for logging — shows which tools were used.
-  let toolTrace = ''
+  let toolTrace = '';
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-    const { toolCalls } = result
-    if (!toolCalls || toolCalls.length === 0) break
+    const { toolCalls } = result;
+    if (!toolCalls || toolCalls.length === 0) break;
 
     if (!executeTools) {
       // Tools defined but no executor — model wanted to call but can't.
       // Return the text content as-is (may be empty or a reasoning note).
-      break
+      break;
     }
 
-    if (toolTrace) toolTrace += ' → '
-    toolTrace += toolCalls.map((tc) => `${tc.name}(${JSON.stringify(tc.arguments)})`).join(', ')
+    if (toolTrace) toolTrace += ' → ';
+    toolTrace += toolCalls
+      .map((tc) => `${tc.name}(${JSON.stringify(tc.arguments)})`)
+      .join(', ');
 
-    const toolResults = await executeTools(toolCalls)
+    const toolResults = await executeTools(toolCalls);
 
     result = await callProvider(provider, {
       ...baseArgs,
@@ -84,42 +99,43 @@ export async function generateReply(args: GenerateArgs): Promise<GenerateResult>
         toolCalls,
         results: toolResults,
       },
-    })
+    });
 
     // Accumulate usage across rounds.
     if (result.usage) {
       if (allUsage) {
         allUsage = {
           promptTokens: allUsage.promptTokens + result.usage.promptTokens,
-          completionTokens: allUsage.completionTokens + result.usage.completionTokens,
+          completionTokens:
+            allUsage.completionTokens + result.usage.completionTokens,
           totalTokens: allUsage.totalTokens + result.usage.totalTokens,
-        }
+        };
       } else {
-        allUsage = result.usage
+        allUsage = result.usage;
       }
     }
   }
 
-  const parsed = parseGeneration(result.text, allUsage)
+  const parsed = parseGeneration(result.text, allUsage);
 
   if (toolTrace) {
-    console.info(`[ai tools] ${toolTrace} → handoff=${parsed.handoff}`)
+    console.info(`[ai tools] ${toolTrace} → handoff=${parsed.handoff}`);
   }
 
-  return parsed
+  return parsed;
 }
 
 function callProvider(provider: string, args: ProviderArgs) {
   switch (provider) {
     case 'openai':
-      return generateOpenAi(args)
+      return generateOpenAi(args);
     case 'anthropic':
-      return generateAnthropic(args)
+      return generateAnthropic(args);
     default:
       throw new AiError(`Unsupported AI provider: ${provider}`, {
         code: 'unsupported_provider',
         status: 400,
-      })
+      });
   }
 }
 
@@ -132,27 +148,36 @@ function callProvider(provider: string, args: ProviderArgs) {
  */
 export function parseGeneration(
   raw: string,
-  usage: AiUsage | null = null,
+  usage: AiUsage | null = null
 ): GenerateResult {
-  const handoff = raw.includes(HANDOFF_SENTINEL)
-  const text = raw.split(HANDOFF_SENTINEL).join('').trim()
-  return { text, handoff, usage }
+  const handoff = raw.includes(HANDOFF_SENTINEL);
+  const text = raw.split(HANDOFF_SENTINEL).join('').trim();
+  return { text, handoff, usage };
 }
 
 export interface StreamCallbacks {
-  onToken: (token: string) => void
-  onToolCall?: (toolCalls: ToolCall[]) => void
-  onEnd: (usage: AiUsage | null) => void
-  onError: (error: Error) => void
+  onToken: (token: string) => void;
+  onToolCall?: (toolCalls: ToolCall[]) => void;
+  onEnd: (usage: AiUsage | null) => void;
+  onError: (error: Error) => void;
 }
 
 export async function generateReplyStream(
   args: GenerateArgs,
-  callbacks: StreamCallbacks,
+  callbacks: StreamCallbacks
 ): Promise<void> {
-  const { config, systemPrompt, messages, temperature, topP, frequencyPenalty, presencePenalty, maxTokens } = args
-  const timeoutMs = aiRequestTimeoutMs()
-  const provider = config.provider
+  const {
+    config,
+    systemPrompt,
+    messages,
+    temperature,
+    topP,
+    frequencyPenalty,
+    presencePenalty,
+    maxTokens,
+  } = args;
+  const timeoutMs = aiRequestTimeoutMs();
+  const provider = config.provider;
 
   const providerArgs: ProviderArgs = {
     apiKey: config.apiKey,
@@ -165,17 +190,17 @@ export async function generateReplyStream(
     frequencyPenalty,
     presencePenalty,
     maxTokens,
-  }
+  };
 
   switch (provider) {
     case 'openai':
-      return generateOpenAiStream(providerArgs, callbacks)
+      return generateOpenAiStream(providerArgs, callbacks);
     case 'anthropic':
-      return generateAnthropicStream(providerArgs, callbacks)
+      return generateAnthropicStream(providerArgs, callbacks);
     default:
       throw new AiError(`Unsupported AI provider: ${provider}`, {
         code: 'unsupported_provider',
         status: 400,
-      })
+      });
   }
 }

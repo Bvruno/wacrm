@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useCallback, useEffect, useState } from 'react'
-import { toast } from 'sonner'
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import {
   Loader2,
   BarChart3,
@@ -11,95 +11,95 @@ import {
   ThumbsDown,
   Minus,
   Bot,
-} from 'lucide-react'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { useTranslations } from 'next-intl'
+} from '@/components/ui/select';
+import { useTranslations } from 'next-intl';
 
 interface AnalyticsData {
   summary: {
-    totalTokens: number
-    totalCalls: number
-    totalHandoffs: number
-    avgResponseTime: number
-    autoReplyTokens: number
-    draftTokens: number
-    handoffRate: number
-  }
+    totalTokens: number;
+    totalCalls: number;
+    totalHandoffs: number;
+    avgResponseTime: number;
+    autoReplyTokens: number;
+    draftTokens: number;
+    handoffRate: number;
+  };
   agentStats: {
-    agent_id: string
-    agent_name: string
-    calls: number
-    tokens: number
-    handoffs: number
-  }[]
+    agent_id: string;
+    agent_name: string;
+    calls: number;
+    tokens: number;
+    handoffs: number;
+  }[];
   feedbackStats: {
-    total: number
-    positive: number
-    negative: number
-    neutral: number
-  }
-  dailyUsage: { date: string; calls: number; tokens: number }[]
-  feedback: { id: string; rating: number; comment?: string; created_at: string }[]
+    total: number;
+    positive: number;
+    negative: number;
+    neutral: number;
+  };
+  dailyUsage: { date: string; calls: number; tokens: number }[];
+  feedback: {
+    id: string;
+    rating: number;
+    comment?: string;
+    created_at: string;
+  }[];
 }
 
 export function AiAnalyticsDashboard() {
-  const [data, setData] = useState<AnalyticsData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [days, setDays] = useState(30)
-  const t = useTranslations('Agents')
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [days, setDays] = useState(30);
+  const t = useTranslations('Agents');
 
   const fetchAnalytics = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch(`/api/ai/analytics?days=${days}`)
-      const json = await res.json()
+      const res = await fetch(`/api/ai/analytics?days=${days}`);
+      const json = await res.json();
       if (res.ok) {
-        setData(json)
+        setData(json);
       } else {
-        toast.error(json.error || 'Failed to load analytics')
+        toast.error(json.error || 'Failed to load analytics');
       }
     } catch {
-      toast.error('Failed to load analytics')
+      toast.error('Failed to load analytics');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [days])
+  }, [days]);
 
   useEffect(() => {
-    void fetchAnalytics()
-  }, [fetchAnalytics])
+    void fetchAnalytics();
+  }, [fetchAnalytics]);
 
   const formatNumber = (n: number) => {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-    return n.toString()
-  }
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+    return n.toString();
+  };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
+      <div className="text-muted-foreground flex items-center justify-center py-16">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         {t('loading')}
       </div>
-    )
+    );
   }
 
-  if (!data) return null
+  if (!data) return null;
 
-  const maxDailyTokens = Math.max(...data.dailyUsage.map((d) => d.tokens), 1)
+  const maxDailyTokens = Math.max(...data.dailyUsage.map((d) => d.tokens), 1);
 
   return (
     <div className="space-y-6">
@@ -121,13 +121,13 @@ export function AiAnalyticsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Tokens</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <BarChart3 className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatNumber(data.summary.totalTokens)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {formatNumber(data.summary.autoReplyTokens)} auto-reply,{' '}
               {formatNumber(data.summary.draftTokens)} drafts
             </p>
@@ -137,11 +137,11 @@ export function AiAnalyticsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Calls</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <MessageSquare className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.summary.totalCalls}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Avg response: {data.summary.avgResponseTime}ms
             </p>
           </CardContent>
@@ -150,13 +150,13 @@ export function AiAnalyticsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Handoffs</CardTitle>
-            <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+            <ArrowUpRight className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {data.summary.totalHandoffs}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {data.summary.handoffRate}% handoff rate
             </p>
           </CardContent>
@@ -165,7 +165,7 @@ export function AiAnalyticsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Feedback</CardTitle>
-            <ThumbsUp className="h-4 w-4 text-muted-foreground" />
+            <ThumbsUp className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.feedbackStats.total}</div>
@@ -190,11 +190,11 @@ export function AiAnalyticsDashboard() {
         </CardHeader>
         <CardContent>
           {data.dailyUsage.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
+            <p className="text-muted-foreground py-8 text-center text-sm">
               No usage data in this period.
             </p>
           ) : (
-            <div className="flex items-end gap-1 h-40">
+            <div className="flex h-40 items-end gap-1">
               {data.dailyUsage.map((day) => (
                 <div
                   key={day.date}
@@ -202,12 +202,12 @@ export function AiAnalyticsDashboard() {
                   title={`${day.date}: ${day.calls} calls, ${formatNumber(day.tokens)} tokens`}
                 >
                   <div
-                    className="w-full rounded-t bg-primary/80 transition-colors hover:bg-primary"
+                    className="bg-primary/80 hover:bg-primary w-full rounded-t transition-colors"
                     style={{
                       height: `${Math.max((day.tokens / maxDailyTokens) * 100, 2)}%`,
                     }}
                   />
-                  <span className="text-[9px] text-muted-foreground">
+                  <span className="text-muted-foreground text-[9px]">
                     {new Date(day.date).getDate()}
                   </span>
                 </div>
@@ -223,7 +223,7 @@ export function AiAnalyticsDashboard() {
         </CardHeader>
         <CardContent>
           {data.agentStats.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">
+            <p className="text-muted-foreground py-4 text-center text-sm">
               No agent data yet.
             </p>
           ) : (
@@ -231,10 +231,10 @@ export function AiAnalyticsDashboard() {
               {data.agentStats.map((agent) => (
                 <div
                   key={agent.agent_id}
-                  className="flex items-center justify-between rounded-md border border-border p-3"
+                  className="border-border flex items-center justify-between rounded-md border p-3"
                 >
                   <div className="flex items-center gap-2">
-                    <Bot className="h-4 w-4 text-muted-foreground" />
+                    <Bot className="text-muted-foreground h-4 w-4" />
                     <span className="font-medium">{agent.agent_name}</span>
                   </div>
                   <div className="flex items-center gap-4 text-sm">
@@ -245,9 +245,7 @@ export function AiAnalyticsDashboard() {
                       {formatNumber(agent.tokens)} tokens
                     </span>
                     {agent.handoffs > 0 && (
-                      <Badge variant="outline">
-                        {agent.handoffs} handoffs
-                      </Badge>
+                      <Badge variant="outline">{agent.handoffs} handoffs</Badge>
                     )}
                   </div>
                 </div>
@@ -267,7 +265,7 @@ export function AiAnalyticsDashboard() {
               {data.feedback.slice(0, 10).map((fb) => (
                 <div
                   key={fb.id}
-                  className="flex items-start gap-3 rounded-md border border-border p-3"
+                  className="border-border flex items-start gap-3 rounded-md border p-3"
                 >
                   <div className="mt-0.5">
                     {fb.rating >= 4 ? (
@@ -278,11 +276,11 @@ export function AiAnalyticsDashboard() {
                       <Minus className="h-4 w-4 text-yellow-600" />
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     {fb.comment && (
-                      <p className="text-sm text-foreground">{fb.comment}</p>
+                      <p className="text-foreground text-sm">{fb.comment}</p>
                     )}
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                       {new Date(fb.created_at).toLocaleDateString()} · Rating:{' '}
                       {fb.rating}/5
                     </p>
@@ -294,5 +292,5 @@ export function AiAnalyticsDashboard() {
         </Card>
       )}
     </div>
-  )
+  );
 }

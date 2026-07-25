@@ -19,8 +19,11 @@ interface CeasCourse {
 
 export async function POST() {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user?.id) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user?.id)
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -28,11 +31,16 @@ export async function POST() {
     .eq('user_id', session.user.id)
     .single();
 
-  if (!profile?.account_id) return NextResponse.json({ error: 'Cuenta no encontrada' }, { status: 400 });
+  if (!profile?.account_id)
+    return NextResponse.json(
+      { error: 'Cuenta no encontrada' },
+      { status: 400 }
+    );
 
   const apiUrl = process.env.CEAS_API_URL;
   const apiToken = process.env.CEAS_API_TOKEN;
-  if (!apiUrl || !apiToken) return NextResponse.json({ error: 'CEAS no configurado' }, { status: 500 });
+  if (!apiUrl || !apiToken)
+    return NextResponse.json({ error: 'CEAS no configurado' }, { status: 500 });
 
   let remoteCourses: CeasCourse[];
   try {
@@ -45,20 +53,33 @@ export async function POST() {
     });
     if (!res.ok) {
       const text = await res.text();
-      return NextResponse.json({ error: `CEAS error ${res.status}: ${text}` }, { status: 502 });
+      return NextResponse.json(
+        { error: `CEAS error ${res.status}: ${text}` },
+        { status: 502 }
+      );
     }
     const json = await res.json();
     remoteCourses = json.content ?? json;
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Error de conexión' }, { status: 502 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Error de conexión' },
+      { status: 502 }
+    );
   }
 
-  const results: { external_id: number; title: string; action: 'created' | 'updated' }[] = [];
+  const results: {
+    external_id: number;
+    title: string;
+    action: 'created' | 'updated';
+  }[] = [];
 
   for (const ceas of remoteCourses) {
     const title = ceas.nombre.trim();
     const descHtml = ceas.descripcion || '';
-    const description = descHtml.replace(/<[^>]*>/g, '').trim().slice(0, 2000);
+    const description = descHtml
+      .replace(/<[^>]*>/g, '')
+      .trim()
+      .slice(0, 2000);
     const externalId = String(ceas.idCurso);
     const hours = ceas.horas || null;
     const imageUrl = ceas.urlCertificado

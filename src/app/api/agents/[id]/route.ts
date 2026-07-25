@@ -1,26 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server';
 import {
   getCurrentAccount,
   requireRole,
   toErrorResponse,
-} from '@/lib/auth/account'
-import {
-  getAgent,
-  updateAgent,
-  deleteAgent,
-} from '@/lib/agents/agents'
+} from '@/lib/auth/account';
+import { getAgent, updateAgent, deleteAgent } from '@/lib/agents/agents';
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
-    const { supabase, accountId } = await getCurrentAccount()
+    const { id } = await params;
+    const { supabase, accountId } = await getCurrentAccount();
 
-    const agent = await getAgent(supabase, id)
+    const agent = await getAgent(supabase, id);
     if (!agent || agent.account_id !== accountId) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -30,26 +26,26 @@ export async function GET(
         has_embeddings_key: Boolean(agent.embeddings_api_key),
         embeddings_api_key: undefined,
       },
-    })
+    });
   } catch (err) {
-    return toErrorResponse(err)
+    return toErrorResponse(err);
   }
 }
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
-    const { supabase, accountId } = await requireRole('admin')
+    const { id } = await params;
+    const { supabase, accountId } = await requireRole('admin');
 
-    const existing = await getAgent(supabase, id)
+    const existing = await getAgent(supabase, id);
     if (!existing || existing.account_id !== accountId) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    const body = await req.json()
+    const body = await req.json();
 
     const agent = await updateAgent(supabase, id, {
       name: body.name?.trim() || undefined,
@@ -87,7 +83,7 @@ export async function PATCH(
         body.embeddings_api_key !== undefined
           ? body.embeddings_api_key?.trim() || null
           : undefined,
-    })
+    });
 
     return NextResponse.json({
       agent: {
@@ -96,35 +92,35 @@ export async function PATCH(
         has_embeddings_key: Boolean(agent.embeddings_api_key),
         embeddings_api_key: undefined,
       },
-    })
+    });
   } catch (err) {
     const message =
       err instanceof Error && err.message.includes('unique')
         ? 'An agent with this name already exists'
-        : undefined
+        : undefined;
     if (message) {
-      return NextResponse.json({ error: message }, { status: 409 })
+      return NextResponse.json({ error: message }, { status: 409 });
     }
-    return toErrorResponse(err)
+    return toErrorResponse(err);
   }
 }
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
-    const { supabase, accountId } = await requireRole('admin')
+    const { id } = await params;
+    const { supabase, accountId } = await requireRole('admin');
 
-    const existing = await getAgent(supabase, id)
+    const existing = await getAgent(supabase, id);
     if (!existing || existing.account_id !== accountId) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    await deleteAgent(supabase, id)
-    return NextResponse.json({ success: true })
+    await deleteAgent(supabase, id);
+    return NextResponse.json({ success: true });
   } catch (err) {
-    return toErrorResponse(err)
+    return toErrorResponse(err);
   }
 }

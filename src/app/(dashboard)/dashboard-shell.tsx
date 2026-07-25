@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { AuthProvider, useAuth } from "@/hooks/use-auth";
-import { SidebarProvider } from "@/hooks/use-sidebar";
-import { Sidebar } from "@/components/layout/sidebar";
-import { Header } from "@/components/layout/header";
-import { PresenceHeartbeat } from "@/components/presence/presence-heartbeat";
+import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { AuthProvider, useAuth } from '@/hooks/use-auth';
+import { SidebarProvider } from '@/hooks/use-sidebar';
+import { Sidebar } from '@/components/layout/sidebar';
+import { Header } from '@/components/layout/header';
+import { PresenceHeartbeat } from '@/components/presence/presence-heartbeat';
 
 function DashboardShellInner({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -17,16 +17,16 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/login");
+      router.push('/login');
     }
   }, [user, loading, router]);
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="bg-background flex h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <div className="border-primary h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" />
+          <p className="text-muted-foreground text-sm">Loading...</p>
         </div>
       </div>
     );
@@ -35,7 +35,7 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="bg-background flex h-screen overflow-hidden">
       <PresenceHeartbeat />
       <SidebarProvider>
         <Sidebar open={sidebarOpen} onClose={closeSidebar} />

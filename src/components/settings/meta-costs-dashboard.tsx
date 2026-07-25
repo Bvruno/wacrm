@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react';
 import {
   DollarSign,
   MessageSquare,
@@ -9,147 +9,162 @@ import {
   TrendingUp,
   Radio,
   Sparkles,
-} from 'lucide-react'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { useTranslations } from 'next-intl'
+} from '@/components/ui/select';
+import { useTranslations } from 'next-intl';
 
 interface DailyBucket {
-  date: string
-  inbound: number
-  outboundFree: number
-  outboundTemplate: number
-  outboundBroadcast: number
-  costMeta: number
-  costAi: number
-  costTotal: number
+  date: string;
+  inbound: number;
+  outboundFree: number;
+  outboundTemplate: number;
+  outboundBroadcast: number;
+  costMeta: number;
+  costAi: number;
+  costTotal: number;
 }
 
 interface CategoryBreakdown {
-  category: string
-  count: number
-  cost: number
+  category: string;
+  count: number;
+  cost: number;
 }
 
 interface AiCost {
-  totalTokens: number
-  totalCalls: number
-  autoReplyTokens: number
-  draftTokens: number
-  estimatedCostUsd: number
+  totalTokens: number;
+  totalCalls: number;
+  autoReplyTokens: number;
+  draftTokens: number;
+  estimatedCostUsd: number;
 }
 
 interface CostData {
   summary: {
-    period: string
+    period: string;
     totalMessages: {
-      inbound: number
-      outboundFree: number
-      outboundTemplate: number
-      outboundBroadcast: number
-      totalOutbound: number
-    }
+      inbound: number;
+      outboundFree: number;
+      outboundTemplate: number;
+      outboundBroadcast: number;
+      totalOutbound: number;
+    };
     costs: {
-      metaUsd: number
-      aiUsd: number
-      totalUsd: number
-    }
-    rates: Record<string, number>
-    freeServiceConversations: number
-    templateConversations: number
-  }
-  daily: DailyBucket[]
-  categoryBreakdown: CategoryBreakdown[]
-  aiCost: AiCost
+      metaUsd: number;
+      aiUsd: number;
+      totalUsd: number;
+    };
+    rates: Record<string, number>;
+    freeServiceConversations: number;
+    templateConversations: number;
+  };
+  daily: DailyBucket[];
+  categoryBreakdown: CategoryBreakdown[];
+  aiCost: AiCost;
 }
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
-  marketing: { label: 'Marketing', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
-  utility: { label: 'Utility', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-  authentication: { label: 'Authentication', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
-  service: { label: 'Service (free)', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-}
+  marketing: {
+    label: 'Marketing',
+    color:
+      'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  },
+  utility: {
+    label: 'Utility',
+    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  },
+  authentication: {
+    label: 'Authentication',
+    color:
+      'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  },
+  service: {
+    label: 'Service (free)',
+    color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  },
+};
 
 export function MetaCostsDashboard() {
-  const [data, setData] = useState<CostData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [days, setDays] = useState(30)
-  const t = useTranslations('Costs')
+  const [data, setData] = useState<CostData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [days, setDays] = useState(30);
+  const t = useTranslations('Costs');
 
   const fetchCosts = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch(`/api/whatsapp/costs?days=${days}`)
-      const json = await res.json()
+      const res = await fetch(`/api/whatsapp/costs?days=${days}`);
+      const json = await res.json();
       if (res.ok) {
-        setData(json)
+        setData(json);
       }
     } catch {
       // silent
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [days])
+  }, [days]);
 
   useEffect(() => {
-    void fetchCosts()
-  }, [fetchCosts])
+    void fetchCosts();
+  }, [fetchCosts]);
 
   const formatCurrency = (usd: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(usd)
-  }
+    }).format(usd);
+  };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
+      <div className="text-muted-foreground flex items-center justify-center py-16">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         Loading costs...
       </div>
-    )
+    );
   }
 
   if (!data) {
     return (
-      <div className="py-8 text-center text-sm text-muted-foreground">
+      <div className="text-muted-foreground py-8 text-center text-sm">
         No cost data available.
       </div>
-    )
+    );
   }
 
-  const maxDailyCost = Math.max(...data.daily.map((d) => d.costTotal), 0.01)
+  const maxDailyCost = Math.max(...data.daily.map((d) => d.costTotal), 0.01);
   const maxDailyMsg = Math.max(
-    ...data.daily.map((d) => d.inbound + d.outboundFree + d.outboundTemplate + d.outboundBroadcast),
-    1,
-  )
+    ...data.daily.map(
+      (d) =>
+        d.inbound + d.outboundFree + d.outboundTemplate + d.outboundBroadcast
+    ),
+    1
+  );
 
   const projectedMonthly =
     data.daily.length > 0
       ? (data.summary.costs.totalUsd / data.daily.length) * 30
-      : 0
+      : 0;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">{t('title') || 'WhatsApp & AI Costs'}</h2>
-          <p className="text-sm text-muted-foreground">
-            {t('description') || 'Estimated costs for Meta WhatsApp messaging and AI usage.'}
+          <h2 className="text-lg font-semibold">
+            {t('title') || 'WhatsApp & AI Costs'}
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            {t('description') ||
+              'Estimated costs for Meta WhatsApp messaging and AI usage.'}
           </p>
         </div>
         <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
@@ -169,13 +184,13 @@ export function MetaCostsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatCurrency(data.summary.costs.totalUsd)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               ~{formatCurrency(projectedMonthly)} projected/month
             </p>
           </CardContent>
@@ -184,13 +199,13 @@ export function MetaCostsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Meta Cost</CardTitle>
-            <Radio className="h-4 w-4 text-muted-foreground" />
+            <Radio className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatCurrency(data.summary.costs.metaUsd)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {data.summary.templateConversations} template conversations
             </p>
           </CardContent>
@@ -199,14 +214,15 @@ export function MetaCostsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">AI Cost (LLM)</CardTitle>
-            <Sparkles className="h-4 w-4 text-muted-foreground" />
+            <Sparkles className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatCurrency(data.summary.costs.aiUsd)}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {data.aiCost.totalCalls} calls, {(data.aiCost.totalTokens / 1000).toFixed(1)}K tokens
+            <p className="text-muted-foreground text-xs">
+              {data.aiCost.totalCalls} calls,{' '}
+              {(data.aiCost.totalTokens / 1000).toFixed(1)}K tokens
             </p>
           </CardContent>
         </Card>
@@ -218,9 +234,10 @@ export function MetaCostsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {data.summary.totalMessages.outboundFree + data.summary.totalMessages.inbound}
+              {data.summary.totalMessages.outboundFree +
+                data.summary.totalMessages.inbound}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {data.summary.totalMessages.inbound} inbound +{' '}
               {data.summary.totalMessages.outboundFree} within 24h window
             </p>
@@ -235,22 +252,22 @@ export function MetaCostsDashboard() {
         </CardHeader>
         <CardContent>
           {data.daily.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
+            <p className="text-muted-foreground py-8 text-center text-sm">
               No data in this period.
             </p>
           ) : (
-            <div className="flex items-end gap-1 h-40">
+            <div className="flex h-40 items-end gap-1">
               {data.daily.map((day) => (
                 <div
                   key={day.date}
                   className="group relative flex flex-1 flex-col items-center gap-0.5"
                   title={`${day.date}: Meta ${formatCurrency(day.costMeta)} + AI ${formatCurrency(day.costAi)}`}
                 >
-                  <div className="w-full flex flex-col gap-0">
+                  <div className="flex w-full flex-col gap-0">
                     {/* AI cost (blue) */}
                     {day.costAi > 0 && (
                       <div
-                        className="w-full bg-blue-400/80 rounded-t transition-colors hover:bg-blue-500"
+                        className="w-full rounded-t bg-blue-400/80 transition-colors hover:bg-blue-500"
                         style={{
                           height: `${Math.max((day.costAi / maxDailyCost) * 100, 1)}%`,
                         }}
@@ -268,26 +285,32 @@ export function MetaCostsDashboard() {
                     {/* No cost bar */}
                     {day.costTotal === 0 && (
                       <div
-                        className="w-full bg-muted/30 rounded-t"
+                        className="bg-muted/30 w-full rounded-t"
                         style={{ height: '2px' }}
                       />
                     )}
                   </div>
-                  <span className="text-[8px] text-muted-foreground mt-1">
+                  <span className="text-muted-foreground mt-1 text-[8px]">
                     {new Date(day.date).getDate()}
                   </span>
                   {/* Tooltip */}
-                  <div className="absolute bottom-full mb-2 hidden rounded bg-popover px-2 py-1 text-[10px] shadow-md ring-1 ring-border group-hover:block whitespace-nowrap z-50">
+                  <div className="bg-popover ring-border absolute bottom-full z-50 mb-2 hidden rounded px-2 py-1 text-[10px] whitespace-nowrap shadow-md ring-1 group-hover:block">
                     <p className="font-medium">{day.date}</p>
                     <p>Meta: {formatCurrency(day.costMeta)}</p>
                     <p>AI: {formatCurrency(day.costAi)}</p>
-                    <p>Msgs: {day.inbound + day.outboundFree + day.outboundTemplate + day.outboundBroadcast}</p>
+                    <p>
+                      Msgs:{' '}
+                      {day.inbound +
+                        day.outboundFree +
+                        day.outboundTemplate +
+                        day.outboundBroadcast}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
           )}
-          <div className="mt-3 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+          <div className="text-muted-foreground mt-3 flex items-center justify-center gap-4 text-xs">
             <span className="flex items-center gap-1">
               <span className="h-2.5 w-2.5 rounded bg-orange-400" /> Meta
             </span>
@@ -305,14 +328,17 @@ export function MetaCostsDashboard() {
         </CardHeader>
         <CardContent>
           {data.daily.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
+            <p className="text-muted-foreground py-8 text-center text-sm">
               No data in this period.
             </p>
           ) : (
-            <div className="flex items-end gap-1 h-32">
+            <div className="flex h-32 items-end gap-1">
               {data.daily.map((day) => {
                 const total =
-                  day.inbound + day.outboundFree + day.outboundTemplate + day.outboundBroadcast
+                  day.inbound +
+                  day.outboundFree +
+                  day.outboundTemplate +
+                  day.outboundBroadcast;
                 return (
                   <div
                     key={day.date}
@@ -350,17 +376,17 @@ export function MetaCostsDashboard() {
                       {/* Inbound (blue) */}
                       {day.inbound > 0 && (
                         <div
-                          className="w-full bg-blue-400/80 rounded-t"
+                          className="w-full rounded-t bg-blue-400/80"
                           style={{
                             height: `${Math.max((day.inbound / maxDailyMsg) * 100, 2)}%`,
                           }}
                         />
                       )}
                     </div>
-                    <span className="mt-1 text-[8px] text-muted-foreground">
+                    <span className="text-muted-foreground mt-1 text-[8px]">
                       {new Date(day.date).getDate()}
                     </span>
-                    <div className="absolute bottom-full mb-2 hidden rounded bg-popover px-2 py-1 text-[10px] shadow-md ring-1 ring-border group-hover:block whitespace-nowrap z-50">
+                    <div className="bg-popover ring-border absolute bottom-full z-50 mb-2 hidden rounded px-2 py-1 text-[10px] whitespace-nowrap shadow-md ring-1 group-hover:block">
                       <p className="font-medium">{day.date}</p>
                       <p>Inbound: {day.inbound}</p>
                       <p>Free (in 24h): {day.outboundFree}</p>
@@ -368,16 +394,17 @@ export function MetaCostsDashboard() {
                       <p>Broadcasts: {day.outboundBroadcast}</p>
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           )}
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
+          <div className="text-muted-foreground mt-3 flex flex-wrap items-center justify-center gap-4 text-xs">
             <span className="flex items-center gap-1">
               <span className="h-2.5 w-2.5 rounded bg-blue-400" /> Inbound
             </span>
             <span className="flex items-center gap-1">
-              <span className="h-2.5 w-2.5 rounded bg-green-400" /> Free (in 24h)
+              <span className="h-2.5 w-2.5 rounded bg-green-400" /> Free (in
+              24h)
             </span>
             <span className="flex items-center gap-1">
               <span className="h-2.5 w-2.5 rounded bg-orange-400" /> Templates
@@ -392,11 +419,13 @@ export function MetaCostsDashboard() {
       {/* Template Category Breakdown */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Template Costs by Category</CardTitle>
+          <CardTitle className="text-base">
+            Template Costs by Category
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {data.categoryBreakdown.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">
+            <p className="text-muted-foreground py-4 text-center text-sm">
               No template messages in this period.
             </p>
           ) : (
@@ -405,21 +434,21 @@ export function MetaCostsDashboard() {
                 const config = CATEGORY_LABELS[cat.category] || {
                   label: cat.category,
                   color: 'bg-gray-100 text-gray-800',
-                }
-                const rate = data.summary.rates[cat.category] || 0
+                };
+                const rate = data.summary.rates[cat.category] || 0;
                 return (
                   <div
                     key={cat.category}
-                    className="flex items-center justify-between rounded-md border border-border p-3"
+                    className="border-border flex items-center justify-between rounded-md border p-3"
                   >
                     <div className="flex items-center gap-2">
                       <Badge className={config.color}>{config.label}</Badge>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-muted-foreground text-sm">
                         {cat.count} conversations
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         @ {formatCurrency(rate)}/conv
                       </span>
                       <span className="font-medium">
@@ -427,7 +456,7 @@ export function MetaCostsDashboard() {
                       </span>
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           )}
@@ -437,33 +466,33 @@ export function MetaCostsDashboard() {
       {/* AI Cost Breakdown */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
             <Bot className="h-4 w-4" /> AI (LLM) Cost Breakdown
           </CardTitle>
         </CardHeader>
         <CardContent>
           {data.aiCost.totalCalls === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">
+            <p className="text-muted-foreground py-4 text-center text-sm">
               No AI usage in this period.
             </p>
           ) : (
             <div className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-md border border-border p-3">
+                <div className="border-border rounded-md border p-3">
                   <p className="text-sm font-medium">Auto-reply</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     {(data.aiCost.autoReplyTokens / 1000).toFixed(1)}K tokens
                   </p>
                 </div>
-                <div className="rounded-md border border-border p-3">
+                <div className="border-border rounded-md border p-3">
                   <p className="text-sm font-medium">Draft with AI</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     {(data.aiCost.draftTokens / 1000).toFixed(1)}K tokens
                   </p>
                 </div>
               </div>
-              <div className="flex items-center justify-between rounded-md border border-border p-3">
-                <span className="text-sm text-muted-foreground">
+              <div className="border-border flex items-center justify-between rounded-md border p-3">
+                <span className="text-muted-foreground text-sm">
                   Estimated cost (~$0.30/1M tokens, gpt-4o-mini blended)
                 </span>
                 <span className="font-medium">
@@ -478,7 +507,7 @@ export function MetaCostsDashboard() {
       {/* Rate Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
             <TrendingUp className="h-4 w-4" /> Current Rate Card
           </CardTitle>
         </CardHeader>
@@ -488,21 +517,21 @@ export function MetaCostsDashboard() {
               const config = CATEGORY_LABELS[category] || {
                 label: category,
                 color: 'bg-gray-100 text-gray-800',
-              }
+              };
               return (
                 <div
                   key={category}
-                  className="flex items-center justify-between rounded-md border border-border p-3"
+                  className="border-border flex items-center justify-between rounded-md border p-3"
                 >
                   <Badge className={config.color}>{config.label}</Badge>
                   <span className="text-sm font-medium">
                     {formatCurrency(rate)}
                   </span>
                 </div>
-              )
+              );
             })}
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="text-muted-foreground mt-2 text-xs">
             Rates are per conversation (24h window). Service conversations
             (customer-initiated) are free within the window. Configure rates in
             meta_costs table for your specific country.
@@ -510,5 +539,5 @@ export function MetaCostsDashboard() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

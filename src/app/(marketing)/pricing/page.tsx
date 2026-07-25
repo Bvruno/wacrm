@@ -1,10 +1,10 @@
-import { useTranslations } from 'next-intl'
-import { PricingCard } from '@/components/marketing/pricing-card'
-import { CtaSection } from '@/components/marketing/cta-section'
+import { useTranslations } from 'next-intl';
+import { PricingCard } from '@/components/marketing/pricing-card';
+import { CtaSection } from '@/components/marketing/cta-section';
 
 export default function PricingPage() {
-  const t = useTranslations('LandingPage.pricing')
-  const pt = useTranslations('LandingPage.pricingPage')
+  const t = useTranslations('LandingPage.pricing');
+  const pt = useTranslations('LandingPage.pricingPage');
 
   const plans = [
     {
@@ -52,15 +52,19 @@ export default function PricingPage() {
       cta: t('enterprise.cta'),
       href: '/about',
     },
-  ]
+  ];
 
   return (
     <>
       <section className="py-20 lg:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">{pt('title')}</h1>
-            <p className="mt-4 text-lg text-muted-foreground">{pt('subtitle')}</p>
+            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+              {pt('title')}
+            </h1>
+            <p className="text-muted-foreground mt-4 text-lg">
+              {pt('subtitle')}
+            </p>
           </div>
           <div className="mt-12 grid gap-8 lg:grid-cols-3">
             {plans.map((plan, i) => (
@@ -71,5 +75,5 @@ export default function PricingPage() {
       </section>
       <CtaSection />
     </>
-  )
+  );
 }

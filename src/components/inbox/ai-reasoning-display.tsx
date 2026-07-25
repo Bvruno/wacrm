@@ -1,23 +1,26 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Brain, ChevronDown, ChevronUp, Lightbulb } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { useTranslations } from 'next-intl'
+import { useState } from 'react';
+import { Brain, ChevronDown, ChevronUp, Lightbulb } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { useTranslations } from 'next-intl';
 
 interface ReasoningDisplayProps {
-  reasoning: string
+  reasoning: string;
   context?: {
-    knowledgeChunks?: number
-    contactProfile?: string | null
-    tonePreset?: string | null
-  } | null
+    knowledgeChunks?: number;
+    contactProfile?: string | null;
+    tonePreset?: string | null;
+  } | null;
 }
 
-export function ReasoningDisplay({ reasoning, context }: ReasoningDisplayProps) {
-  const [open, setOpen] = useState(false)
-  const t = useTranslations('Inbox.aiBanner')
+export function ReasoningDisplay({
+  reasoning,
+  context,
+}: ReasoningDisplayProps) {
+  const [open, setOpen] = useState(false);
+  const t = useTranslations('Inbox.aiBanner');
 
   return (
     <div>
@@ -37,14 +40,14 @@ export function ReasoningDisplay({ reasoning, context }: ReasoningDisplayProps) 
       </Button>
       {open && (
         <div className="mt-2 space-y-2">
-          <div className="rounded-md border border-border bg-muted/30 p-3">
+          <div className="border-border bg-muted/30 rounded-md border p-3">
             <div className="mb-2 flex items-center gap-2">
-              <Lightbulb className="h-4 w-4 text-primary" />
+              <Lightbulb className="text-primary h-4 w-4" />
               <span className="text-sm font-medium">
                 {t('reasoningTitle') || 'Why the AI responded this way'}
               </span>
             </div>
-            <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm whitespace-pre-wrap">
               {reasoning}
             </p>
             {context && (
@@ -70,5 +73,5 @@ export function ReasoningDisplay({ reasoning, context }: ReasoningDisplayProps) 
         </div>
       )}
     </div>
-  )
+  );
 }

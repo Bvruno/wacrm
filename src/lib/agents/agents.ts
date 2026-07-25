@@ -1,34 +1,34 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
-import { decrypt, encrypt } from '@/lib/whatsapp/encryption'
-import type { Agent, AiProvider, TonePreset } from '@/types'
-import type { AgentConfig } from '@/lib/ai/types'
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { decrypt, encrypt } from '@/lib/whatsapp/encryption';
+import type { Agent, AiProvider, TonePreset } from '@/types';
+import type { AgentConfig } from '@/lib/ai/types';
 
 interface AgentRow {
-  id: string
-  account_id: string
-  created_by: string | null
-  name: string
-  description: string | null
-  avatar_url: string | null
-  provider: AiProvider
-  model: string
-  api_key: string
-  system_prompt: string | null
-  temperature: number
-  top_p: number
-  frequency_penalty: number
-  presence_penalty: number
-  max_tokens: number
-  tone_preset: TonePreset | null
-  custom_tone_instructions: string | null
-  language: string | null
-  is_active: boolean
-  auto_reply_enabled: boolean
-  auto_reply_max_per_conversation: number
-  handoff_agent_id: string | null
-  embeddings_api_key: string | null
-  created_at: string
-  updated_at: string
+  id: string;
+  account_id: string;
+  created_by: string | null;
+  name: string;
+  description: string | null;
+  avatar_url: string | null;
+  provider: AiProvider;
+  model: string;
+  api_key: string;
+  system_prompt: string | null;
+  temperature: number;
+  top_p: number;
+  frequency_penalty: number;
+  presence_penalty: number;
+  max_tokens: number;
+  tone_preset: TonePreset | null;
+  custom_tone_instructions: string | null;
+  language: string | null;
+  is_active: boolean;
+  auto_reply_enabled: boolean;
+  auto_reply_max_per_conversation: number;
+  handoff_agent_id: string | null;
+  embeddings_api_key: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 const AGENT_COLUMNS = `
@@ -39,7 +39,7 @@ const AGENT_COLUMNS = `
   is_active, auto_reply_enabled, auto_reply_max_per_conversation,
   handoff_agent_id, embeddings_api_key,
   created_at, updated_at
-`
+`;
 
 function rowToAgent(row: AgentRow): Agent {
   return {
@@ -67,7 +67,7 @@ function rowToAgent(row: AgentRow): Agent {
     embeddings_api_key: row.embeddings_api_key,
     created_at: row.created_at,
     updated_at: row.updated_at,
-  }
+  };
 }
 
 function rowToAgentConfig(row: AgentRow): AgentConfig {
@@ -93,123 +93,123 @@ function rowToAgentConfig(row: AgentRow): AgentConfig {
     embeddingsApiKey: row.embeddings_api_key
       ? (() => {
           try {
-            return decrypt(row.embeddings_api_key!)
+            return decrypt(row.embeddings_api_key!);
           } catch {
-            return null
+            return null;
           }
         })()
       : null,
-  }
+  };
 }
 
 export async function listAgents(
   db: SupabaseClient,
-  accountId: string,
+  accountId: string
 ): Promise<Agent[]> {
   const { data, error } = await db
     .from('agents')
     .select(AGENT_COLUMNS)
     .eq('account_id', accountId)
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: false });
 
-  if (error) throw error
-  return (data as AgentRow[]).map(rowToAgent)
+  if (error) throw error;
+  return (data as AgentRow[]).map(rowToAgent);
 }
 
 export async function getAgent(
   db: SupabaseClient,
-  agentId: string,
+  agentId: string
 ): Promise<Agent | null> {
   const { data, error } = await db
     .from('agents')
     .select(AGENT_COLUMNS)
     .eq('id', agentId)
-    .maybeSingle()
+    .maybeSingle();
 
-  if (error) throw error
-  if (!data) return null
-  return rowToAgent(data as AgentRow)
+  if (error) throw error;
+  if (!data) return null;
+  return rowToAgent(data as AgentRow);
 }
 
 export async function getAgentConfig(
   db: SupabaseClient,
   agentId: string,
-  opts: { requireActive?: boolean } = {},
+  opts: { requireActive?: boolean } = {}
 ): Promise<AgentConfig | null> {
-  const { requireActive = true } = opts
+  const { requireActive = true } = opts;
   const { data, error } = await db
     .from('agents')
     .select(AGENT_COLUMNS)
     .eq('id', agentId)
-    .maybeSingle()
+    .maybeSingle();
 
-  if (error) throw error
-  if (!data) return null
+  if (error) throw error;
+  if (!data) return null;
 
-  const row = data as AgentRow
-  if (requireActive && !row.is_active) return null
-  if (!row.api_key) return null
+  const row = data as AgentRow;
+  if (requireActive && !row.is_active) return null;
+  if (!row.api_key) return null;
 
-  return rowToAgentConfig(row)
+  return rowToAgentConfig(row);
 }
 
 export async function getDefaultAgent(
   db: SupabaseClient,
   accountId: string,
-  opts: { requireActive?: boolean } = {},
+  opts: { requireActive?: boolean } = {}
 ): Promise<AgentConfig | null> {
-  const { requireActive = true } = opts
+  const { requireActive = true } = opts;
   const { data, error } = await db
     .from('agents')
     .select(AGENT_COLUMNS)
     .eq('account_id', accountId)
     .order('created_at', { ascending: true })
     .limit(1)
-    .maybeSingle()
+    .maybeSingle();
 
-  if (error) throw error
-  if (!data) return null
+  if (error) throw error;
+  if (!data) return null;
 
-  const row = data as AgentRow
-  if (requireActive && !row.is_active) return null
-  if (!row.api_key) return null
+  const row = data as AgentRow;
+  if (requireActive && !row.is_active) return null;
+  if (!row.api_key) return null;
 
-  return rowToAgentConfig(row)
+  return rowToAgentConfig(row);
 }
 
 export interface CreateAgentInput {
-  name: string
-  description?: string | null
-  avatar_url?: string | null
-  provider: AiProvider
-  model: string
-  api_key: string
-  system_prompt?: string | null
-  temperature?: number
-  top_p?: number
-  frequency_penalty?: number
-  presence_penalty?: number
-  max_tokens?: number
-  tone_preset?: TonePreset | null
-  custom_tone_instructions?: string | null
-  language?: string | null
-  is_active?: boolean
-  auto_reply_enabled?: boolean
-  auto_reply_max_per_conversation?: number
-  handoff_agent_id?: string | null
-  embeddings_api_key?: string | null
+  name: string;
+  description?: string | null;
+  avatar_url?: string | null;
+  provider: AiProvider;
+  model: string;
+  api_key: string;
+  system_prompt?: string | null;
+  temperature?: number;
+  top_p?: number;
+  frequency_penalty?: number;
+  presence_penalty?: number;
+  max_tokens?: number;
+  tone_preset?: TonePreset | null;
+  custom_tone_instructions?: string | null;
+  language?: string | null;
+  is_active?: boolean;
+  auto_reply_enabled?: boolean;
+  auto_reply_max_per_conversation?: number;
+  handoff_agent_id?: string | null;
+  embeddings_api_key?: string | null;
 }
 
 export async function createAgent(
   db: SupabaseClient,
   accountId: string,
   userId: string,
-  input: CreateAgentInput,
+  input: CreateAgentInput
 ): Promise<Agent> {
-  const encryptedKey = encrypt(input.api_key)
+  const encryptedKey = encrypt(input.api_key);
   const encryptedEmbeddingsKey = input.embeddings_api_key
     ? encrypt(input.embeddings_api_key)
-    : null
+    : null;
 
   const { data, error } = await db
     .from('agents')
@@ -239,98 +239,100 @@ export async function createAgent(
       embeddings_api_key: encryptedEmbeddingsKey,
     })
     .select(AGENT_COLUMNS)
-    .single()
+    .single();
 
-  if (error) throw error
-  return rowToAgent(data as AgentRow)
+  if (error) throw error;
+  return rowToAgent(data as AgentRow);
 }
 
 export interface UpdateAgentInput {
-  name?: string
-  description?: string | null
-  avatar_url?: string | null
-  provider?: AiProvider
-  model?: string
-  api_key?: string
-  system_prompt?: string | null
-  temperature?: number
-  top_p?: number
-  frequency_penalty?: number
-  presence_penalty?: number
-  max_tokens?: number
-  tone_preset?: TonePreset | null
-  custom_tone_instructions?: string | null
-  language?: string | null
-  is_active?: boolean
-  auto_reply_enabled?: boolean
-  auto_reply_max_per_conversation?: number
-  handoff_agent_id?: string | null
-  embeddings_api_key?: string | null
+  name?: string;
+  description?: string | null;
+  avatar_url?: string | null;
+  provider?: AiProvider;
+  model?: string;
+  api_key?: string;
+  system_prompt?: string | null;
+  temperature?: number;
+  top_p?: number;
+  frequency_penalty?: number;
+  presence_penalty?: number;
+  max_tokens?: number;
+  tone_preset?: TonePreset | null;
+  custom_tone_instructions?: string | null;
+  language?: string | null;
+  is_active?: boolean;
+  auto_reply_enabled?: boolean;
+  auto_reply_max_per_conversation?: number;
+  handoff_agent_id?: string | null;
+  embeddings_api_key?: string | null;
 }
 
 export async function updateAgent(
   db: SupabaseClient,
   agentId: string,
-  input: UpdateAgentInput,
+  input: UpdateAgentInput
 ): Promise<Agent> {
-  const updates: Record<string, unknown> = {}
+  const updates: Record<string, unknown> = {};
 
-  if (input.name !== undefined) updates.name = input.name
-  if (input.description !== undefined) updates.description = input.description
-  if (input.avatar_url !== undefined) updates.avatar_url = input.avatar_url
-  if (input.provider !== undefined) updates.provider = input.provider
-  if (input.model !== undefined) updates.model = input.model
-  if (input.api_key !== undefined) updates.api_key = encrypt(input.api_key)
-  if (input.system_prompt !== undefined) updates.system_prompt = input.system_prompt
-  if (input.temperature !== undefined) updates.temperature = input.temperature
-  if (input.top_p !== undefined) updates.top_p = input.top_p
+  if (input.name !== undefined) updates.name = input.name;
+  if (input.description !== undefined) updates.description = input.description;
+  if (input.avatar_url !== undefined) updates.avatar_url = input.avatar_url;
+  if (input.provider !== undefined) updates.provider = input.provider;
+  if (input.model !== undefined) updates.model = input.model;
+  if (input.api_key !== undefined) updates.api_key = encrypt(input.api_key);
+  if (input.system_prompt !== undefined)
+    updates.system_prompt = input.system_prompt;
+  if (input.temperature !== undefined) updates.temperature = input.temperature;
+  if (input.top_p !== undefined) updates.top_p = input.top_p;
   if (input.frequency_penalty !== undefined)
-    updates.frequency_penalty = input.frequency_penalty
+    updates.frequency_penalty = input.frequency_penalty;
   if (input.presence_penalty !== undefined)
-    updates.presence_penalty = input.presence_penalty
-  if (input.max_tokens !== undefined) updates.max_tokens = input.max_tokens
-  if (input.tone_preset !== undefined) updates.tone_preset = input.tone_preset
+    updates.presence_penalty = input.presence_penalty;
+  if (input.max_tokens !== undefined) updates.max_tokens = input.max_tokens;
+  if (input.tone_preset !== undefined) updates.tone_preset = input.tone_preset;
   if (input.custom_tone_instructions !== undefined)
-    updates.custom_tone_instructions = input.custom_tone_instructions
-  if (input.language !== undefined) updates.language = input.language
-  if (input.is_active !== undefined) updates.is_active = input.is_active
+    updates.custom_tone_instructions = input.custom_tone_instructions;
+  if (input.language !== undefined) updates.language = input.language;
+  if (input.is_active !== undefined) updates.is_active = input.is_active;
   if (input.auto_reply_enabled !== undefined)
-    updates.auto_reply_enabled = input.auto_reply_enabled
+    updates.auto_reply_enabled = input.auto_reply_enabled;
   if (input.auto_reply_max_per_conversation !== undefined)
-    updates.auto_reply_max_per_conversation = input.auto_reply_max_per_conversation
+    updates.auto_reply_max_per_conversation =
+      input.auto_reply_max_per_conversation;
   if (input.handoff_agent_id !== undefined)
-    updates.handoff_agent_id = input.handoff_agent_id
+    updates.handoff_agent_id = input.handoff_agent_id;
   if (input.embeddings_api_key !== undefined)
     updates.embeddings_api_key = input.embeddings_api_key
       ? encrypt(input.embeddings_api_key)
-      : null
+      : null;
 
   const { data, error } = await db
     .from('agents')
     .update(updates)
     .eq('id', agentId)
     .select(AGENT_COLUMNS)
-    .single()
+    .single();
 
-  if (error) throw error
-  return rowToAgent(data as AgentRow)
+  if (error) throw error;
+  return rowToAgent(data as AgentRow);
 }
 
 export async function deleteAgent(
   db: SupabaseClient,
-  agentId: string,
+  agentId: string
 ): Promise<void> {
-  const { error } = await db.from('agents').delete().eq('id', agentId)
-  if (error) throw error
+  const { error } = await db.from('agents').delete().eq('id', agentId);
+  if (error) throw error;
 }
 
 export async function duplicateAgent(
   db: SupabaseClient,
   agentId: string,
-  newName: string,
+  newName: string
 ): Promise<Agent> {
-  const original = await getAgent(db, agentId)
-  if (!original) throw new Error('Agent not found')
+  const original = await getAgent(db, agentId);
+  if (!original) throw new Error('Agent not found');
 
   const { data, error } = await db
     .from('agents')
@@ -358,8 +360,8 @@ export async function duplicateAgent(
       embeddings_api_key: original.embeddings_api_key,
     })
     .select(AGENT_COLUMNS)
-    .single()
+    .single();
 
-  if (error) throw error
-  return rowToAgent(data as AgentRow)
+  if (error) throw error;
+  return rowToAgent(data as AgentRow);
 }

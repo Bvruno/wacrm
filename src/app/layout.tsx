@@ -1,13 +1,13 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata, Viewport } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
-import { Inter } from "next/font/google";
-import Script from "next/script";
-import "./globals.css";
-import { ThemeProvider } from "@/hooks/use-theme";
-import { ThemedToaster } from "@/components/themed-toaster";
-import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
-import { SplashRemover } from "@/components/splash-remover";
+import { Inter } from 'next/font/google';
+import Script from 'next/script';
+import './globals.css';
+import { ThemeProvider } from '@/hooks/use-theme';
+import { ThemedToaster } from '@/components/themed-toaster';
+import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
+import { SplashRemover } from '@/components/splash-remover';
 import {
   DEFAULT_MODE,
   DEFAULT_THEME,
@@ -15,31 +15,31 @@ import {
   MODES,
   STORAGE_KEY,
   THEME_IDS,
-} from "@/lib/themes";
+} from '@/lib/themes';
 
 const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
+  variable: '--font-sans',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "CodixIA",
-    template: "%s — CodixIA",
+    default: 'CodixIA',
+    template: '%s — CodixIA',
   },
-  description: "Self-hostable CRM template for WhatsApp.",
-  applicationName: "CodixIA",
+  description: 'Self-hostable CRM template for WhatsApp.',
+  applicationName: 'CodixIA',
   icons: {
-    icon: [{ url: "/icon" }],
+    icon: [{ url: '/icon' }],
     apple: [
-      { url: "/icon-192.png", sizes: "192x192" },
-      { url: "/icon-512.png", sizes: "512x512" },
+      { url: '/icon-192.png', sizes: '192x192' },
+      { url: '/icon-512.png', sizes: '512x512' },
     ],
   },
   appleWebApp: {
     capable: true,
-    title: "CodixIA",
-    statusBarStyle: "black-translucent",
+    title: 'CodixIA',
+    statusBarStyle: 'black-translucent',
   },
   formatDetection: {
     email: false,
@@ -47,22 +47,22 @@ export const metadata: Metadata = {
     telephone: false,
   },
   other: {
-    "mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-capable": "yes",
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
   },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#020617" },
-    { media: "(prefers-color-scheme: dark)", color: "#020617" },
+    { media: '(prefers-color-scheme: light)', color: '#020617' },
+    { media: '(prefers-color-scheme: dark)', color: '#020617' },
   ],
-  colorScheme: "dark light",
-  width: "device-width",
+  colorScheme: 'dark light',
+  width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  viewportFit: "cover",
+  viewportFit: 'cover',
 };
 
 const THEME_BOOT_SCRIPT = `
@@ -97,7 +97,7 @@ const APPLE_SPLASH_SCREENS = [
   '(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)',
   '(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)',
   '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)',
-] as const
+] as const;
 
 const APPLE_SPLASH_SIZES = [
   '640x1136',
@@ -109,7 +109,7 @@ const APPLE_SPLASH_SIZES = [
   '1284x2778',
   '1536x2048',
   '2048x2732',
-] as const
+] as const;
 
 export default async function RootLayout({
   children,
@@ -143,14 +143,32 @@ export default async function RootLayout({
           />
         ))}
       </head>
-      <body className="min-h-full bg-background text-foreground font-sans">
+      <body className="bg-background text-foreground min-h-full font-sans">
         {/* Splash bridge: visible until React hydrates, then fades out */}
         <div id="app-splash" aria-hidden="true">
           <div className="splash-logo">
             <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
               <rect width="500" height="500" fill="#0D7BEA" rx="80" />
-              <text x="70" y="285" fontFamily="Arial, Helvetica, sans-serif" fontSize="88" fontWeight="700" fill="#FFFFFF">Codix</text>
-              <text x="340" y="285" fontFamily="Arial, Helvetica, sans-serif" fontSize="88" fontWeight="700" fill="#E11B22">IA</text>
+              <text
+                x="70"
+                y="285"
+                fontFamily="Arial, Helvetica, sans-serif"
+                fontSize="88"
+                fontWeight="700"
+                fill="#FFFFFF"
+              >
+                Codix
+              </text>
+              <text
+                x="340"
+                y="285"
+                fontFamily="Arial, Helvetica, sans-serif"
+                fontSize="88"
+                fontWeight="700"
+                fill="#E11B22"
+              >
+                IA
+              </text>
             </svg>
             <span className="splash-brand">WhatsApp CRM</span>
           </div>

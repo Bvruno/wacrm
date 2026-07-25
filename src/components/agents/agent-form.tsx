@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useEffect, useRef, useState } from 'react'
-import { toast } from 'sonner'
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import {
   Loader2,
   Save,
@@ -10,43 +10,43 @@ import {
   Eye,
   EyeOff,
   CheckCircle2,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card'
+} from '@/components/ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { AI_PROVIDER_DEFAULT_MODEL } from '@/lib/ai/defaults'
-import type { Agent, AiProvider, TonePreset, AccountMember } from '@/types'
-import { fetchAccountMembers, memberLabel } from '@/lib/account/members'
-import { useTranslations } from 'next-intl'
+} from '@/components/ui/select';
+import { AI_PROVIDER_DEFAULT_MODEL } from '@/lib/ai/defaults';
+import type { Agent, AiProvider, TonePreset, AccountMember } from '@/types';
+import { fetchAccountMembers, memberLabel } from '@/lib/account/members';
+import { useTranslations } from 'next-intl';
 
-const MASKED_KEY = '••••••••••••••••'
-const HANDOFF_QUEUE = '__queue__'
+const MASKED_KEY = '••••••••••••••••';
+const HANDOFF_QUEUE = '__queue__';
 
 const PROVIDER_LABEL: Record<AiProvider, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic (Claude)',
-}
+};
 
 const KEY_PLACEHOLDER: Record<AiProvider, string> = {
   openai: 'sk-...',
   anthropic: 'sk-ant-...',
-}
+};
 
 const TONE_PRESETS: { value: TonePreset; label: string }[] = [
   { value: 'formal', label: 'Formal' },
@@ -55,107 +55,107 @@ const TONE_PRESETS: { value: TonePreset; label: string }[] = [
   { value: 'professional', label: 'Profesional' },
   { value: 'empathetic', label: 'Empático' },
   { value: 'technical', label: 'Técnico' },
-]
+];
 
 interface AgentFormProps {
-  agent: Agent | null
-  onClose: () => void
-  canEdit: boolean
+  agent: Agent | null;
+  onClose: () => void;
+  canEdit: boolean;
 }
 
 export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
-  const t = useTranslations('Agents')
+  const t = useTranslations('Agents');
 
-  const isEditing = Boolean(agent)
+  const isEditing = Boolean(agent);
 
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [testing, setTesting] = useState(false)
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
 
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [provider, setProvider] = useState<AiProvider>('openai')
-  const [model, setModel] = useState(AI_PROVIDER_DEFAULT_MODEL.openai)
-  const [apiKey, setApiKey] = useState('')
-  const [keyEdited, setKeyEdited] = useState(false)
-  const [showKey, setShowKey] = useState(false)
-  const [hasStoredKey, setHasStoredKey] = useState(false)
-  const [embeddingsKey, setEmbeddingsKey] = useState('')
-  const [embeddingsKeyEdited, setEmbeddingsKeyEdited] = useState(false)
-  const [hasStoredEmbeddingsKey, setHasStoredEmbeddingsKey] = useState(false)
-  const [systemPrompt, setSystemPrompt] = useState('')
-  const [temperature, setTemperature] = useState(0.7)
-  const [topP, setTopP] = useState(1.0)
-  const [frequencyPenalty, setFrequencyPenalty] = useState(0)
-  const [presencePenalty, setPresencePenalty] = useState(0)
-  const [maxTokens, setMaxTokens] = useState(1024)
-  const [tonePreset, setTonePreset] = useState<string>('')
-  const [customToneInstructions, setCustomToneInstructions] = useState('')
-  const [language, setLanguage] = useState('')
-  const [isActive, setIsActive] = useState(false)
-  const [autoReplyEnabled, setAutoReplyEnabled] = useState(false)
-  const [maxPerConversation, setMaxPerConversation] = useState(3)
-  const [handoffAgentId, setHandoffAgentId] = useState('')
-  const [members, setMembers] = useState<AccountMember[]>([])
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [provider, setProvider] = useState<AiProvider>('openai');
+  const [model, setModel] = useState(AI_PROVIDER_DEFAULT_MODEL.openai);
+  const [apiKey, setApiKey] = useState('');
+  const [keyEdited, setKeyEdited] = useState(false);
+  const [showKey, setShowKey] = useState(false);
+  const [hasStoredKey, setHasStoredKey] = useState(false);
+  const [embeddingsKey, setEmbeddingsKey] = useState('');
+  const [embeddingsKeyEdited, setEmbeddingsKeyEdited] = useState(false);
+  const [hasStoredEmbeddingsKey, setHasStoredEmbeddingsKey] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState('');
+  const [temperature, setTemperature] = useState(0.7);
+  const [topP, setTopP] = useState(1.0);
+  const [frequencyPenalty, setFrequencyPenalty] = useState(0);
+  const [presencePenalty, setPresencePenalty] = useState(0);
+  const [maxTokens, setMaxTokens] = useState(1024);
+  const [tonePreset, setTonePreset] = useState<string>('');
+  const [customToneInstructions, setCustomToneInstructions] = useState('');
+  const [language, setLanguage] = useState('');
+  const [isActive, setIsActive] = useState(false);
+  const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
+  const [maxPerConversation, setMaxPerConversation] = useState(3);
+  const [handoffAgentId, setHandoffAgentId] = useState('');
+  const [members, setMembers] = useState<AccountMember[]>([]);
 
-  const loadedAgentIdRef = useRef<string | null>(null)
+  const loadedAgentIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    void fetchAccountMembers().then(setMembers)
-  }, [])
+    void fetchAccountMembers().then(setMembers);
+  }, []);
 
   useEffect(() => {
     if (agent && loadedAgentIdRef.current !== agent.id) {
-      loadedAgentIdRef.current = agent.id
-      setLoading(true)
+      loadedAgentIdRef.current = agent.id;
+      setLoading(true);
       fetch(`/api/agents/${agent.id}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.agent) {
-            const a = data.agent
-            setName(a.name)
-            setDescription(a.description || '')
-            setProvider(a.provider)
-            setModel(a.model)
-            setHasStoredKey(true)
-            setApiKey(MASKED_KEY)
-            setSystemPrompt(a.system_prompt || '')
-            setTemperature(a.temperature)
-            setTopP(a.top_p)
-            setFrequencyPenalty(a.frequency_penalty)
-            setPresencePenalty(a.presence_penalty)
-            setMaxTokens(a.max_tokens)
-            setTonePreset(a.tone_preset || '')
-            setCustomToneInstructions(a.custom_tone_instructions || '')
-            setLanguage(a.language || '')
-            setIsActive(a.is_active)
-            setAutoReplyEnabled(a.auto_reply_enabled)
-            setMaxPerConversation(a.auto_reply_max_per_conversation)
-            setHandoffAgentId(a.handoff_agent_id || '')
-            setHasStoredEmbeddingsKey(Boolean(a.has_embeddings_key))
-            setEmbeddingsKey(a.has_embeddings_key ? MASKED_KEY : '')
+            const a = data.agent;
+            setName(a.name);
+            setDescription(a.description || '');
+            setProvider(a.provider);
+            setModel(a.model);
+            setHasStoredKey(true);
+            setApiKey(MASKED_KEY);
+            setSystemPrompt(a.system_prompt || '');
+            setTemperature(a.temperature);
+            setTopP(a.top_p);
+            setFrequencyPenalty(a.frequency_penalty);
+            setPresencePenalty(a.presence_penalty);
+            setMaxTokens(a.max_tokens);
+            setTonePreset(a.tone_preset || '');
+            setCustomToneInstructions(a.custom_tone_instructions || '');
+            setLanguage(a.language || '');
+            setIsActive(a.is_active);
+            setAutoReplyEnabled(a.auto_reply_enabled);
+            setMaxPerConversation(a.auto_reply_max_per_conversation);
+            setHandoffAgentId(a.handoff_agent_id || '');
+            setHasStoredEmbeddingsKey(Boolean(a.has_embeddings_key));
+            setEmbeddingsKey(a.has_embeddings_key ? MASKED_KEY : '');
           }
         })
         .catch(() => toast.error(t('loadFailed')))
-        .finally(() => setLoading(false))
+        .finally(() => setLoading(false));
     }
-  }, [agent, t])
+  }, [agent, t]);
 
   const handleProviderChange = (next: AiProvider) => {
-    setProvider(next)
+    setProvider(next);
     const isDefaultModel =
       model === AI_PROVIDER_DEFAULT_MODEL.openai ||
       model === AI_PROVIDER_DEFAULT_MODEL.anthropic ||
-      model.trim() === ''
-    if (isDefaultModel) setModel(AI_PROVIDER_DEFAULT_MODEL[next])
-  }
+      model.trim() === '';
+    if (isDefaultModel) setModel(AI_PROVIDER_DEFAULT_MODEL[next]);
+  };
 
-  const keyPayload = () => (keyEdited ? apiKey.trim() : undefined)
+  const keyPayload = () => (keyEdited ? apiKey.trim() : undefined);
   const embeddingsKeyPayload = () =>
-    embeddingsKeyEdited ? embeddingsKey.trim() || null : undefined
+    embeddingsKeyEdited ? embeddingsKey.trim() || null : undefined;
 
   const handleTest = async () => {
-    setTesting(true)
+    setTesting(true);
     try {
       const res = await fetch('/api/ai/test', {
         method: 'POST',
@@ -165,35 +165,35 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
           model: model.trim(),
           api_key: keyPayload(),
         }),
-      })
-      const data = await res.json()
-      if (res.ok) toast.success(t('testSuccess'))
-      else toast.error(data.error || t('testRejected'))
+      });
+      const data = await res.json();
+      if (res.ok) toast.success(t('testSuccess'));
+      else toast.error(data.error || t('testRejected'));
     } catch {
-      toast.error(t('testNetworkError'))
+      toast.error(t('testNetworkError'));
     } finally {
-      setTesting(false)
+      setTesting(false);
     }
-  }
+  };
 
   const handleSave = async () => {
     if (!name.trim()) {
-      toast.error(t('missingName'))
-      return
+      toast.error(t('missingName'));
+      return;
     }
     if (!model.trim()) {
-      toast.error(t('missingModel'))
-      return
+      toast.error(t('missingModel'));
+      return;
     }
     if (!isEditing && !keyEdited) {
-      toast.error(t('missingApiKey'))
-      return
+      toast.error(t('missingApiKey'));
+      return;
     }
 
-    setSaving(true)
+    setSaving(true);
     try {
-      const url = isEditing ? `/api/agents/${agent!.id}` : '/api/agents'
-      const method = isEditing ? 'PATCH' : 'POST'
+      const url = isEditing ? `/api/agents/${agent!.id}` : '/api/agents';
+      const method = isEditing ? 'PATCH' : 'POST';
 
       const body: Record<string, unknown> = {
         name: name.trim(),
@@ -213,45 +213,45 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
         auto_reply_enabled: autoReplyEnabled,
         auto_reply_max_per_conversation: maxPerConversation,
         handoff_agent_id: handoffAgentId || null,
-      }
+      };
 
       if (keyPayload() !== undefined) {
-        body.api_key = keyPayload()
+        body.api_key = keyPayload();
       }
       if (embeddingsKeyPayload() !== undefined) {
-        body.embeddings_api_key = embeddingsKeyPayload()
+        body.embeddings_api_key = embeddingsKeyPayload();
       }
 
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-      })
+      });
 
-      const data = await res.json()
+      const data = await res.json();
       if (res.ok) {
-        toast.success(isEditing ? t('updateSuccess') : t('createSuccess'))
-        onClose()
+        toast.success(isEditing ? t('updateSuccess') : t('createSuccess'));
+        onClose();
       } else {
-        toast.error(data.error || t('saveFailed'))
+        toast.error(data.error || t('saveFailed'));
       }
     } catch {
-      toast.error(t('saveFailed'))
+      toast.error(t('saveFailed'));
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground">
+      <div className="text-muted-foreground flex items-center justify-center py-16">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         {t('loading')}
       </div>
-    )
+    );
   }
 
-  const disabled = !canEdit || saving
+  const disabled = !canEdit || saving;
 
   return (
     <div className="space-y-6">
@@ -268,7 +268,7 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Sparkles className="h-4 w-4 text-primary" />
+            <Sparkles className="text-primary h-4 w-4" />
             {t('basicInfo')}
           </CardTitle>
           <CardDescription>{t('basicInfoDesc')}</CardDescription>
@@ -317,7 +317,9 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="openai">{PROVIDER_LABEL.openai}</SelectItem>
+                  <SelectItem value="openai">
+                    {PROVIDER_LABEL.openai}
+                  </SelectItem>
                   <SelectItem value="anthropic">
                     {PROVIDER_LABEL.anthropic}
                   </SelectItem>
@@ -346,13 +348,13 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
                   type={showKey ? 'text' : 'password'}
                   value={apiKey}
                   onChange={(e) => {
-                    setApiKey(e.target.value)
-                    setKeyEdited(true)
+                    setApiKey(e.target.value);
+                    setKeyEdited(true);
                   }}
                   onFocus={() => {
                     if (!keyEdited && hasStoredKey) {
-                      setApiKey('')
-                      setKeyEdited(true)
+                      setApiKey('');
+                      setKeyEdited(true);
                     }
                   }}
                   placeholder={KEY_PLACEHOLDER[provider]}
@@ -362,7 +364,7 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
                 <button
                   type="button"
                   onClick={() => setShowKey((s) => !s)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
                   tabIndex={-1}
                 >
                   {showKey ? (
@@ -390,7 +392,7 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
           <div className="space-y-2">
             <Label htmlFor="agent-embeddings-key">
               {t('embeddingsKey')}{' '}
-              <span className="font-normal text-muted-foreground">
+              <span className="text-muted-foreground font-normal">
                 {t('optionalSemanticSearch')}
               </span>
             </Label>
@@ -399,13 +401,13 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
               type="password"
               value={embeddingsKey}
               onChange={(e) => {
-                setEmbeddingsKey(e.target.value)
-                setEmbeddingsKeyEdited(true)
+                setEmbeddingsKey(e.target.value);
+                setEmbeddingsKeyEdited(true);
               }}
               onFocus={() => {
                 if (!embeddingsKeyEdited && hasStoredEmbeddingsKey) {
-                  setEmbeddingsKey('')
-                  setEmbeddingsKeyEdited(true)
+                  setEmbeddingsKey('');
+                  setEmbeddingsKeyEdited(true);
                 }
               }}
               placeholder="sk-... (OpenAI)"
@@ -439,7 +441,9 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
               <Label htmlFor="agent-tone">{t('tonePreset')}</Label>
               <Select
                 value={tonePreset || 'none'}
-                onValueChange={(v) => setTonePreset(v === 'none' || !v ? '' : v)}
+                onValueChange={(v) =>
+                  setTonePreset(v === 'none' || !v ? '' : v)
+                }
                 disabled={disabled}
               >
                 <SelectTrigger id="agent-tone">
@@ -476,7 +480,9 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="agent-custom-tone">{t('customToneInstructions')}</Label>
+            <Label htmlFor="agent-custom-tone">
+              {t('customToneInstructions')}
+            </Label>
             <Textarea
               id="agent-custom-tone"
               value={customToneInstructions}
@@ -583,12 +589,12 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
           <CardDescription>{t('autoReplyDesc')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between gap-4 rounded-md border border-border p-3">
+          <div className="border-border flex items-center justify-between gap-4 rounded-md border p-3">
             <div>
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-foreground text-sm font-medium">
                 {t('enableAssistant')}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 {t('enableAssistantDesc')}
               </p>
             </div>
@@ -599,12 +605,12 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
             />
           </div>
 
-          <div className="flex items-center justify-between gap-4 rounded-md border border-border p-3">
+          <div className="border-border flex items-center justify-between gap-4 rounded-md border p-3">
             <div>
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-foreground text-sm font-medium">
                 {t('autoReply')}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 {t('autoReplyDesc')}
               </p>
             </div>
@@ -618,7 +624,7 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
           <div className="flex items-center justify-between gap-4">
             <div>
               <Label htmlFor="agent-max">{t('maxAutoReplies')}</Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 {t('maxAutoRepliesDesc')}
               </p>
             </div>
@@ -630,7 +636,7 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
               value={maxPerConversation}
               onChange={(e) =>
                 setMaxPerConversation(
-                  Math.min(20, Math.max(1, Number(e.target.value) || 1)),
+                  Math.min(20, Math.max(1, Number(e.target.value) || 1))
                 )
               }
               disabled={disabled || !autoReplyEnabled}
@@ -640,7 +646,7 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="agent-handoff">{t('handoffTo')}</Label>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {t('handoffToDesc')}
             </p>
             <Select
@@ -679,5 +685,5 @@ export function AgentForm({ agent, onClose, canEdit }: AgentFormProps) {
         </Button>
       </div>
     </div>
-  )
+  );
 }

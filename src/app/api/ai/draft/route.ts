@@ -1,18 +1,25 @@
-import { NextResponse } from 'next/server'
-import { requireRole, toErrorResponse } from '@/lib/auth/account'
-import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
-import { getDefaultAgent } from '@/lib/agents/agents'
-import { buildConversationContext } from '@/lib/ai/context'
-import { retrieveKnowledge } from '@/lib/ai/knowledge'
-import { generateReply } from '@/lib/ai/generate'
-import { buildSystemPrompt } from '@/lib/ai/defaults'
-import { buildContactProfile, formatContactProfile } from '@/lib/ai/contact-profile'
-import { AI_TOOLS, executeToolCalls } from '@/lib/ai/tools'
-import { latestUserMessage } from '@/lib/ai/query'
-import { logAiUsage } from '@/lib/ai/usage'
-import { supabaseAdmin } from '@/lib/ai/admin-client'
-import { AiError } from '@/lib/ai/types'
-import { getToneInstructions } from '@/lib/ai/tone-presets'
+import { NextResponse } from 'next/server';
+import { requireRole, toErrorResponse } from '@/lib/auth/account';
+import {
+  checkRateLimit,
+  rateLimitResponse,
+  RATE_LIMITS,
+} from '@/lib/rate-limit';
+import { getDefaultAgent } from '@/lib/agents/agents';
+import { buildConversationContext } from '@/lib/ai/context';
+import { retrieveKnowledge } from '@/lib/ai/knowledge';
+import { generateReply } from '@/lib/ai/generate';
+import { buildSystemPrompt } from '@/lib/ai/defaults';
+import {
+  buildContactProfile,
+  formatContactProfile,
+} from '@/lib/ai/contact-profile';
+import { AI_TOOLS, executeToolCalls } from '@/lib/ai/tools';
+import { latestUserMessage } from '@/lib/ai/query';
+import { logAiUsage } from '@/lib/ai/usage';
+import { supabaseAdmin } from '@/lib/ai/admin-client';
+import { AiError } from '@/lib/ai/types';
+import { getToneInstructions } from '@/lib/ai/tone-presets';
 
 /**
  * POST /api/ai/draft  (agent+)
@@ -25,25 +32,27 @@ import { getToneInstructions } from '@/lib/ai/tone-presets'
  */
 export async function POST(request: Request) {
   try {
-    const { supabase, accountId, userId } = await requireRole('agent')
+    const { supabase, accountId, userId } = await requireRole('agent');
 
-    const userLimit = checkRateLimit(`ai-draft:${userId}`, RATE_LIMITS.aiDraft)
-    if (!userLimit.success) return rateLimitResponse(userLimit)
+    const userLimit = checkRateLimit(`ai-draft:${userId}`, RATE_LIMITS.aiDraft);
+    if (!userLimit.success) return rateLimitResponse(userLimit);
     // Also cap the whole team's draws on the shared BYO provider key.
     const accountLimit = checkRateLimit(
       `ai-draft-acct:${accountId}`,
-      RATE_LIMITS.aiDraftAccount,
-    )
-    if (!accountLimit.success) return rateLimitResponse(accountLimit)
+      RATE_LIMITS.aiDraftAccount
+    );
+    if (!accountLimit.success) return rateLimitResponse(accountLimit);
 
-    const body = await request.json().catch(() => null)
+    const body = await request.json().catch(() => null);
     const conversationId =
-      body && typeof body.conversation_id === 'string' ? body.conversation_id : ''
+      body && typeof body.conversation_id === 'string'
+        ? body.conversation_id
+        : '';
     if (!conversationId) {
       return NextResponse.json(
         { error: 'conversation_id is required' },
-        { status: 400 },
-      )
+        { status: 400 }
+      );
     }
 
     // RLS scopes the SSR client to the caller's account, so a missing
@@ -52,41 +61,48 @@ export async function POST(request: Request) {
       .from('conversations')
       .select('id, contact_id')
       .eq('id', conversationId)
-      .maybeSingle()
+      .maybeSingle();
     if (convErr) {
-      console.error('[ai/draft] conversation lookup error:', convErr)
-      return NextResponse.json({ error: 'Failed to load conversation' }, { status: 500 })
+      console.error('[ai/draft] conversation lookup error:', convErr);
+      return NextResponse.json(
+        { error: 'Failed to load conversation' },
+        { status: 500 }
+      );
     }
     if (!conversation) {
-      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Conversation not found' },
+        { status: 404 }
+      );
     }
 
     const config = await getDefaultAgent(supabase, accountId).catch((err) => {
-      console.error('[ai/draft] getDefaultAgent error:', err)
+      console.error('[ai/draft] getDefaultAgent error:', err);
       throw new AiError('Stored API key could not be decrypted.', {
         code: 'key_decrypt_failed',
         status: 400,
-      })
-    })
+      });
+    });
     if (!config) {
       return NextResponse.json(
         {
-          error: 'AI assistant is not set up. Enable it in Settings → AI Assistant.',
+          error:
+            'AI assistant is not set up. Enable it in Settings → AI Assistant.',
           code: 'ai_not_configured',
         },
-        { status: 400 },
-      )
+        { status: 400 }
+      );
     }
 
-    const messages = await buildConversationContext(supabase, conversationId)
+    const messages = await buildConversationContext(supabase, conversationId);
     if (messages.length === 0) {
       return NextResponse.json(
         {
           error: 'No messages to draft from yet.',
           code: 'no_messages',
         },
-        { status: 400 },
-      )
+        { status: 400 }
+      );
     }
 
     const aiConfig = {
@@ -99,21 +115,21 @@ export async function POST(request: Request) {
       autoReplyMaxPerConversation: config.autoReplyMaxPerConversation,
       handoffAgentId: config.handoffAgentId,
       embeddingsApiKey: config.embeddingsApiKey,
-    }
+    };
 
     const knowledge = await retrieveKnowledge(
       supabase,
       accountId,
       aiConfig,
-      latestUserMessage(messages),
-    )
+      latestUserMessage(messages)
+    );
 
     const profile = conversation.contact_id
       ? await buildContactProfile(supabase, conversation.contact_id)
-      : null
-    const contactProfile = profile ? formatContactProfile(profile) : undefined
+      : null;
+    const contactProfile = profile ? formatContactProfile(profile) : undefined;
 
-    const toneInstructions = getToneInstructions(config.tonePreset)
+    const toneInstructions = getToneInstructions(config.tonePreset);
 
     const systemPrompt = buildSystemPrompt({
       userPrompt: config.systemPrompt,
@@ -122,9 +138,9 @@ export async function POST(request: Request) {
       contactProfile,
       toneInstructions,
       customToneInstructions: config.customToneInstructions,
-    })
+    });
 
-    const contactId = conversation.contact_id
+    const contactId = conversation.contact_id;
     const { text, usage } = await generateReply({
       config: aiConfig,
       systemPrompt,
@@ -139,7 +155,7 @@ export async function POST(request: Request) {
       frequencyPenalty: config.frequencyPenalty,
       presencePenalty: config.presencePenalty,
       maxTokens: config.maxTokens,
-    })
+    });
 
     // Record spend on the account's BYO key. Best-effort + via the
     // service role (the log has no `authenticated` INSERT policy). This
@@ -156,9 +172,9 @@ export async function POST(request: Request) {
         provider: config.provider,
         model: config.model,
         usage,
-      })
+      });
     } catch (logErr) {
-      console.error('[ai/draft] usage log skipped:', logErr)
+      console.error('[ai/draft] usage log skipped:', logErr);
     }
 
     try {
@@ -178,28 +194,28 @@ export async function POST(request: Request) {
           max_tokens: config.maxTokens,
           tone_preset: config.tonePreset || null,
         },
-      })
+      });
 
       try {
         await supabase.rpc('cleanup_old_drafts', {
           p_conversation_id: conversationId,
           p_keep: 50,
-        })
+        });
       } catch {
         // Best-effort cleanup
       }
     } catch (draftErr) {
-      console.error('[ai/draft] draft save skipped:', draftErr)
+      console.error('[ai/draft] draft save skipped:', draftErr);
     }
 
-    return NextResponse.json({ draft: text })
+    return NextResponse.json({ draft: text });
   } catch (err) {
     if (err instanceof AiError) {
       return NextResponse.json(
         { error: err.message, code: err.code },
-        { status: err.status },
-      )
+        { status: err.status }
+      );
     }
-    return toErrorResponse(err)
+    return toErrorResponse(err);
   }
 }

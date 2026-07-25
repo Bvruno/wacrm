@@ -1,4 +1,5 @@
 <!-- BEGIN:nextjs-agent-rules -->
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
@@ -11,16 +12,16 @@ Stack: Next.js 16 (App Router, server actions), React 19, TypeScript 6, Tailwind
 
 ## Commands
 
-| Command | Purpose |
-|---|---|
-| `npm run dev` | Turbopack dev server (port 3000) |
-| `npm run build` | Production build (includes its own typecheck) |
-| `npm run typecheck` | `tsc --noEmit` — fast standalone check |
-| `npm run lint` | ESLint (next core-web-vitals + typescript) |
-| `npm run format` | Prettier write |
-| `npm run format:check` | Prettier check-only (use in CI) |
-| `npm run test` | Vitest run (single pass) |
-| `npm run test:watch` | Vitest watch |
+| Command                | Purpose                                       |
+| ---------------------- | --------------------------------------------- |
+| `npm run dev`          | Turbopack dev server (port 3000)              |
+| `npm run build`        | Production build (includes its own typecheck) |
+| `npm run typecheck`    | `tsc --noEmit` — fast standalone check        |
+| `npm run lint`         | ESLint (next core-web-vitals + typescript)    |
+| `npm run format`       | Prettier write                                |
+| `npm run format:check` | Prettier check-only (use in CI)               |
+| `npm run test`         | Vitest run (single pass)                      |
+| `npm run test:watch`   | Vitest watch                                  |
 
 **Before pushing changes:** run `npm run typecheck && npm run lint && npm run test` in order.
 
@@ -38,9 +39,11 @@ Stack: Next.js 16 (App Router, server actions), React 19, TypeScript 6, Tailwind
 ## API routes
 
 All under `src/app/api/`. Key segments:
+
 - `/api/v1/` — public REST API with scoped, revocable API keys (see `docs/public-api.md`)
 - `/api/whatsapp/webhook` — Meta inbound webhook (HMAC-verified, unauthenticated)
 - `/api/ai/` — AI reply assistant endpoints
+- `/api/cron/check-trials` — downgrades expired trials to the Free plan
 - Other: `/api/account`, `/api/contacts`, `/api/automations`, `/api/flows`, `/api/invitations`, `/api/quick-replies`
 
 ## Code conventions
@@ -65,7 +68,7 @@ Supabase migrations in `supabase/migrations/` (numbered sequentially). RLS is en
 
 ## Environment
 
-Required vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ENCRYPTION_KEY` (64 hex chars), `META_APP_SECRET`. See `.env.local.example` for the full list with explanations.
+Required vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ENCRYPTION_KEY` (64 hex chars), `META_APP_SECRET`, `CRON_SECRET`. See `.env.local.example` for the full list with explanations.
 
 ## Gotchas
 

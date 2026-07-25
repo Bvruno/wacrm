@@ -1,7 +1,7 @@
-import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
-import { MarketingHeader } from '@/components/marketing/header'
-import { MarketingFooter } from '@/components/marketing/footer'
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import { MarketingHeader } from '@/components/marketing/header';
+import { MarketingFooter } from '@/components/marketing/footer';
 
 export const metadata: Metadata = {
   title: {
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-}
+};
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
@@ -23,5 +23,5 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
       <main className="flex-1">{children}</main>
       <MarketingFooter />
     </div>
-  )
+  );
 }

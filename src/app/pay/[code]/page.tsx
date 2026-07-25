@@ -2,10 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { Loader2, CheckCircle, AlertCircle, Copy, Smartphone, CreditCard, QrCode } from 'lucide-react';
+import {
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Copy,
+  Smartphone,
+  CreditCard,
+  QrCode,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type PayState = 'loading' | 'ready' | 'yape_plin' | 'card' | 'processing' | 'success' | 'error';
+type PayState =
+  | 'loading'
+  | 'ready'
+  | 'yape_plin'
+  | 'card'
+  | 'processing'
+  | 'success'
+  | 'error';
 
 interface PayData {
   code: string;
@@ -52,7 +67,9 @@ export default function PayPage() {
   const handleYapePlin = async () => {
     setState('processing');
     try {
-      const res = await fetch(`/api/pay/${code}/create-order`, { method: 'POST' });
+      const res = await fetch(`/api/pay/${code}/create-order`, {
+        method: 'POST',
+      });
       const json = await res.json();
       if (json.error) {
         setErrorMsg(json.error);
@@ -105,19 +122,19 @@ export default function PayPage() {
 
   if (state === 'loading') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-primary" />
+      <div className="bg-background flex min-h-screen items-center justify-center">
+        <Loader2 className="text-primary size-8 animate-spin" />
       </div>
     );
   }
 
   if (state === 'error') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center max-w-sm space-y-4">
-          <AlertCircle className="size-12 text-red-400 mx-auto" />
-          <h1 className="text-lg font-semibold text-foreground">Error</h1>
-          <p className="text-sm text-muted-foreground">{errorMsg}</p>
+      <div className="bg-background flex min-h-screen items-center justify-center p-4">
+        <div className="max-w-sm space-y-4 text-center">
+          <AlertCircle className="mx-auto size-12 text-red-400" />
+          <h1 className="text-foreground text-lg font-semibold">Error</h1>
+          <p className="text-muted-foreground text-sm">{errorMsg}</p>
         </div>
       </div>
     );
@@ -125,26 +142,32 @@ export default function PayPage() {
 
   if (state === 'success') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center max-w-sm space-y-4">
-          <CheckCircle className="size-16 text-green-500 mx-auto" />
-          <h1 className="text-xl font-bold text-foreground">¡Pago exitoso!</h1>
-          <p className="text-sm text-muted-foreground">Tu pago ha sido confirmado. Gracias por tu compra.</p>
+      <div className="bg-background flex min-h-screen items-center justify-center p-4">
+        <div className="max-w-sm space-y-4 text-center">
+          <CheckCircle className="mx-auto size-16 text-green-500" />
+          <h1 className="text-foreground text-xl font-bold">¡Pago exitoso!</h1>
+          <p className="text-muted-foreground text-sm">
+            Tu pago ha sido confirmado. Gracias por tu compra.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center p-4">
+    <div className="from-background to-muted/30 flex min-h-screen items-center justify-center bg-gradient-to-b p-4">
       <div className="w-full max-w-md space-y-6">
         {/* Header */}
-        <div className="text-center space-y-1">
-          <h1 className="text-2xl font-bold text-foreground">{data?.course_title}</h1>
+        <div className="space-y-1 text-center">
+          <h1 className="text-foreground text-2xl font-bold">
+            {data?.course_title}
+          </h1>
           {data?.course_description && (
-            <p className="text-sm text-muted-foreground">{data.course_description}</p>
+            <p className="text-muted-foreground text-sm">
+              {data.course_description}
+            </p>
           )}
-          <p className="text-3xl font-bold text-primary mt-2">
+          <p className="text-primary mt-2 text-3xl font-bold">
             {data && formatPrice(data.amount_pen)}
           </p>
         </div>
@@ -152,11 +175,11 @@ export default function PayPage() {
         {/* Yape/Plin Flow */}
         {state === 'yape_plin' && orderData && (
           <div className="space-y-4">
-            <div className="rounded-xl border border-border bg-card p-6 text-center space-y-4">
-              <QrCode className="size-8 text-primary mx-auto" />
+            <div className="border-border bg-card space-y-4 rounded-xl border p-6 text-center">
+              <QrCode className="text-primary mx-auto size-8" />
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Código CIP</p>
-                <p className="text-2xl font-bold font-mono tracking-widest text-foreground">
+                <p className="text-muted-foreground mb-1 text-xs">Código CIP</p>
+                <p className="text-foreground font-mono text-2xl font-bold tracking-widest">
                   {orderData.cip_code}
                 </p>
               </div>
@@ -166,21 +189,28 @@ export default function PayPage() {
                   <img
                     src={orderData.cip_qr_url}
                     alt="QR CIP"
-                    className="w-48 h-48 rounded-lg border border-border"
+                    className="border-border h-48 w-48 rounded-lg border"
                   />
                 </div>
               )}
-              <Button onClick={copyCip} variant="outline" className="w-full border-border">
+              <Button
+                onClick={copyCip}
+                variant="outline"
+                className="border-border w-full"
+              >
                 <Copy className="size-4" />
                 {cipCopied ? '¡Copiado!' : 'Copiar CIP'}
               </Button>
-              <p className="text-xs text-muted-foreground">
-                Abre Yape o Plin, elige &quot;Pagar con CIP&quot; e ingresa el código de arriba
+              <p className="text-muted-foreground text-xs">
+                Abre Yape o Plin, elige &quot;Pagar con CIP&quot; e ingresa el
+                código de arriba
               </p>
             </div>
-            <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-center">
-              <p className="text-xs text-amber-600 font-medium">Esperando confirmación...</p>
-              <p className="text-[10px] text-muted-foreground mt-1">
+            <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-center">
+              <p className="text-xs font-medium text-amber-600">
+                Esperando confirmación...
+              </p>
+              <p className="text-muted-foreground mt-1 text-[10px]">
                 El pago se confirmará automáticamente al recibir la notificación
               </p>
             </div>
@@ -192,7 +222,7 @@ export default function PayPage() {
           <div className="space-y-3">
             <Button
               onClick={handleYapePlin}
-              className="w-full h-14 text-base bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-3"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground flex h-14 w-full items-center justify-center gap-3 text-base"
             >
               <Smartphone className="size-5" />
               Pagar con Yape / Plin
@@ -200,7 +230,7 @@ export default function PayPage() {
             <Button
               onClick={handleCard}
               variant="outline"
-              className="w-full h-14 text-base border-border text-foreground hover:bg-muted flex items-center justify-center gap-3"
+              className="border-border text-foreground hover:bg-muted flex h-14 w-full items-center justify-center gap-3 text-base"
             >
               <CreditCard className="size-5" />
               Pagar con tarjeta
@@ -211,15 +241,17 @@ export default function PayPage() {
         {/* Card flow */}
         {state === 'card' && (
           <div className="space-y-4">
-            <div className="rounded-xl border border-border bg-card p-6 text-center space-y-3">
-              <CreditCard className="size-8 text-primary mx-auto" />
-              <p className="text-sm text-foreground font-medium">Pago con tarjeta</p>
-              <p className="text-xs text-muted-foreground">
+            <div className="border-border bg-card space-y-3 rounded-xl border p-6 text-center">
+              <CreditCard className="text-primary mx-auto size-8" />
+              <p className="text-foreground text-sm font-medium">
+                Pago con tarjeta
+              </p>
+              <p className="text-muted-foreground text-xs">
                 Serás redirigido al formulario seguro de pago
               </p>
               <Button
                 onClick={handleCardPayment}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground w-full"
               >
                 Pagar {data && formatPrice(data.amount_pen)}
               </Button>
@@ -228,14 +260,14 @@ export default function PayPage() {
         )}
 
         {state === 'processing' && (
-          <div className="text-center py-12 space-y-3">
-            <Loader2 className="size-8 animate-spin text-primary mx-auto" />
-            <p className="text-sm text-muted-foreground">Procesando pago...</p>
+          <div className="space-y-3 py-12 text-center">
+            <Loader2 className="text-primary mx-auto size-8 animate-spin" />
+            <p className="text-muted-foreground text-sm">Procesando pago...</p>
           </div>
         )}
 
         {/* Footer */}
-        <p className="text-[10px] text-center text-muted-foreground/50">
+        <p className="text-muted-foreground/50 text-center text-[10px]">
           Pago procesado de forma segura con Culqi
         </p>
       </div>

@@ -400,9 +400,9 @@
         "custom": "Custom Fields",
         "deals": "Deals",
         "tags": "Tags",
-      "noTags": "No tags",
-      "noDeals": "No deals",
-      "addNotePlaceholder": "Add a note..."
+        "noTags": "No tags",
+        "noDeals": "No deals",
+        "addNotePlaceholder": "Add a note..."
       },
       "actions": {
         "edit": "Edit",
@@ -2091,27 +2091,52 @@
       "sharedInbox": {
         "title": "Shared Inbox",
         "description": "Centralize all WhatsApp conversations in one place. Your team can view, assign, and reply without conflicts.",
-        "features": ["Real-time conversations", "Agent assignment", "Tags and filters", "Full history"]
+        "features": [
+          "Real-time conversations",
+          "Agent assignment",
+          "Tags and filters",
+          "Full history"
+        ]
       },
       "pipeline": {
         "title": "Sales Pipeline",
         "description": "Convert more leads with a visual pipeline. Drag and drop between stages, customize your sales flow, and track every opportunity.",
-        "features": ["Kanban drag & drop", "Customizable stages", "Pipeline value", "Stage metrics"]
+        "features": [
+          "Kanban drag & drop",
+          "Customizable stages",
+          "Pipeline value",
+          "Stage metrics"
+        ]
       },
       "broadcasts": {
         "title": "Broadcasts",
         "description": "Reach hundreds of contacts with one click. Segment your audience, schedule campaigns, and measure performance.",
-        "features": ["Tag-based segmentation", "Send scheduling", "Campaign metrics", "Reusable templates"]
+        "features": [
+          "Tag-based segmentation",
+          "Send scheduling",
+          "Campaign metrics",
+          "Reusable templates"
+        ]
       },
       "automations": {
         "title": "Automations",
         "description": "Create automated workflows without writing a single line of code — from welcome messages to complex follow-ups.",
-        "features": ["Triggers and actions", "Visual flows", "No-code", "Integrations"]
+        "features": [
+          "Triggers and actions",
+          "Visual flows",
+          "No-code",
+          "Integrations"
+        ]
       },
       "aiAssistant": {
         "title": "AI Assistant",
         "description": "Reply faster and more accurately. The AI assistant learns from your knowledge base and suggests contextual replies.",
-        "features": ["Smart suggestions", "Knowledge base", "Auto-reply", "Customizable"]
+        "features": [
+          "Smart suggestions",
+          "Knowledge base",
+          "Auto-reply",
+          "Customizable"
+        ]
       }
     },
     "pricingPage": {

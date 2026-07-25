@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import {
   createContext,
@@ -7,61 +7,65 @@ import {
   useState,
   useCallback,
   type ReactNode,
-} from 'react'
+} from 'react';
 
-const STORAGE_KEY = 'sidebar-collapsed'
+const STORAGE_KEY = 'sidebar-collapsed';
 
 interface SidebarContextValue {
-  collapsed: boolean
-  toggleCollapsed: () => void
-  setCollapsed: (value: boolean) => void
+  collapsed: boolean;
+  toggleCollapsed: () => void;
+  setCollapsed: (value: boolean) => void;
 }
 
-const SidebarContext = createContext<SidebarContextValue | null>(null)
+const SidebarContext = createContext<SidebarContextValue | null>(null);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [mounted, setMounted] = useState(false)
+  const [mounted, setMounted] = useState(false);
 
   const [collapsed, setCollapsedState] = useState(() => {
     if (typeof window !== 'undefined') {
       try {
-        return localStorage.getItem(STORAGE_KEY) === 'true'
+        return localStorage.getItem(STORAGE_KEY) === 'true';
       } catch {}
     }
-    return false
-  })
+    return false;
+  });
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const setCollapsed = useCallback((value: boolean) => {
-    setCollapsedState(value)
+    setCollapsedState(value);
     try {
-      localStorage.setItem(STORAGE_KEY, String(value))
+      localStorage.setItem(STORAGE_KEY, String(value));
     } catch {}
-  }, [])
+  }, []);
 
   const toggleCollapsed = useCallback(() => {
     setCollapsedState((prev) => {
-      const next = !prev
+      const next = !prev;
       try {
-        localStorage.setItem(STORAGE_KEY, String(next))
+        localStorage.setItem(STORAGE_KEY, String(next));
       } catch {}
-      return next
-    })
-  }, [])
+      return next;
+    });
+  }, []);
 
-  if (!mounted) return null
+  if (!mounted) return null;
 
   return (
-    <SidebarContext.Provider value={{ collapsed, toggleCollapsed, setCollapsed }}>
+    <SidebarContext.Provider
+      value={{ collapsed, toggleCollapsed, setCollapsed }}
+    >
       {children}
     </SidebarContext.Provider>
-  )
+  );
 }
 
 export function useSidebar() {
-  const ctx = useContext(SidebarContext)
-  if (!ctx) throw new Error('useSidebar must be used within SidebarProvider')
-  return ctx
+  const ctx = useContext(SidebarContext);
+  if (!ctx) throw new Error('useSidebar must be used within SidebarProvider');
+  return ctx;
 }

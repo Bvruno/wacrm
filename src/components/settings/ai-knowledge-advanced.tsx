@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { toast } from 'sonner'
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import {
   Loader2,
   Plus,
@@ -15,146 +15,141 @@ import {
   Globe,
   Eye,
   BarChart3,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog'
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from '@/components/ui/tabs'
-import { useTranslations } from 'next-intl'
+} from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useTranslations } from 'next-intl';
 
 interface DocSummary {
-  id: string
-  title: string
-  source_type: 'text' | 'file' | 'url'
-  file_url?: string | null
-  file_size?: number | null
-  file_type?: string | null
-  url?: string | null
-  usage_count: number
-  updated_at: string
+  id: string;
+  title: string;
+  source_type: 'text' | 'file' | 'url';
+  file_url?: string | null;
+  file_size?: number | null;
+  file_type?: string | null;
+  url?: string | null;
+  usage_count: number;
+  updated_at: string;
 }
 
 interface Chunk {
-  id: string
-  content: string
-  chunk_index: number
+  id: string;
+  content: string;
+  chunk_index: number;
 }
 
-type EditTarget = 'new' | string | null
-type AddMode = 'text' | 'file' | 'url'
+type EditTarget = 'new' | string | null;
+type AddMode = 'text' | 'file' | 'url';
 
 export function AiKnowledgeCardAdvanced({
   accountId,
   canEdit,
   hasEmbeddingsKey,
 }: {
-  accountId: string | null
-  canEdit: boolean
-  hasEmbeddingsKey: boolean
+  accountId: string | null;
+  canEdit: boolean;
+  hasEmbeddingsKey: boolean;
 }) {
-  const [docs, setDocs] = useState<DocSummary[]>([])
-  const [loading, setLoading] = useState(true)
-  const [editing, setEditing] = useState<EditTarget>(null)
-  const [addMode, setAddMode] = useState<AddMode>('text')
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const [url, setUrl] = useState('')
-  const [file, setFile] = useState<File | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [reindexing, setReindexing] = useState(false)
-  const [chunksOpen, setChunksOpen] = useState(false)
-  const [chunks, setChunks] = useState<Chunk[]>([])
-  const [chunksLoading, setChunksLoading] = useState(false)
-  const [editingChunk, setEditingChunk] = useState<Chunk | null>(null)
-  const [selectedDoc, setSelectedDoc] = useState<DocSummary | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const loadedAccountIdRef = useRef<string | null>(null)
-  const t = useTranslations('Settings.aiKnowledge')
+  const [docs, setDocs] = useState<DocSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<EditTarget>(null);
+  const [addMode, setAddMode] = useState<AddMode>('text');
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [url, setUrl] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [reindexing, setReindexing] = useState(false);
+  const [chunksOpen, setChunksOpen] = useState(false);
+  const [chunks, setChunks] = useState<Chunk[]>([]);
+  const [chunksLoading, setChunksLoading] = useState(false);
+  const [editingChunk, setEditingChunk] = useState<Chunk | null>(null);
+  const [selectedDoc, setSelectedDoc] = useState<DocSummary | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const loadedAccountIdRef = useRef<string | null>(null);
+  const t = useTranslations('Settings.aiKnowledge');
 
   const fetchDocs = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch('/api/ai/knowledge')
-      const data = await res.json()
-      if (res.ok) setDocs(data.documents ?? [])
-      else toast.error(data.error ?? t('loadFailed'))
+      const res = await fetch('/api/ai/knowledge');
+      const data = await res.json();
+      if (res.ok) setDocs(data.documents ?? []);
+      else toast.error(data.error ?? t('loadFailed'));
     } catch {
-      toast.error(t('loadFailed'))
+      toast.error(t('loadFailed'));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [t])
+  }, [t]);
 
   useEffect(() => {
-    if (!accountId || loadedAccountIdRef.current === accountId) return
-    loadedAccountIdRef.current = accountId
-    void fetchDocs()
-  }, [accountId, fetchDocs])
+    if (!accountId || loadedAccountIdRef.current === accountId) return;
+    loadedAccountIdRef.current = accountId;
+    void fetchDocs();
+  }, [accountId, fetchDocs]);
 
   const openNew = (mode: AddMode = 'text') => {
-    setAddMode(mode)
-    setEditing('new')
-    setTitle('')
-    setContent('')
-    setUrl('')
-    setFile(null)
-  }
+    setAddMode(mode);
+    setEditing('new');
+    setTitle('');
+    setContent('');
+    setUrl('');
+    setFile(null);
+  };
 
   const openEdit = async (id: string) => {
     try {
-      const res = await fetch(`/api/ai/knowledge/${id}`)
-      const data = await res.json()
+      const res = await fetch(`/api/ai/knowledge/${id}`);
+      const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error ?? t('openFailed'))
-        return
+        toast.error(data.error ?? t('openFailed'));
+        return;
       }
-      setEditing(id)
-      setAddMode('text')
-      setTitle(data.title ?? '')
-      setContent(data.content ?? '')
-      setUrl(data.url ?? '')
+      setEditing(id);
+      setAddMode('text');
+      setTitle(data.title ?? '');
+      setContent(data.content ?? '');
+      setUrl(data.url ?? '');
     } catch {
-      toast.error(t('openFailed'))
+      toast.error(t('openFailed'));
     }
-  }
+  };
 
   const cancelEdit = () => {
-    setEditing(null)
-    setTitle('')
-    setContent('')
-    setUrl('')
-    setFile(null)
-  }
+    setEditing(null);
+    setTitle('');
+    setContent('');
+    setUrl('');
+    setFile(null);
+  };
 
   const saveText = async () => {
     if (!title.trim() || !content.trim()) {
-      toast.error(t('titleContentRequired'))
-      return
+      toast.error(t('titleContentRequired'));
+      return;
     }
-    setSaving(true)
+    setSaving(true);
     try {
-      const isNew = editing === 'new'
+      const isNew = editing === 'new';
       const res = await fetch(
         isNew ? '/api/ai/knowledge' : `/api/ai/knowledge/${editing}`,
         {
@@ -165,64 +160,65 @@ export function AiKnowledgeCardAdvanced({
             content: content.trim(),
             source_type: 'text',
           }),
-        },
-      )
-      const data = await res.json()
+        }
+      );
+      const data = await res.json();
       if (res.ok) {
-        if (data.warning) toast.warning(data.warning)
-        else toast.success(isNew ? t('saveSuccessNew') : t('saveSuccessUpdate'))
-        cancelEdit()
-        await fetchDocs()
+        if (data.warning) toast.warning(data.warning);
+        else
+          toast.success(isNew ? t('saveSuccessNew') : t('saveSuccessUpdate'));
+        cancelEdit();
+        await fetchDocs();
       } else {
-        toast.error(data.error ?? t('saveFailed'))
+        toast.error(data.error ?? t('saveFailed'));
       }
     } catch {
-      toast.error(t('saveFailed'))
+      toast.error(t('saveFailed'));
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const saveFile = async () => {
     if (!title.trim() || !file) {
-      toast.error('Title and file are required')
-      return
+      toast.error('Title and file are required');
+      return;
     }
-    setSaving(true)
+    setSaving(true);
     try {
-      const formData = new FormData()
-      formData.append('title', title.trim())
-      formData.append('file', file)
-      formData.append('source_type', 'file')
+      const formData = new FormData();
+      formData.append('title', title.trim());
+      formData.append('file', file);
+      formData.append('source_type', 'file');
 
       const res = await fetch('/api/ai/knowledge', {
         method: 'POST',
         body: formData,
-      })
-      const data = await res.json()
+      });
+      const data = await res.json();
       if (res.ok) {
-        if (data.warning) toast.warning(data.warning)
-        else toast.success(t('saveSuccessNew'))
-        cancelEdit()
-        await fetchDocs()
+        if (data.warning) toast.warning(data.warning);
+        else toast.success(t('saveSuccessNew'));
+        cancelEdit();
+        await fetchDocs();
       } else {
-        toast.error(data.error ?? t('saveFailed'))
+        toast.error(data.error ?? t('saveFailed'));
       }
     } catch {
-      toast.error(t('saveFailed'))
+      toast.error(t('saveFailed'));
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const saveUrl = async () => {
     if (!title.trim() || !url.trim()) {
-      toast.error('Title and URL are required')
-      return
+      toast.error('Title and URL are required');
+      return;
     }
-    setSaving(true)
+    setSaving(true);
     try {
-      const isNew = editing === 'new'
+      const isNew = editing === 'new';
       const res = await fetch(
         isNew ? '/api/ai/knowledge' : `/api/ai/knowledge/${editing}`,
         {
@@ -233,85 +229,86 @@ export function AiKnowledgeCardAdvanced({
             url: url.trim(),
             source_type: 'url',
           }),
-        },
-      )
-      const data = await res.json()
+        }
+      );
+      const data = await res.json();
       if (res.ok) {
-        if (data.warning) toast.warning(data.warning)
-        else toast.success(isNew ? t('saveSuccessNew') : t('saveSuccessUpdate'))
-        cancelEdit()
-        await fetchDocs()
+        if (data.warning) toast.warning(data.warning);
+        else
+          toast.success(isNew ? t('saveSuccessNew') : t('saveSuccessUpdate'));
+        cancelEdit();
+        await fetchDocs();
       } else {
-        toast.error(data.error ?? t('saveFailed'))
+        toast.error(data.error ?? t('saveFailed'));
       }
     } catch {
-      toast.error(t('saveFailed'))
+      toast.error(t('saveFailed'));
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const save = () => {
-    if (addMode === 'file') return saveFile()
-    if (addMode === 'url') return saveUrl()
-    return saveText()
-  }
+    if (addMode === 'file') return saveFile();
+    if (addMode === 'url') return saveUrl();
+    return saveText();
+  };
 
   const remove = async (id: string) => {
     try {
-      const res = await fetch(`/api/ai/knowledge/${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/ai/knowledge/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        toast.success(t('removeSuccess'))
-        setDocs((d) => d.filter((x) => x.id !== id))
+        toast.success(t('removeSuccess'));
+        setDocs((d) => d.filter((x) => x.id !== id));
       } else {
-        const data = await res.json()
-        toast.error(data.error ?? t('removeFailed'))
+        const data = await res.json();
+        toast.error(data.error ?? t('removeFailed'));
       }
     } catch {
-      toast.error(t('removeFailed'))
+      toast.error(t('removeFailed'));
     }
-  }
+  };
 
   const reindex = async () => {
-    setReindexing(true)
+    setReindexing(true);
     try {
-      const res = await fetch('/api/ai/knowledge/reindex', { method: 'POST' })
-      const data = await res.json()
+      const res = await fetch('/api/ai/knowledge/reindex', { method: 'POST' });
+      const data = await res.json();
       if (res.ok && data.success) {
-        toast.success(t('reindexSuccess', { count: data.reindexed }))
+        toast.success(t('reindexSuccess', { count: data.reindexed }));
       } else {
-        toast.error(data.error ?? t('reindexFailed'))
+        toast.error(data.error ?? t('reindexFailed'));
       }
     } catch {
-      toast.error(t('reindexFailed'))
+      toast.error(t('reindexFailed'));
     } finally {
-      setReindexing(false)
+      setReindexing(false);
     }
-  }
+  };
 
   const viewChunks = async (doc: DocSummary) => {
-    setSelectedDoc(doc)
-    setChunksOpen(true)
-    setChunksLoading(true)
+    setSelectedDoc(doc);
+    setChunksOpen(true);
+    setChunksLoading(true);
     try {
-      const res = await fetch(`/api/ai/knowledge/${doc.id}/chunks`)
-      const data = await res.json()
+      const res = await fetch(`/api/ai/knowledge/${doc.id}/chunks`);
+      const data = await res.json();
       if (res.ok) {
-        setChunks(data.chunks ?? [])
+        setChunks(data.chunks ?? []);
       } else {
-        toast.error(data.error ?? 'Failed to load chunks')
-        setChunks([])
+        toast.error(data.error ?? 'Failed to load chunks');
+        setChunks([]);
       }
     } catch {
-      toast.error('Failed to load chunks')
-      setChunks([])
+      toast.error('Failed to load chunks');
+      setChunks([]);
     } finally {
-      setChunksLoading(false)
+      setChunksLoading(false);
     }
-  }
+  };
 
   const saveChunk = async () => {
-    if (!editingChunk || !selectedDoc) return
+    if (!editingChunk || !selectedDoc) return;
     try {
       const res = await fetch(
         `/api/ai/knowledge/${selectedDoc.id}/chunks/${editingChunk.id}`,
@@ -319,53 +316,54 @@ export function AiKnowledgeCardAdvanced({
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content: editingChunk.content }),
-        },
-      )
+        }
+      );
       if (res.ok) {
-        toast.success('Chunk updated')
+        toast.success('Chunk updated');
         setChunks((prev) =>
-          prev.map((c) => (c.id === editingChunk.id ? editingChunk : c)),
-        )
-        setEditingChunk(null)
+          prev.map((c) => (c.id === editingChunk.id ? editingChunk : c))
+        );
+        setEditingChunk(null);
       } else {
-        const data = await res.json()
-        toast.error(data.error ?? 'Failed to update chunk')
+        const data = await res.json();
+        toast.error(data.error ?? 'Failed to update chunk');
       }
     } catch {
-      toast.error('Failed to update chunk')
+      toast.error('Failed to update chunk');
     }
-  }
+  };
 
   const sourceIcon = (sourceType: string) => {
     switch (sourceType) {
       case 'file':
-        return <FileText className="h-4 w-4" />
+        return <FileText className="h-4 w-4" />;
       case 'url':
-        return <Globe className="h-4 w-4" />
+        return <Globe className="h-4 w-4" />;
       default:
-        return <BookOpen className="h-4 w-4" />
+        return <BookOpen className="h-4 w-4" />;
     }
-  }
+  };
 
   const sourceLabel = (doc: DocSummary) => {
-    if (doc.source_type === 'file') return doc.file_type?.toUpperCase() || 'FILE'
-    if (doc.source_type === 'url') return 'URL'
-    return 'TEXT'
-  }
+    if (doc.source_type === 'file')
+      return doc.file_type?.toUpperCase() || 'FILE';
+    if (doc.source_type === 'url') return 'URL';
+    return 'TEXT';
+  };
 
   const formatFileSize = (bytes: number | null | undefined) => {
-    if (!bytes) return ''
-    if (bytes < 1024) return `${bytes} B`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  }
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   return (
     <>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <BookOpen className="h-4 w-4 text-primary" /> {t('title')}
+            <BookOpen className="text-primary h-4 w-4" /> {t('title')}
           </CardTitle>
           <CardDescription>
             {t('description', {
@@ -377,17 +375,17 @@ export function AiKnowledgeCardAdvanced({
         </CardHeader>
         <CardContent className="space-y-4">
           {loading ? (
-            <div className="flex items-center py-4 text-sm text-muted-foreground">
+            <div className="text-muted-foreground flex items-center py-4 text-sm">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('loading')}
             </div>
           ) : (
             <>
               {docs.length === 0 && editing === null && (
-                <p className="text-sm text-muted-foreground">{t('noDocs')}</p>
+                <p className="text-muted-foreground text-sm">{t('noDocs')}</p>
               )}
 
               {docs.length > 0 && (
-                <ul className="divide-y divide-border rounded-md border border-border">
+                <ul className="divide-border border-border divide-y rounded-md border">
                   {docs.map((doc) => (
                     <li
                       key={doc.id}
@@ -395,10 +393,13 @@ export function AiKnowledgeCardAdvanced({
                     >
                       <div className="flex min-w-0 items-center gap-2">
                         {sourceIcon(doc.source_type)}
-                        <span className="min-w-0 truncate text-sm text-foreground">
+                        <span className="text-foreground min-w-0 truncate text-sm">
                           {doc.title}
                         </span>
-                        <Badge variant="outline" className="shrink-0 text-[10px]">
+                        <Badge
+                          variant="outline"
+                          className="shrink-0 text-[10px]"
+                        >
                           {sourceLabel(doc)}
                         </Badge>
                         {doc.usage_count > 0 && (
@@ -411,7 +412,7 @@ export function AiKnowledgeCardAdvanced({
                           </Badge>
                         )}
                         {doc.file_size && (
-                          <span className="shrink-0 text-xs text-muted-foreground">
+                          <span className="text-muted-foreground shrink-0 text-xs">
                             {formatFileSize(doc.file_size)}
                           </span>
                         )}
@@ -439,7 +440,7 @@ export function AiKnowledgeCardAdvanced({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            className="text-destructive hover:text-destructive h-8 w-8 p-0"
                             onClick={() => void remove(doc.id)}
                             title="Delete"
                           >
@@ -453,7 +454,7 @@ export function AiKnowledgeCardAdvanced({
               )}
 
               {editing !== null ? (
-                <div className="space-y-3 rounded-md border border-border p-3">
+                <div className="border-border space-y-3 rounded-md border p-3">
                   <Tabs
                     value={addMode}
                     onValueChange={(v) => setAddMode(v as AddMode)}
@@ -483,7 +484,9 @@ export function AiKnowledgeCardAdvanced({
                       </div>
 
                       <TabsContent value="text" className="mt-0 space-y-2">
-                        <Label htmlFor="kb-content">{t('editDocContent')}</Label>
+                        <Label htmlFor="kb-content">
+                          {t('editDocContent')}
+                        </Label>
                         <Textarea
                           id="kb-content"
                           value={content}
@@ -502,10 +505,10 @@ export function AiKnowledgeCardAdvanced({
                           accept=".pdf,.docx,.txt,.md"
                           className="hidden"
                           onChange={(e) => {
-                            const f = e.target.files?.[0]
+                            const f = e.target.files?.[0];
                             if (f) {
-                              setFile(f)
-                              if (!title) setTitle(f.name)
+                              setFile(f);
+                              if (!title) setTitle(f.name);
                             }
                           }}
                         />
@@ -518,7 +521,7 @@ export function AiKnowledgeCardAdvanced({
                           {file ? file.name : 'Choose file'}
                         </Button>
                         {file && (
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-muted-foreground text-xs">
                             {formatFileSize(file.size)}
                           </p>
                         )}
@@ -557,13 +560,25 @@ export function AiKnowledgeCardAdvanced({
                 canEdit && (
                   <div className="flex items-center justify-between">
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => openNew('text')}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openNew('text')}
+                      >
                         <Plus className="mr-2 h-4 w-4" /> Add Text
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => openNew('file')}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openNew('file')}
+                      >
                         <Upload className="mr-2 h-4 w-4" /> Upload File
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => openNew('url')}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openNew('url')}
+                      >
                         <Link2 className="mr-2 h-4 w-4" /> Import URL
                       </Button>
                     </div>
@@ -592,29 +607,25 @@ export function AiKnowledgeCardAdvanced({
       </Card>
 
       <Dialog open={chunksOpen} onOpenChange={setChunksOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Chunks: {selectedDoc?.title}
-            </DialogTitle>
-            <DialogDescription>
-              {chunks.length} chunks
-            </DialogDescription>
+            <DialogTitle>Chunks: {selectedDoc?.title}</DialogTitle>
+            <DialogDescription>{chunks.length} chunks</DialogDescription>
           </DialogHeader>
           <div className="mt-4 space-y-3">
             {chunksLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
               </div>
             ) : chunks.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
+              <p className="text-muted-foreground py-8 text-center text-sm">
                 No chunks found
               </p>
             ) : (
               chunks.map((chunk) => (
                 <div
                   key={chunk.id}
-                  className="rounded-md border border-border p-3"
+                  className="border-border rounded-md border p-3"
                 >
                   <div className="mb-2 flex items-center justify-between">
                     <Badge variant="outline">Chunk #{chunk.chunk_index}</Badge>
@@ -626,7 +637,7 @@ export function AiKnowledgeCardAdvanced({
                       <Pencil className="h-3 w-3" />
                     </Button>
                   </div>
-                  <p className="whitespace-pre-wrap text-sm text-foreground">
+                  <p className="text-foreground text-sm whitespace-pre-wrap">
                     {chunk.content}
                   </p>
                   {editingChunk?.id === chunk.id && (
@@ -634,7 +645,10 @@ export function AiKnowledgeCardAdvanced({
                       <Textarea
                         value={editingChunk.content}
                         onChange={(e) =>
-                          setEditingChunk({ ...editingChunk, content: e.target.value })
+                          setEditingChunk({
+                            ...editingChunk,
+                            content: e.target.value,
+                          })
                         }
                         rows={4}
                       />
@@ -659,5 +673,5 @@ export function AiKnowledgeCardAdvanced({
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

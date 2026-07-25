@@ -26,7 +26,11 @@ interface CourseFormProps {
   onSaved: () => void;
 }
 
-function FormInner({ course, onSaved, onOpenChange }: {
+function FormInner({
+  course,
+  onSaved,
+  onOpenChange,
+}: {
   course: Course | null;
   onSaved: () => void;
   onOpenChange: (open: boolean) => void;
@@ -37,7 +41,9 @@ function FormInner({ course, onSaved, onOpenChange }: {
 
   const [title, setTitle] = useState(course?.title ?? '');
   const [description, setDescription] = useState(course?.description ?? '');
-  const [price, setPrice] = useState(course?.price_pen ? (course.price_pen / 100).toFixed(2) : '');
+  const [price, setPrice] = useState(
+    course?.price_pen ? (course.price_pen / 100).toFixed(2) : ''
+  );
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
@@ -97,7 +103,9 @@ function FormInner({ course, onSaved, onOpenChange }: {
       </DialogHeader>
       <div className="space-y-4">
         <div className="space-y-1.5">
-          <Label className="text-muted-foreground text-xs">{t('title')} *</Label>
+          <Label className="text-muted-foreground text-xs">
+            {t('title')} *
+          </Label>
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -106,16 +114,20 @@ function FormInner({ course, onSaved, onOpenChange }: {
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-muted-foreground text-xs">{t('description')}</Label>
+          <Label className="text-muted-foreground text-xs">
+            {t('description')}
+          </Label>
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder={t('descPlaceholder')}
-            className="bg-muted border-border text-foreground text-sm resize-none min-h-[60px]"
+            className="bg-muted border-border text-foreground min-h-[60px] resize-none text-sm"
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-muted-foreground text-xs">{t('price')} (S/) *</Label>
+          <Label className="text-muted-foreground text-xs">
+            {t('price')} (S/) *
+          </Label>
           <Input
             type="number"
             step="0.01"
@@ -123,7 +135,7 @@ function FormInner({ course, onSaved, onOpenChange }: {
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             placeholder="79.00"
-            className="bg-muted border-border text-foreground h-9 text-sm font-mono"
+            className="bg-muted border-border text-foreground h-9 font-mono text-sm"
           />
         </div>
       </div>
@@ -148,7 +160,12 @@ function FormInner({ course, onSaved, onOpenChange }: {
   );
 }
 
-export function CourseForm({ open, onOpenChange, course, onSaved }: CourseFormProps) {
+export function CourseForm({
+  open,
+  onOpenChange,
+  course,
+  onSaved,
+}: CourseFormProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <FormInner

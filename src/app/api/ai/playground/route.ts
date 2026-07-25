@@ -1,30 +1,40 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { requireRole, toErrorResponse } from '@/lib/auth/account'
-import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
-import { getDefaultAgent } from '@/lib/agents/agents'
-import { retrieveKnowledge } from '@/lib/ai/knowledge'
-import { generateReply, generateReplyStream } from '@/lib/ai/generate'
-import { buildSystemPrompt } from '@/lib/ai/defaults'
-import { latestUserMessage } from '@/lib/ai/query'
-import { AiError, type ChatMessage } from '@/lib/ai/types'
-import { getToneInstructions } from '@/lib/ai/tone-presets'
+import { NextRequest, NextResponse } from 'next/server';
+import { requireRole, toErrorResponse } from '@/lib/auth/account';
+import {
+  checkRateLimit,
+  rateLimitResponse,
+  RATE_LIMITS,
+} from '@/lib/rate-limit';
+import { getDefaultAgent } from '@/lib/agents/agents';
+import { retrieveKnowledge } from '@/lib/ai/knowledge';
+import { generateReply, generateReplyStream } from '@/lib/ai/generate';
+import { buildSystemPrompt } from '@/lib/ai/defaults';
+import { latestUserMessage } from '@/lib/ai/query';
+import { AiError, type ChatMessage } from '@/lib/ai/types';
+import { getToneInstructions } from '@/lib/ai/tone-presets';
 
-const MAX_TURNS = 20
+const MAX_TURNS = 20;
 
 export async function POST(request: NextRequest) {
   try {
-    const { supabase, accountId, userId } = await requireRole('agent')
+    const { supabase, accountId, userId } = await requireRole('agent');
 
-    const limit = checkRateLimit(`ai-playground:${userId}`, RATE_LIMITS.aiDraft)
-    if (!limit.success) return rateLimitResponse(limit)
+    const limit = checkRateLimit(
+      `ai-playground:${userId}`,
+      RATE_LIMITS.aiDraft
+    );
+    if (!limit.success) return rateLimitResponse(limit);
 
-    const body = await request.json().catch(() => null)
-    const rawMessages = Array.isArray(body?.messages) ? body.messages : null
+    const body = await request.json().catch(() => null);
+    const rawMessages = Array.isArray(body?.messages) ? body.messages : null;
     if (!rawMessages) {
-      return NextResponse.json({ error: 'messages is required' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'messages is required' },
+        { status: 400 }
+      );
     }
 
-    const stream = body?.stream === true
+    const stream = body?.stream === true;
 
     const messages: ChatMessage[] = rawMessages
       .filter(
@@ -34,34 +44,34 @@ export async function POST(request: NextRequest) {
           ((m as ChatMessage).role === 'user' ||
             (m as ChatMessage).role === 'assistant') &&
           typeof (m as ChatMessage).content === 'string' &&
-          (m as ChatMessage).content.trim().length > 0,
+          (m as ChatMessage).content.trim().length > 0
       )
-      .slice(-MAX_TURNS)
+      .slice(-MAX_TURNS);
 
     if (messages.length === 0) {
       return NextResponse.json(
         { error: 'Send a message to test the agent.' },
-        { status: 400 },
-      )
+        { status: 400 }
+      );
     }
 
     const config = await getDefaultAgent(supabase, accountId, {
       requireActive: false,
     }).catch((err) => {
-      console.error('[ai/playground] getDefaultAgent error:', err)
+      console.error('[ai/playground] getDefaultAgent error:', err);
       throw new AiError('Stored API key could not be decrypted.', {
         code: 'key_decrypt_failed',
         status: 400,
-      })
-    })
+      });
+    });
     if (!config) {
       return NextResponse.json(
         {
           error: 'No agent configured yet. Add your provider key in Setup.',
           code: 'ai_not_configured',
         },
-        { status: 400 },
-      )
+        { status: 400 }
+      );
     }
 
     const aiConfig = {
@@ -74,16 +84,16 @@ export async function POST(request: NextRequest) {
       autoReplyMaxPerConversation: config.autoReplyMaxPerConversation,
       handoffAgentId: config.handoffAgentId,
       embeddingsApiKey: config.embeddingsApiKey,
-    }
+    };
 
     const knowledge = await retrieveKnowledge(
       supabase,
       accountId,
       aiConfig,
-      latestUserMessage(messages),
-    )
+      latestUserMessage(messages)
+    );
 
-    const toneInstructions = getToneInstructions(config.tonePreset)
+    const toneInstructions = getToneInstructions(config.tonePreset);
 
     const systemPrompt = buildSystemPrompt({
       userPrompt: config.systemPrompt,
@@ -91,7 +101,7 @@ export async function POST(request: NextRequest) {
       knowledge,
       toneInstructions,
       customToneInstructions: config.customToneInstructions,
-    })
+    });
 
     const generateArgs = {
       config: aiConfig,
@@ -102,41 +112,42 @@ export async function POST(request: NextRequest) {
       frequencyPenalty: config.frequencyPenalty,
       presencePenalty: config.presencePenalty,
       maxTokens: config.maxTokens,
-    }
+    };
 
     if (stream) {
-      const encoder = new TextEncoder()
+      const encoder = new TextEncoder();
       const stream = new ReadableStream({
         async start(controller) {
           try {
             await generateReplyStream(generateArgs, {
               onToken: (token) => {
-                const data = `data: ${JSON.stringify({ type: 'token', content: token })}\n\n`
-                controller.enqueue(encoder.encode(data))
+                const data = `data: ${JSON.stringify({ type: 'token', content: token })}\n\n`;
+                controller.enqueue(encoder.encode(data));
               },
               onToolCall: (toolCalls) => {
-                const data = `data: ${JSON.stringify({ type: 'tool_calls', tool_calls: toolCalls })}\n\n`
-                controller.enqueue(encoder.encode(data))
+                const data = `data: ${JSON.stringify({ type: 'tool_calls', tool_calls: toolCalls })}\n\n`;
+                controller.enqueue(encoder.encode(data));
               },
               onEnd: (usage) => {
-                const data = `data: ${JSON.stringify({ type: 'end', usage })}\n\n`
-                controller.enqueue(encoder.encode(data))
-                controller.close()
+                const data = `data: ${JSON.stringify({ type: 'end', usage })}\n\n`;
+                controller.enqueue(encoder.encode(data));
+                controller.close();
               },
               onError: (error) => {
-                const data = `data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`
-                controller.enqueue(encoder.encode(data))
-                controller.close()
+                const data = `data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`;
+                controller.enqueue(encoder.encode(data));
+                controller.close();
               },
-            })
+            });
           } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-            const data = `data: ${JSON.stringify({ type: 'error', error: errorMessage })}\n\n`
-            controller.enqueue(encoder.encode(data))
-            controller.close()
+            const errorMessage =
+              err instanceof Error ? err.message : 'Unknown error';
+            const data = `data: ${JSON.stringify({ type: 'error', error: errorMessage })}\n\n`;
+            controller.enqueue(encoder.encode(data));
+            controller.close();
           }
         },
-      })
+      });
 
       return new Response(stream, {
         headers: {
@@ -144,18 +155,18 @@ export async function POST(request: NextRequest) {
           'Cache-Control': 'no-cache',
           Connection: 'keep-alive',
         },
-      })
+      });
     }
 
-    const { text, handoff } = await generateReply(generateArgs)
-    return NextResponse.json({ reply: text, handoff })
+    const { text, handoff } = await generateReply(generateArgs);
+    return NextResponse.json({ reply: text, handoff });
   } catch (err) {
     if (err instanceof AiError) {
       return NextResponse.json(
         { error: err.message, code: err.code },
-        { status: err.status },
-      )
+        { status: err.status }
+      );
     }
-    return toErrorResponse(err)
+    return toErrorResponse(err);
   }
 }

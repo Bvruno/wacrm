@@ -35,11 +35,15 @@ async function main(): Promise<void> {
   console.error(
     `CodixIA MCP server v${VERSION} ready — instance ${config.baseUrl}, ` +
       `tool groups: ${groups.join(', ')}` +
-      (config.enableWrites ? '' : ' (read-only; set CODIXIA_ENABLE_WRITES to allow changes)'),
+      (config.enableWrites
+        ? ''
+        : ' (read-only; set CODIXIA_ENABLE_WRITES to allow changes)')
   );
 }
 
 main().catch((err) => {
-  console.error(`Failed to start CodixIA MCP server: ${(err as Error).message}`);
+  console.error(
+    `Failed to start CodixIA MCP server: ${(err as Error).message}`
+  );
   process.exit(1);
 });

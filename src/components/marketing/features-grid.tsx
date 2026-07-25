@@ -1,15 +1,15 @@
-import type { LucideIcon } from 'lucide-react'
-import { FeatureCard } from './feature-card'
+import type { LucideIcon } from 'lucide-react';
+import { FeatureCard } from './feature-card';
 
 interface Feature {
-  icon: LucideIcon
-  title: string
-  description: string
+  icon: LucideIcon;
+  title: string;
+  description: string;
 }
 
 interface FeaturesGridProps {
-  features: Feature[]
-  columns?: 2 | 3
+  features: Feature[];
+  columns?: 2 | 3;
 }
 
 export function FeaturesGrid({ features, columns = 3 }: FeaturesGridProps) {
@@ -25,5 +25,5 @@ export function FeaturesGrid({ features, columns = 3 }: FeaturesGridProps) {
         <FeatureCard key={i} {...feature} />
       ))}
     </div>
-  )
+  );
 }

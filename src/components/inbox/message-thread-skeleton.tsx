@@ -1,4 +1,4 @@
-import { Skeleton } from '@/components/ui/skeleton'
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function MessageThreadSkeleton() {
   return (
@@ -41,5 +41,5 @@ export function MessageThreadSkeleton() {
         </div>
       </div>
     </div>
-  )
+  );
 }

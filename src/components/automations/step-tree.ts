@@ -1,6 +1,6 @@
 export type TreeParentScope =
-  | { kind: "root" }
-  | { kind: "branch"; parentCid: string; branch: "yes" | "no" };
+  | { kind: 'root' }
+  | { kind: 'branch'; parentCid: string; branch: 'yes' | 'no' };
 
 export interface TreeNodeLike {
   cid: string;
@@ -11,9 +11,9 @@ export function insertStepAt<T extends TreeNodeLike>(
   steps: T[],
   parent: TreeParentScope,
   index: number,
-  node: T,
+  node: T
 ): T[] {
-  if (parent.kind === "root") {
+  if (parent.kind === 'root') {
     const copy = [...steps];
     copy.splice(index, 0, node);
     return copy;
@@ -23,6 +23,9 @@ export function insertStepAt<T extends TreeNodeLike>(
     if (step.cid !== parent.parentCid || !step.branches) return step;
     const list = [...step.branches[parent.branch]];
     list.splice(index, 0, node);
-    return { ...step, branches: { ...step.branches, [parent.branch]: list } } as T;
+    return {
+      ...step,
+      branches: { ...step.branches, [parent.branch]: list },
+    } as T;
   });
 }

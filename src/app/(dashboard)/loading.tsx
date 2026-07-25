@@ -31,8 +31,8 @@ export default function DashboardLoading() {
             </text>
           </svg>
         </div>
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground text-sm">Loading...</p>
       </div>
     </div>
-  )
+  );
 }

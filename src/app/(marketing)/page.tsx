@@ -1,8 +1,8 @@
-import { useTranslations } from 'next-intl'
-import Link from 'next/link'
-import { buttonVariants } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import { useTranslations } from 'next-intl';
+import Link from 'next/link';
+import { buttonVariants } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import {
   MessageCircle,
   TrendingUp,
@@ -10,11 +10,11 @@ import {
   Workflow,
   Sparkles,
   ArrowRight,
-} from 'lucide-react'
-import { FeaturesGrid } from '@/components/marketing/features-grid'
-import { PricingCard } from '@/components/marketing/pricing-card'
-import { CtaSection } from '@/components/marketing/cta-section'
-import { HeroSlideshow } from '@/components/marketing/hero-slideshow'
+} from 'lucide-react';
+import { FeaturesGrid } from '@/components/marketing/features-grid';
+import { PricingCard } from '@/components/marketing/pricing-card';
+import { CtaSection } from '@/components/marketing/cta-section';
+import { HeroSlideshow } from '@/components/marketing/hero-slideshow';
 
 export default function HomePage() {
   return (
@@ -25,11 +25,11 @@ export default function HomePage() {
       <PricingSection />
       <CtaSection />
     </>
-  )
+  );
 }
 
 function HeroSection() {
-  const t = useTranslations('LandingPage')
+  const t = useTranslations('LandingPage');
 
   return (
     <section className="relative overflow-hidden py-20 lg:py-28">
@@ -40,7 +40,7 @@ function HeroSection() {
         <h1 className="mx-auto max-w-4xl text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
           {t('hero.title')}
         </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
+        <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-lg">
           {t('hero.subtitle')}
         </p>
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
@@ -58,11 +58,11 @@ function HeroSection() {
         <HeroSlideshow />
       </div>
     </section>
-  )
+  );
 }
 
 function FeaturesSection() {
-  const t = useTranslations('LandingPage.features')
+  const t = useTranslations('LandingPage.features');
 
   const features = [
     {
@@ -90,14 +90,16 @@ function FeaturesSection() {
       title: t('aiAssistant.title'),
       description: t('aiAssistant.description'),
     },
-  ]
+  ];
 
   return (
     <section className="border-t py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t('title')}</h2>
-          <p className="mt-4 text-muted-foreground">{t('subtitle')}</p>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            {t('title')}
+          </h2>
+          <p className="text-muted-foreground mt-4">{t('subtitle')}</p>
         </div>
         <div className="mt-12">
           <FeaturesGrid features={features} columns={3} />
@@ -113,24 +115,26 @@ function FeaturesSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }
 
 function HowItWorksSection() {
-  const t = useTranslations('LandingPage.howItWorks')
+  const t = useTranslations('LandingPage.howItWorks');
 
   const steps = [
     { key: 'step1', number: '01' },
     { key: 'step2', number: '02' },
     { key: 'step3', number: '03' },
-  ]
+  ];
 
   return (
     <section className="border-t py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t('title')}</h2>
-          <p className="mt-4 text-muted-foreground">{t('subtitle')}</p>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            {t('title')}
+          </h2>
+          <p className="text-muted-foreground mt-4">{t('subtitle')}</p>
         </div>
         <div className="mt-12 grid gap-8 sm:grid-cols-3">
           {steps.map(({ key, number }, i) => (
@@ -138,21 +142,23 @@ function HowItWorksSection() {
               {i < steps.length - 1 && (
                 <div className="absolute top-6 left-[calc(50%+2rem)] hidden h-px w-[calc(100%-4rem)] border-t border-dashed sm:block" />
               )}
-              <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
+              <div className="bg-primary/10 text-primary mx-auto flex size-12 items-center justify-center rounded-full text-lg font-bold">
                 {number}
               </div>
               <h3 className="mt-4 font-semibold">{t(`${key}.title`)}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{t(`${key}.description`)}</p>
+              <p className="text-muted-foreground mt-2 text-sm">
+                {t(`${key}.description`)}
+              </p>
             </div>
           ))}
         </div>
       </div>
     </section>
-  )
+  );
 }
 
 function PricingSection() {
-  const t = useTranslations('LandingPage.pricing')
+  const t = useTranslations('LandingPage.pricing');
 
   const plans = [
     {
@@ -200,14 +206,16 @@ function PricingSection() {
       cta: t('enterprise.cta'),
       href: '/about',
     },
-  ]
+  ];
 
   return (
-    <section className="border-t bg-muted/30 py-20">
+    <section className="bg-muted/30 border-t py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t('title')}</h2>
-          <p className="mt-4 text-muted-foreground">{t('subtitle')}</p>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            {t('title')}
+          </h2>
+          <p className="text-muted-foreground mt-4">{t('subtitle')}</p>
         </div>
         <div className="mt-12 grid gap-8 lg:grid-cols-3">
           {plans.map((plan, i) => (
@@ -216,5 +224,5 @@ function PricingSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }
