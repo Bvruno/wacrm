@@ -149,8 +149,8 @@ export default async function RootLayout({
           <div className="splash-logo">
             <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
               <rect width="500" height="500" fill="#0D7BEA" rx="80" />
-              <text x="70" y="285" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="700" fill="#FFFFFF">Codix</text>
-              <text x="340" y="285" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="700" fill="#E11B22">IA</text>
+              <text x="70" y="285" fontFamily="Arial, Helvetica, sans-serif" fontSize="88" fontWeight="700" fill="#FFFFFF">Codix</text>
+              <text x="340" y="285" fontFamily="Arial, Helvetica, sans-serif" fontSize="88" fontWeight="700" fill="#E11B22">IA</text>
             </svg>
             <span className="splash-brand">WhatsApp CRM</span>
           </div>

@@ -462,7 +462,9 @@
       "send": "Enviar",
       "quickReplyNamePrompt": "Nombre para esta respuesta rápida:",
       "quickReplySaved": "Guardada como respuesta rápida.",
-      "quickReplySaveError": "No se pudo guardar la respuesta rápida."
+      "quickReplySaveError": "No se pudo guardar la respuesta rápida.",
+      "draftHistory": "Historial de borradores",
+      "draftVariations": "Variaciones de borrador"
     },
     "bubble": {
       "photo": "Foto",
@@ -1913,14 +1915,14 @@
       "step2_3": "Sigue el asistente de configuración para vincular tu negocio",
       "step3": "Obtener credenciales API",
       "step3_1": "Ve a WhatsApp > API Setup",
-      "step3_2": "Copia tu <strong class=\"text-foreground\">ID de número de teléfono</strong>",
-      "step3_3": "Copia tu <strong class=\"text-foreground\">ID de cuenta de WhatsApp Business</strong>",
-      "step3_4": "Genera un <strong class=\"text-foreground\">Token de acceso permanente</strong> desde Business Settings > System Users",
+      "step3_2": "Copia tu <strong>ID de número de teléfono</strong>",
+      "step3_3": "Copia tu <strong>ID de cuenta de WhatsApp Business</strong>",
+      "step3_4": "Genera un <strong>Token de acceso permanente</strong> desde Business Settings > System Users",
       "step4": "Configurar webhooks",
       "step4_1": "Ve a WhatsApp > Configuration",
       "step4_2": "Haz clic en \"Edit\" en la sección de Webhook",
-      "step4_3": "Pega la <strong class=\"text-foreground\">URL de callback del webhook</strong> de arriba",
-      "step4_4": "Ingresa el mismo <strong class=\"text-foreground\">Token de verificación</strong> que configuraste aquí",
+      "step4_3": "Pega la <strong>URL de callback del webhook</strong> de arriba",
+      "step4_4": "Ingresa el mismo <strong>Token de verificación</strong> que configuraste aquí",
       "step4_5": "Suscríbete al campo de webhook \"messages\"",
       "metaDocs": "Documentación de la API de Meta WhatsApp"
     },
@@ -2179,6 +2181,7 @@
     "agents": "Agentes",
     "playground": "Playground",
     "usage": "Uso",
+    "costs": "Costos",
     "loading": "Cargando...",
     "loadFailed": "Error al cargar los agentes",
     "searchAgents": "Buscar agentes...",
