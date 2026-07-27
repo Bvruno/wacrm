@@ -2,6 +2,7 @@
 
 import { Suspense, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 import {
   AutomationBuilder,
@@ -19,7 +20,13 @@ import type { AutomationStepType, AutomationTriggerType } from '@/types';
 // component reads the `?template=` query string.
 export default function NewAutomationPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <div className="flex h-full items-center justify-center">
+          <Loader2 className="text-primary h-6 w-6 animate-spin" />
+        </div>
+      }
+    >
       <NewAutomationPageInner />
     </Suspense>
   );

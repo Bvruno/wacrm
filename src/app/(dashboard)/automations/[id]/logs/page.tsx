@@ -58,7 +58,7 @@ export default function AutomationLogsPage({
       }
     }
     load();
-  }, [id]);
+  }, [id, t]);
 
   if (error) {
     return (
@@ -139,7 +139,7 @@ export default function AutomationLogsPage({
                     </div>
                   </div>
                   <div className="text-muted-foreground text-xs">
-                    {formatRelative(log.created_at)}
+                    {formatRelative(log.created_at, t)}
                   </div>
                 </button>
                 {isOpen && (

@@ -544,15 +544,20 @@ async function runStep(
         throw new Error('assign_conversation needs a contact');
       let agentId = cfg.agent_id;
       if (cfg.mode === 'round_robin') {
-        // Pick any member of the account. The existing implementation
-        // only ever returned the automation's author; preserving that
-        // shape until a real round-robin algorithm replaces it.
+        // Deterministic load-balancing round-robin: hash the contact id
+        // to pick an agent. This keeps the same contact always assigned
+        // to the same agent (useful for continuity) while distributing
+        // contacts evenly across the team. A true stateful round-robin
+        // would need a persisted cursor; this is the best no-state proxy.
         const { data: profiles } = await db
           .from('profiles')
           .select('user_id')
           .eq('account_id', args.automation.account_id)
-          .limit(1);
-        agentId = profiles?.[0]?.user_id;
+          .order('user_id');
+        if (profiles && profiles.length > 0) {
+          const idx = hashString(args.contactId) % profiles.length;
+          agentId = profiles[idx]?.user_id;
+        }
       }
       if (!agentId) return 'no agent resolved';
       await db
@@ -895,4 +900,14 @@ async function markPending(id: string, status: 'done' | 'failed') {
     .from('automation_pending_executions')
     .update({ status })
     .eq('id', id);
+}
+
+/** Simple non-cryptographic hash used for deterministic round-robin. */
+function hashString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
 }

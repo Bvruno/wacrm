@@ -358,7 +358,7 @@ function AutomationCard({
             <span aria-hidden>·</span>
             <span>
               {t('lastRun', {
-                time: formatRelative(automation.last_executed_at),
+                time: formatRelative(automation.last_executed_at, t),
               })}
             </span>
           </div>

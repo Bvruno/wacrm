@@ -38,38 +38,16 @@ export async function POST(request: Request) {
   // Creating an automation is a write — the RLS automations_insert policy
   // requires `agent`, but this route inserts via the service-role client
   // which bypasses RLS, so the role must be enforced here.
+  let ctx;
   try {
-    await requireRole('agent');
+    ctx = await requireRole('agent');
   } catch (err) {
     return toErrorResponse(err);
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user)
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  // Resolve the caller's account_id — `automations.account_id` is NOT
-  // NULL post-017, so an INSERT without it trips the not-null constraint
-  // even though the admin client bypasses RLS.
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('account_id')
-    .eq('user_id', user.id)
-    .single();
-  const accountId = profile?.account_id as string | undefined;
-  if (!accountId) {
-    return NextResponse.json(
-      { error: 'Your profile is not linked to an account.' },
-      { status: 403 }
-    );
-  }
-
   // Plan gate: automations require the has_automations feature
   try {
-    await enforceFeatureAccess(accountId, 'has_automations');
+    await enforceFeatureAccess(ctx.accountId, 'has_automations');
   } catch (err) {
     if (err instanceof ForbiddenError) return toErrorResponse(err);
     throw err;
@@ -145,8 +123,8 @@ export async function POST(request: Request) {
   const { data: automation, error: insertErr } = await admin
     .from('automations')
     .insert({
-      user_id: user.id,
-      account_id: accountId,
+      user_id: ctx.userId,
+      account_id: ctx.accountId,
       name: effectiveName,
       description: effectiveDescription ?? null,
       trigger_type: effectiveTriggerType,
@@ -165,7 +143,11 @@ export async function POST(request: Request) {
 
   if (effectiveSteps && effectiveSteps.length > 0) {
     const err = await insertSteps(automation.id, effectiveSteps);
-    if (err) return NextResponse.json({ error: err }, { status: 500 });
+    if (err) {
+      // Roll back the automation so we don't leave an orphaned draft.
+      await admin.from('automations').delete().eq('id', automation.id);
+      return NextResponse.json({ error: err }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ automation }, { status: 201 });

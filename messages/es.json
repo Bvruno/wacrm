@@ -1173,6 +1173,13 @@
       "cancel": "Cancelar",
       "deleteTitle": "Eliminar automatización",
       "deleteDesc": "Esto elimina permanentemente {name} y su historial de ejecución. No se puede deshacer.",
+      "relativeTime": {
+        "never": "nunca",
+        "justNow": "ahora mismo",
+        "minutesAgo": "hace {count} min",
+        "hoursAgo": "hace {count} h",
+        "daysAgo": "hace {count} d"
+      },
       "toasts": {
         "activated": "Automatización activada",
         "paused": "Automatización pausada",
@@ -1317,6 +1324,20 @@
         "no": "No"
       },
       "addStep": "Añadir paso",
+      "previews": {
+        "noText": "sin texto aún",
+        "noBody": "sin cuerpo aún",
+        "pickTemplate": "elige una plantilla",
+        "noUrl": "sin URL",
+        "amountUnit": "{amount} {unit}",
+        "conditionWhen": "cuando {subject}"
+      },
+      "stepKinds": {
+        "condition": "Condición",
+        "wait": "Esperar",
+        "action": "Acción"
+      },
+      "triggerTag": "Etiqueta",
       "config": {
         "messageText": "Texto del mensaje",
         "placeholderMessageText": "¡Hola! Gracias por contactarnos…",

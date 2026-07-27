@@ -53,7 +53,7 @@ All under `src/app/api/`. Key segments:
 - **shadcn components** live in `src/components/ui/`. Add new ones via `npx shadcn@latest add <component>`. Config in `components.json` (base-nova style, Lucide icons).
 - **Feature directories** mirror under `src/components/<feature>/`, `src/lib/<feature>/`, and `src/app/(dashboard)/<feature>/`.
 - **Hooks** in `src/hooks/`. Custom ones follow `use-*.tsx` naming (e.g. `use-auth.tsx`).
-- **i18n** via `next-intl`. Locale from `NEXT_PUBLIC_APP_LOCALE` env var. Message dictionaries in `messages/*.json` (currently `en.json`, `ko.json`).
+- **i18n** via `next-intl`. Locale from `NEXT_PUBLIC_APP_LOCALE` env var. Only `messages/es.json`.
 - **Types** in `src/types/index.ts`.
 
 ## Testing

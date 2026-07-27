@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { requireRole, toErrorResponse } from '@/lib/auth/account';
 import { supabaseAdmin } from '@/lib/automations/admin-client';
 import {
   loadStepsTree,
-  replaceSteps,
+  replaceStepsAtomic,
   type BuilderStepInput,
 } from '@/lib/automations/steps-tree';
 import {
@@ -12,29 +11,25 @@ import {
   validateTriggerForActivation,
 } from '@/lib/automations/validate';
 
-async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
-}
-
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const user = await requireUser();
-  if (!user)
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  let ctx;
+  try {
+    ctx = await requireRole('viewer');
+  } catch (err) {
+    return toErrorResponse(err);
+  }
 
   const admin = supabaseAdmin();
   const { data: automation, error } = await admin
     .from('automations')
     .select('*')
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('account_id', ctx.accountId)
     .maybeSingle();
 
   if (error)
@@ -55,15 +50,12 @@ export async function PATCH(
   // Editing an automation is a write — the RLS automations_update policy
   // requires `agent`, but this route mutates via the service-role client
   // which bypasses RLS, so enforce the role here.
+  let ctx;
   try {
-    await requireRole('agent');
+    ctx = await requireRole('agent');
   } catch (err) {
     return toErrorResponse(err);
   }
-
-  const user = await requireUser();
-  if (!user)
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json().catch(() => null);
   if (!body)
@@ -75,10 +67,10 @@ export async function PATCH(
   // to compute the post-patch "effective" state for validation.
   const { data: existing } = await admin
     .from('automations')
-    .select('id, user_id, is_active, trigger_type, trigger_config')
+    .select('id, account_id, is_active, trigger_type, trigger_config')
     .eq('id', id)
     .maybeSingle();
-  if (!existing || existing.user_id !== user.id) {
+  if (!existing || existing.account_id !== ctx.accountId) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
@@ -137,7 +129,7 @@ export async function PATCH(
   }
 
   if (Array.isArray(body.steps)) {
-    const err = await replaceSteps(id, body.steps as BuilderStepInput[]);
+    const err = await replaceStepsAtomic(id, body.steps as BuilderStepInput[]);
     if (err) return NextResponse.json({ error: err }, { status: 500 });
   }
 
@@ -152,21 +144,18 @@ export async function DELETE(
 
   // Deleting an automation is a write — enforce `agent` (the service-role
   // client below bypasses the agent-gated automations_delete RLS).
+  let ctx;
   try {
-    await requireRole('agent');
+    ctx = await requireRole('agent');
   } catch (err) {
     return toErrorResponse(err);
   }
-
-  const user = await requireUser();
-  if (!user)
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { error } = await supabaseAdmin()
     .from('automations')
     .delete()
     .eq('id', id)
-    .eq('user_id', user.id);
+    .eq('account_id', ctx.accountId);
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

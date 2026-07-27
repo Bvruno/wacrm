@@ -794,7 +794,9 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
   const isEditing = !!initial.id;
   const [state, setState] = useState<BuilderInitial>(initial);
   const [saving, setSaving] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(
+    initial.steps[0]?.cid ?? null
+  );
 
   function patchTop<K extends keyof BuilderInitial>(
     key: K,
@@ -889,7 +891,7 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
   }
 
   return (
-    <div className="bg-background fixed inset-0 flex flex-col">
+    <div className="bg-background flex h-full min-h-0 flex-col">
       {/* Top bar. At sub-sm widths the "Active" label is hidden and the
           switch moves to the right of the save button, so the name input
           gets maximum width. */}
@@ -1042,7 +1044,7 @@ function TriggerCard({
             {type === 'tag_added' && (
               <div>
                 <label className="text-muted-foreground mb-1 block text-xs font-medium">
-                  Tag
+                  {t('triggerTag')}
                 </label>
                 <TagSelect
                   value={(config.tag_id as string) ?? ''}
@@ -1322,16 +1324,16 @@ function StepRenderer({
             <div className="min-w-0 flex-1">
               <div className="text-muted-foreground text-[11px] tracking-wide uppercase">
                 {isCondition
-                  ? 'Condition'
+                  ? t('stepKinds.condition')
                   : step.step_type === 'wait'
-                    ? 'Wait'
-                    : 'Action'}
+                    ? t('stepKinds.wait')
+                    : t('stepKinds.action')}
               </div>
               <div className="text-foreground truncate text-sm font-medium">
                 {t(`steps.${meta.label}`)}
               </div>
               <div className="text-muted-foreground truncate text-[11px]">
-                {previewFor(step)}
+                {previewFor(step, t)}
               </div>
             </div>
             <ChevronDown
@@ -1764,24 +1766,34 @@ function FieldBlock({
   );
 }
 
-function previewFor(step: BuilderStep): string {
+function previewFor(
+  step: BuilderStep,
+  t: ReturnType<typeof useTranslations>
+): string {
   switch (step.step_type) {
     case 'send_message':
-      return (step.step_config.text as string) || 'no text yet';
+      return (step.step_config.text as string) || t('previews.noText');
     case 'send_buttons':
     case 'send_list':
       return (
         interactivePayloadPreviewText(asInteractive(step.step_config)) ||
-        'no body yet'
+        t('previews.noBody')
       );
     case 'send_template':
-      return (step.step_config.template_name as string) || 'pick a template';
+      return (
+        (step.step_config.template_name as string) || t('previews.pickTemplate')
+      );
     case 'wait':
-      return `${step.step_config.amount ?? '?'} ${step.step_config.unit ?? ''}`;
+      return t('previews.amountUnit', {
+        amount: String(step.step_config.amount ?? '?'),
+        unit: String(step.step_config.unit ?? ''),
+      });
     case 'condition':
-      return `when ${step.step_config.subject ?? '?'}`;
+      return t('previews.conditionWhen', {
+        subject: String(step.step_config.subject ?? '?'),
+      });
     case 'send_webhook':
-      return (step.step_config.url as string) || 'no url';
+      return (step.step_config.url as string) || t('previews.noUrl');
     default:
       return '';
   }
@@ -1915,7 +1927,17 @@ function moveAt(
   return steps.map((s) => {
     if (s.cid !== head.parentCid || !s.branches) return s;
     const bucket = s.branches[head.branch];
-    const next = rest.length === 0 ? swap(bucket, head.index) : bucket;
+    const next =
+      rest.length === 0
+        ? swap(bucket, head.index)
+        : bucket.map((child, i) =>
+            i !== head.index
+              ? child
+              : {
+                  ...child,
+                  branches: moveInBranches(child.branches, rest, direction),
+                }
+          );
     return { ...s, branches: { ...s.branches, [head.branch]: next } };
   });
 }
@@ -1937,7 +1959,17 @@ function moveInBranches(
     [copy[i], copy[j]] = [copy[j], copy[i]];
     return copy;
   };
-  const next = rest.length === 0 ? swap(bucket, head.index) : bucket;
+  const next =
+    rest.length === 0
+      ? swap(bucket, head.index)
+      : bucket.map((child, i) =>
+          i !== head.index
+            ? child
+            : {
+                ...child,
+                branches: moveInBranches(child.branches, rest, direction),
+              }
+        );
   return { ...branches, [head.branch]: next };
 }
 

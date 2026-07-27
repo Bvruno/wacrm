@@ -26,7 +26,7 @@ const messages = {
 
 function render(ui: React.ReactElement): string {
   return renderToStaticMarkup(
-    <NextIntlClientProvider locale="en" messages={messages}>
+    <NextIntlClientProvider locale="es" messages={messages}>
       {ui}
     </NextIntlClientProvider>
   );

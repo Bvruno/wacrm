@@ -46,6 +46,50 @@ export async function replaceSteps(
   return insertSteps(automationId, input);
 }
 
+interface BackupStep {
+  id: string;
+  parent_step_id: string | null;
+  branch: 'yes' | 'no' | null;
+  step_type: string;
+  step_config: Record<string, unknown>;
+  position: number;
+}
+
+/**
+ * Replace the steps of an automation with rollback: if the new tree cannot
+ * be inserted, restore the previous rows so the automation is never left
+ * without steps. Supabase JS does not expose multi-statement transactions,
+ * so we load a backup, delete, insert, and re-insert the backup on failure.
+ */
+export async function replaceStepsAtomic(
+  automationId: string,
+  input: BuilderStepInput[]
+): Promise<string | null> {
+  const admin = supabaseAdmin();
+  const { data: backup, error: backupErr } = await admin
+    .from('automation_steps')
+    .select('id, parent_step_id, branch, step_type, step_config, position')
+    .eq('automation_id', automationId)
+    .order('position', { ascending: true });
+  if (backupErr) return backupErr.message;
+
+  const { error: delErr } = await admin
+    .from('automation_steps')
+    .delete()
+    .eq('automation_id', automationId);
+  if (delErr) return delErr.message;
+
+  const err = await insertSteps(automationId, input);
+  if (err) {
+    const oldSteps = (backup ?? []) as BackupStep[];
+    if (oldSteps.length > 0) {
+      await admin.from('automation_steps').insert(oldSteps);
+    }
+    return err;
+  }
+  return null;
+}
+
 export async function insertSteps(
   automationId: string,
   input: BuilderStepInput[]

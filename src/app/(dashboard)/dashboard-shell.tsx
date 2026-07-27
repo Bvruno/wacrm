@@ -42,7 +42,7 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
         <div className="flex flex-1 flex-col overflow-hidden">
           <Header onOpenSidebar={() => setSidebarOpen(true)} />
           <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-            <div className="page-enter">{children}</div>
+            <div className="page-enter h-full">{children}</div>
           </main>
         </div>
       </SidebarProvider>

@@ -163,6 +163,22 @@ function validateOne(
           message: 'condition operand is required',
         });
       }
+      if (c.subject === 'message_content' && !nonEmpty(c.value)) {
+        issues.push({
+          path: `${path}.value`,
+          message: 'condition value is required for message content',
+        });
+      }
+      if (
+        c.subject === 'time_of_day' &&
+        c.operand &&
+        !/^\d{1,2}:\d{2}-\d{1,2}:\d{2}$/.test(String(c.operand))
+      ) {
+        issues.push({
+          path: `${path}.operand`,
+          message: 'time of day must be in HH:mm-HH:mm format',
+        });
+      }
       break;
     case 'send_webhook':
       if (!nonEmpty(c.url)) {
