@@ -212,6 +212,72 @@
         "title": "Tecnología",
         "description": "Construido con Next.js, Supabase y TypeScript. Diseñado para ser rápido, seguro y fácil de desplegar."
       }
+    },
+    "privacyPage": {
+      "title": "Política de Privacidad",
+      "subtitle": "Cómo gestionamos tus datos y los de tus clientes en CodixIA.",
+      "lastUpdated": "Última actualización: 3 de agosto de 2026",
+      "sections": {
+        "intro": {
+          "title": "Introducción",
+          "content": [
+            "Esta Política de Privacidad explica qué datos recogemos, cómo los utilizamos y qué derechos tienes sobre ellos cuando usas CodixIA, el CRM auto-hospedable para WhatsApp.",
+            "CodixIA está diseñado para el auto-hospedaje: tú controlas tu propia instancia y los datos que contiene. Esta política describe el tratamiento que realiza el responsable de tu instancia, no el de terceros."
+          ]
+        },
+        "data": {
+          "title": "Datos que recogemos",
+          "content": [
+            "Para crear tu cuenta: nombre, correo electrónico y contraseña cifrada. Si participas en un equipo, también registramos tu rol y tus permisos.",
+            "Para prestar el servicio: mensajes de WhatsApp, contactos, pipelines, broadcasts, automatizaciones y configuración que tú o tu equipo introduzcas en la aplicación.",
+            "Datos técnicos: dirección IP, agente de usuario y registros de acceso, utilizados exclusivamente para seguridad y depuración. No registramos el contenido de los mensajes en los logs."
+          ]
+        },
+        "use": {
+          "title": "Cómo usamos los datos",
+          "content": [
+            "Los datos de tu cuenta se usan para autenticarte, gestionar tus permisos y enviarte comunicaciones esenciales del servicio.",
+            "Los datos de clientes y mensajes se usan únicamente para las funciones que has configurado: bandeja compartida, pipelines, broadcasts, automatizaciones y asistente de respuestas con IA.",
+            "Nunca vendemos tus datos ni los de tus clientes. No los usamos para publicidad ni para entrenar modelos de terceros."
+          ]
+        },
+        "storage": {
+          "title": "Almacenamiento y seguridad",
+          "content": [
+            "Al auto-hospedar, los datos residen en tu propia infraestructura. Nosotros solo publicamos el software y procesamos datos en la medida necesaria para prestar el servicio técnico.",
+            "La aplicación aplica cifrado en reposo y en tránsito, control de acceso basado en roles (RLS) y autenticación segura.",
+            "Recomendamos realizar copias de seguridad periódicas de tu base de datos y mantener el software actualizado para protegerte ante vulnerabilidades conocidas."
+          ]
+        },
+        "sharing": {
+          "title": "Compartición de datos",
+          "content": [
+            "No compartimos datos personales con terceros salvo: (a) proveedores técnicos necesarios para operar la infraestructura que elijas, (b) cuando la ley lo exija o (c) con tu consentimiento explícito.",
+            "Los mensajes se intercambian con WhatsApp a través de la API oficial de Meta únicamente cuando tú configuras una conexión de canal."
+          ]
+        },
+        "rights": {
+          "title": "Tus derechos",
+          "content": [
+            "Como responsable de tu instancia, tienes derecho de acceso, rectificación, supresión, limitación, portabilidad y oposición sobre tus datos, conforme al RGPD.",
+            "Puedes ejercer estos derechos en cualquier momento desde la configuración de tu cuenta o contactando con el responsable de tu instancia.",
+            "Los datos de contacto de tus clientes también están sujetos a sus derechos. Es tu responsabilidad gestionar el consentimiento y las solicitudes que te dirijan."
+          ]
+        },
+        "retention": {
+          "title": "Retención de datos",
+          "content": [
+            "Conservamos los datos mientras tu cuenta esté activa o mientras sea necesario para los fines descritos.",
+            "Al eliminar tu cuenta, los datos asociados se borran de forma definitiva. Las copias de seguridad se eliminan conforme a los ciclos que configures en tu infraestructura."
+          ]
+        },
+        "contact": {
+          "title": "Contacto",
+          "content": [
+            "Si tienes preguntas sobre esta política o sobre el tratamiento de tus datos, contacta con el administrador de tu instancia o con nosotros a través de los canales publicados en la web."
+          ]
+        }
+      }
     }
   },
   "LoginPage": {

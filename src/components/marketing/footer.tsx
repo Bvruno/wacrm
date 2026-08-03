@@ -60,7 +60,7 @@ export function MarketingFooter() {
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="/privacy"
+                  href="/privacidad"
                   className="text-muted-foreground hover:text-foreground text-sm"
                 >
                   {t('privacy')}
