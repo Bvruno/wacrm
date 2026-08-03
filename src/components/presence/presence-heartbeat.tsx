@@ -52,6 +52,11 @@ export function PresenceHeartbeat() {
       return 'online';
     };
 
+    const ensureSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      return !!data.session;
+    };
+
     const beat = async () => {
       if (cancelled) return;
       // Coalesce bursts: a tab refocus fires visibilitychange AND focus
@@ -60,6 +65,13 @@ export function PresenceHeartbeat() {
       const t = Date.now();
       if (t - lastBeatAt < 1_000) return;
       lastBeatAt = t;
+
+      // Ensure the in-memory session is populated before calling the RPC.
+      // The singleton client may have recovered cookies without loading
+      // the session into memory yet, causing auth.uid() to return NULL
+      // in touch_presence and spurious "Unauthorized" errors.
+      if (!(await ensureSession())) return;
+
       const { error } = await supabase.rpc('touch_presence', {
         p_status: currentStatus(),
       });
