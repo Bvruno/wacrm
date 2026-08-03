@@ -3,8 +3,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
-  Eye,
-  EyeOff,
   Copy,
   CheckCircle2,
   XCircle,
@@ -30,14 +28,10 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SettingsPanelHead } from './settings-panel-head';
 import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from '@/components/ui/accordion';
+  launchEmbeddedSignup,
+  EmbeddedSignupError,
+} from '@/lib/whatsapp/embedded-signup';
 import type { WhatsAppConfig as WhatsAppConfigType } from '@/types';
-
-const MASKED_TOKEN = '••••••••••••••••';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'unknown';
 type ResetReason = 'token_corrupted' | 'meta_api_error' | null;
@@ -45,42 +39,19 @@ type ResetReason = 'token_corrupted' | 'meta_api_error' | null;
 export function WhatsAppConfig() {
   const t = useTranslations('Settings.whatsapp');
   const supabase = createClient();
-  // After multi-user, whatsapp_config is one-row-per-account, not
-  // one-row-per-user. We pull `accountId` straight off the auth
-  // context and key every read off it — so a teammate who just
-  // joined an account sees the inviter's saved config without
-  // having to re-enter anything.
   const { user, accountId, loading: authLoading, profileLoading } = useAuth();
 
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const [testing, setTesting] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [showToken, setShowToken] = useState(false);
   const [config, setConfig] = useState<WhatsAppConfigType | null>(null);
   const [connectionStatus, setConnectionStatus] =
     useState<ConnectionStatus>('unknown');
   const [resetReason, setResetReason] = useState<ResetReason>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
-  // Guards against re-hydrating the form when the load effect below
-  // re-runs for reasons unrelated to actually switching accounts —
-  // e.g. Supabase's onAuthStateChange fires a token refresh (new
-  // `user` object, profileLoading flips true/false) when the browser
-  // tab regains focus. Without this, that churn calls fetchConfig()
-  // again and overwrites whatever the user typed but hadn't saved yet.
   const loadedAccountIdRef = useRef<string | null>(null);
 
-  const [phoneNumberId, setPhoneNumberId] = useState('');
-  const [wabaId, setWabaId] = useState('');
-  const [accessToken, setAccessToken] = useState('');
-  const [verifyToken, setVerifyToken] = useState('');
-  const [pin, setPin] = useState('');
-  const [tokenEdited, setTokenEdited] = useState(false);
-
-  // True once /register has succeeded on Meta's side (timestamp set
-  // in the row). When false, the saved config is metadata-only and
-  // Meta will silently drop every inbound event — that's the
-  // multi-number bug that prompted this work.
   const isRegistered = Boolean(config?.registered_at);
   const lastRegistrationError = config?.last_registration_error ?? null;
 
@@ -105,12 +76,6 @@ export function WhatsAppConfig() {
     async (acctId: string) => {
       setLoading(true);
       try {
-        // Load form values from Supabase (shows what's in DB).
-        // Switched from `user_id` (which would only match the row's
-        // original author) to `account_id` so every member of the
-        // account sees the same saved configuration. UNIQUE(account_id)
-        // on the table guarantees the .maybeSingle() return type
-        // remains accurate.
         const { data, error } = await supabase
           .from('whatsapp_config')
           .select('*')
@@ -121,27 +86,9 @@ export function WhatsAppConfig() {
           console.error('Failed to load config row:', error);
         }
 
-        if (data) {
-          setConfig(data);
-          setPhoneNumberId(data.phone_number_id || '');
-          setWabaId(data.waba_id || '');
-          setAccessToken(MASKED_TOKEN);
-          setVerifyToken('');
-          setPin('');
-          setTokenEdited(false);
-        } else {
-          setConfig(null);
-          setPhoneNumberId('');
-          setWabaId('');
-          setAccessToken('');
-          setVerifyToken('');
-          setPin('');
-          setTokenEdited(false);
-        }
-        // Clear any stale probe result when reloading the row.
+        setConfig(data ?? null);
         setRegistrationProbe(null);
 
-        // Then verify health via the API (decrypts token + pings Meta)
         if (data) {
           try {
             const res = await fetch('/api/whatsapp/config', { method: 'GET' });
@@ -182,11 +129,6 @@ export function WhatsAppConfig() {
   );
 
   useEffect(() => {
-    // Need both the auth session (`!authLoading`) AND the profile
-    // (`!profileLoading`, which carries `accountId`). Without the
-    // second guard, the effect would fire with `accountId === null`
-    // for the first render window and bail without ever retrying
-    // once the profile arrives.
     if (authLoading || profileLoading) return;
     if (!user || !accountId) {
       loadedAccountIdRef.current = null;
@@ -198,98 +140,44 @@ export function WhatsAppConfig() {
     fetchConfig(accountId);
   }, [authLoading, profileLoading, user?.id, accountId, fetchConfig]);
 
-  async function handleSave() {
-    if (!phoneNumberId.trim()) {
-      toast.error('Phone Number ID is required');
-      return;
-    }
-    if (!config && (!accessToken.trim() || !tokenEdited)) {
-      toast.error('Access Token is required for initial setup');
-      return;
-    }
-
+  async function handleConnect() {
     try {
-      setSaving(true);
-
-      // Always POST through the API — it verifies with Meta and encrypts
-      // the access_token server-side with ENCRYPTION_KEY. Skipping this
-      // and writing direct to Supabase stores the token in plaintext,
-      // which then fails decryption on every subsequent health check.
-      const payload: Record<string, unknown> = {
-        phone_number_id: phoneNumberId.trim(),
-        waba_id: wabaId.trim() || null,
-        verify_token: verifyToken.trim() || null,
-        // Optional — only sent when the user filled it in. The server
-        // requires it on first save or when changing numbers; for a
-        // simple token rotation, leaving it blank skips re-register.
-        pin: pin.trim() || null,
-      };
-
-      if (tokenEdited && accessToken !== MASKED_TOKEN && accessToken.trim()) {
-        payload.access_token = accessToken.trim();
-      } else if (config) {
-        // Existing config — reuse stored encrypted token by decrypting on the
-        // server. But our POST handler requires an access_token to verify
-        // with Meta. If the user didn't change the token, we need to signal
-        // that. Simplest: require token re-entry if they're updating.
-        toast.error('Please re-enter the Access Token to save changes');
-        setSaving(false);
-        return;
-      }
+      setConnecting(true);
+      const signup = await launchEmbeddedSignup();
 
       const res = await fetch('/api/whatsapp/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          code: signup.code,
+          phone_number_id: signup.phoneNumberId,
+          waba_id: signup.wabaId,
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || 'Failed to save configuration');
-        setSaving(false);
+        toast.error(data.error || t('signupError'));
         return;
       }
 
-      // The route now returns a structured outcome:
-      //   * registered=true   → number is live, events will flow
-      //   * registered=false  → credentials saved but /register
-      //                         failed; UI shows the specific error
-      //                         and a retry path. registration_error
-      //                         is human-readable from Meta.
-      if (data.registered === false && data.registration_error) {
-        toast.error(
-          `Saved, but Meta couldn't register the number: ${data.registration_error}`,
-          { duration: 12000 }
-        );
-      } else if (data.registration_skipped) {
-        // Credentials saved + verified, but /register was skipped
-        // because no PIN was supplied (e.g. a Meta test number).
-        // Don't claim the number is "Live" — point at the
-        // Registration status banner instead.
-        toast.success(
-          'Credentials saved and verified. Inbound registration was skipped (no PIN) — see Registration status below.',
-          { duration: 10000 }
-        );
-        setPin('');
-      } else {
-        toast.success(
-          data.phone_info?.verified_name
-            ? `Live — ${data.phone_info.verified_name} can now receive events.`
-            : 'WhatsApp connected. Events will start flowing within a minute.'
-        );
-        // Clear the PIN so subsequent saves don't accidentally
-        // re-register (which would void the active subscription if
-        // the PIN became stale).
-        setPin('');
-      }
+      toast.success(
+        data.phone_info?.verified_name
+          ? t('connectedSuccess', { name: data.phone_info.verified_name })
+          : t('connectedSuccessGeneric')
+      );
 
       if (accountId) await fetchConfig(accountId);
     } catch (err) {
-      console.error('Save error:', err);
-      toast.error('Failed to save configuration');
+      if (err instanceof EmbeddedSignupError && err.reason === 'cancelled') {
+        toast.error(t('cancelMessage'));
+      } else {
+        console.error('Embedded Signup error:', err);
+        toast.error(t('signupError'));
+      }
     } finally {
-      setSaving(false);
+      setConnecting(false);
     }
   }
 
@@ -358,7 +246,7 @@ export function WhatsAppConfig() {
   async function handleReset() {
     if (
       !confirm(
-        'This will delete the current WhatsApp config so you can re-enter it. Continue?'
+        'This will delete the current WhatsApp config so you can reconnect. Continue?'
       )
     ) {
       return;
@@ -374,15 +262,8 @@ export function WhatsAppConfig() {
         return;
       }
 
-      toast.success(
-        'Configuration cleared. You can now re-enter your credentials.'
-      );
+      toast.success('Configuration cleared. You can now reconnect.');
       setConfig(null);
-      setPhoneNumberId('');
-      setWabaId('');
-      setAccessToken('');
-      setVerifyToken('');
-      setTokenEdited(false);
       setConnectionStatus('disconnected');
       setResetReason(null);
       setStatusMessage('');
@@ -416,9 +297,7 @@ export function WhatsAppConfig() {
     <section className="animate-in fade-in-50 duration-200">
       <SettingsPanelHead title={t('title')} description={t('description')} />
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        {/* Main config form */}
         <div className="space-y-6">
-          {/* Corrupted-token reset banner */}
           {showResetBanner && (
             <Alert className="border-amber-600/40 bg-amber-950/40">
               <div className="flex items-start gap-3">
@@ -474,11 +353,6 @@ export function WhatsAppConfig() {
             </AlertDescription>
           </Alert>
 
-          {/* Registration Status — the "is it actually live?" check.
-            Credentials being valid is necessary but not sufficient;
-            without a successful /register call the number won't
-            receive inbound events. Surface this dimension separately
-            so users don't trust a misleading green banner. */}
           {config && (
             <Alert
               className={
@@ -582,116 +456,53 @@ export function WhatsAppConfig() {
             </Alert>
           )}
 
-          {/* API Credentials */}
+          {/* Embedded Signup */}
           <Card>
             <CardHeader>
               <CardTitle className="text-foreground">
-                {t('apiCredentialsTitle')}
+                {t('connectTitle')}
               </CardTitle>
               <CardDescription className="text-muted-foreground">
-                {t('apiCredentialsDesc')}
+                {t('connectDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">
-                  {t('phoneNumberId')}
-                </Label>
-                <Input
-                  placeholder="e.g. 100234567890123"
-                  value={phoneNumberId}
-                  onChange={(e) => setPhoneNumberId(e.target.value)}
-                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">{t('wabaId')}</Label>
-                <Input
-                  placeholder="e.g. 100234567890456"
-                  value={wabaId}
-                  onChange={(e) => setWabaId(e.target.value)}
-                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">
-                  {t('accessToken')}
-                </Label>
-                <div className="relative">
+              {config?.phone_number_id && (
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">
+                    {t('phoneNumberId')}
+                  </Label>
                   <Input
-                    type={showToken ? 'text' : 'password'}
-                    placeholder={t('accessTokenPlaceholder')}
-                    value={accessToken}
-                    onChange={(e) => {
-                      setAccessToken(e.target.value);
-                      setTokenEdited(true);
-                    }}
-                    onFocus={() => {
-                      if (accessToken === MASKED_TOKEN) {
-                        setAccessToken('');
-                        setTokenEdited(true);
-                      }
-                    }}
-                    className="bg-muted border-border text-foreground placeholder:text-muted-foreground pr-10"
+                    readOnly
+                    value={config.phone_number_id}
+                    className="bg-muted border-border text-muted-foreground font-mono text-sm"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowToken(!showToken)}
-                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 transition-colors"
-                  >
-                    {showToken ? (
-                      <EyeOff className="size-4" />
-                    ) : (
-                      <Eye className="size-4" />
-                    )}
-                  </button>
                 </div>
-                {config && !tokenEdited && (
-                  <p className="text-muted-foreground text-xs">
-                    {t('tokenHidden')}
-                  </p>
+              )}
+              <Button
+                onClick={handleConnect}
+                disabled={connecting}
+                className="bg-[#1877F2] text-white hover:bg-[#166fe0]"
+              >
+                {connecting ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    {t('connecting')}
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="size-4"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.025 1.792-4.697 4.533-4.697 1.313 0 2.686.236 2.686.236v2.971H15.83c-1.491 0-1.956.93-1.956 1.886v2.264h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" />
+                    </svg>
+                    {config ? t('reconnectWithMeta') : t('connectWithMeta')}
+                  </>
                 )}
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">
-                  {t('webhookVerifyToken')}
-                </Label>
-                <Input
-                  placeholder={t('webhookVerifyTokenPlaceholder')}
-                  value={verifyToken}
-                  onChange={(e) => setVerifyToken(e.target.value)}
-                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-                />
-                <p className="text-muted-foreground text-xs">
-                  {t('webhookVerifyTokenHint')}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">
-                  {t('twoStepPin')}
-                  <span className="text-muted-foreground ml-1">
-                    {t('optional')}
-                  </span>
-                </Label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder={t('pinPlaceholder')}
-                  value={pin}
-                  onChange={(e) =>
-                    setPin(e.target.value.replace(/\D/g, '').slice(0, 6))
-                  }
-                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground tracking-widest"
-                />
-                <p className="text-muted-foreground text-xs leading-relaxed">
-                  <span dangerouslySetInnerHTML={{ __html: t('pinHint') }} />
-                </p>
-              </div>
+              </Button>
             </CardContent>
           </Card>
 
@@ -731,20 +542,6 @@ export function WhatsAppConfig() {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  {t('saving')}
-                </>
-              ) : (
-                t('saveConfig')
-              )}
-            </Button>
             <Button
               variant="outline"
               onClick={handleTestConnection}
@@ -786,134 +583,35 @@ export function WhatsAppConfig() {
           </div>
         </div>
 
-        {/* Setup Instructions Sidebar */}
+        {/* How it works sidebar */}
         <div>
           <Card>
             <CardHeader>
               <CardTitle className="text-foreground text-base">
-                {t('setupInstructions')}
+                {t('howItWorksTitle')}
               </CardTitle>
               <CardDescription className="text-muted-foreground">
-                {t('setupInstructionsDesc')}
+                {t('howItWorksDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Accordion>
-                <AccordionItem className="border-border">
-                  <AccordionTrigger className="text-muted-foreground hover:text-foreground hover:no-underline">
-                    <span className="flex items-center gap-2">
-                      <span className="bg-primary text-primary-foreground flex size-5 items-center justify-center rounded-full text-xs font-bold">
-                        1
+              <ol className="space-y-3">
+                {(['howItWorksStep1', 'howItWorksStep2', 'howItWorksStep3'] as const).map(
+                  (key, i) => (
+                    <li key={key} className="flex items-start gap-3">
+                      <span className="bg-primary text-primary-foreground mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-bold">
+                        {i + 1}
                       </span>
-                      {t('step1')}
-                    </span>
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground">
-                    <ol className="list-inside list-decimal space-y-1 text-sm">
-                      <li dangerouslySetInnerHTML={{ __html: t('step1_1') }} />
-                      <li>{t('step1_2')}</li>
-                      <li>{t('step1_3')}</li>
-                      <li>{t('step1_4')}</li>
-                    </ol>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem className="border-border">
-                  <AccordionTrigger className="text-muted-foreground hover:text-foreground hover:no-underline">
-                    <span className="flex items-center gap-2">
-                      <span className="bg-primary text-primary-foreground flex size-5 items-center justify-center rounded-full text-xs font-bold">
-                        2
+                      <span className="text-muted-foreground text-sm">
+                        {t(key)}
                       </span>
-                      {t('step2')}
-                    </span>
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground">
-                    <ol className="list-inside list-decimal space-y-1 text-sm">
-                      <li>{t('step2_1')}</li>
-                      <li>{t('step2_2')}</li>
-                      <li>{t('step2_3')}</li>
-                    </ol>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem className="border-border">
-                  <AccordionTrigger className="text-muted-foreground hover:text-foreground hover:no-underline">
-                    <span className="flex items-center gap-2">
-                      <span className="bg-primary text-primary-foreground flex size-5 items-center justify-center rounded-full text-xs font-bold">
-                        3
-                      </span>
-                      {t('step3')}
-                    </span>
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground">
-                    <ol className="list-inside list-decimal space-y-1 text-sm">
-                      <li>{t('step3_1')}</li>
-                      <li
-                        dangerouslySetInnerHTML={{
-                          __html: t.markup('step3_2', {
-                            strong: (chunks) =>
-                              `<strong class="text-foreground">${chunks}</strong>`,
-                          }),
-                        }}
-                      />
-                      <li
-                        dangerouslySetInnerHTML={{
-                          __html: t.markup('step3_3', {
-                            strong: (chunks) =>
-                              `<strong class="text-foreground">${chunks}</strong>`,
-                          }),
-                        }}
-                      />
-                      <li
-                        dangerouslySetInnerHTML={{
-                          __html: t.markup('step3_4', {
-                            strong: (chunks) =>
-                              `<strong class="text-foreground">${chunks}</strong>`,
-                          }),
-                        }}
-                      />
-                    </ol>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem className="border-border">
-                  <AccordionTrigger className="text-muted-foreground hover:text-foreground hover:no-underline">
-                    <span className="flex items-center gap-2">
-                      <span className="bg-primary text-primary-foreground flex size-5 items-center justify-center rounded-full text-xs font-bold">
-                        4
-                      </span>
-                      {t('step4')}
-                    </span>
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground">
-                    <ol className="list-inside list-decimal space-y-1 text-sm">
-                      <li>{t('step4_1')}</li>
-                      <li>{t('step4_2')}</li>
-                      <li
-                        dangerouslySetInnerHTML={{
-                          __html: t.markup('step4_3', {
-                            strong: (chunks) =>
-                              `<strong class="text-foreground">${chunks}</strong>`,
-                          }),
-                        }}
-                      />
-                      <li
-                        dangerouslySetInnerHTML={{
-                          __html: t.markup('step4_4', {
-                            strong: (chunks) =>
-                              `<strong class="text-foreground">${chunks}</strong>`,
-                          }),
-                        }}
-                      />
-                      <li>{t('step4_5')}</li>
-                    </ol>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-
+                    </li>
+                  )
+                )}
+              </ol>
               <div className="border-border mt-4 border-t pt-4">
                 <a
-                  href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started"
+                  href="https://developers.facebook.com/docs/whatsapp/embedded-signup"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:text-primary/80 inline-flex items-center gap-1.5 text-sm transition-colors"

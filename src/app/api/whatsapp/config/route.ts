@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { randomBytes } from 'crypto';
 import {
-  registerPhoneNumber,
+  exchangeSignupCode,
   subscribeWabaToApp,
   verifyPhoneNumber,
 } from '@/lib/whatsapp/meta-api';
@@ -169,8 +170,11 @@ export async function GET() {
 /**
  * POST /api/whatsapp/config
  *
- * Saves or updates the WhatsApp config for the authenticated user.
- * Verifies credentials with Meta first, then encrypts and stores.
+ * Completes a Meta Embedded Signup flow: exchanges the authorization
+ * code for a system-user token, verifies the selected phone number,
+ * subscribes the WABA to this app, encrypts and stores everything.
+ *
+ * Body: { code: string, phone_number_id: string, waba_id: string }
  */
 export async function POST(request: Request) {
   try {
@@ -194,31 +198,34 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { phone_number_id, waba_id, access_token, verify_token, pin } = body;
+    const { code, phone_number_id, waba_id } = body;
 
-    if (!access_token || !phone_number_id) {
+    if (!code || !phone_number_id || !waba_id) {
       return NextResponse.json(
-        { error: 'access_token and phone_number_id are required' },
+        { error: 'code, phone_number_id and waba_id are required' },
         { status: 400 }
       );
     }
 
-    if (pin !== undefined && pin !== null && pin !== '') {
-      if (typeof pin !== 'string' || !/^\d{6}$/.test(pin)) {
-        return NextResponse.json(
-          { error: 'PIN must be exactly 6 digits.' },
-          { status: 400 }
-        );
-      }
+    // Exchange the Embedded Signup authorization code for a
+    // system-user access token (long-lived, no expiry).
+    let accessToken: string;
+    try {
+      accessToken = await exchangeSignupCode(code);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('Embedded Signup code exchange failed:', message);
+      return NextResponse.json(
+        { error: `Meta code exchange failed: ${message}` },
+        { status: 400 }
+      );
     }
 
     // Reject if another account has already claimed this phone_number_id.
     // CodixIA is single-tenant-per-WhatsApp-number — letting two accounts
     // bind the same number causes the webhook's `.single()` lookup to
     // throw PGRST116 ("multiple rows"), silently dropping every
-    // inbound message. See issue #136. Post-multi-user we key on
-    // account_id (not user_id) since teammates inside the same account
-    // all share one config; the conflict is between accounts.
+    // inbound message. See issue #136.
     const { data: claimed, error: claimedError } = await supabaseAdmin()
       .from('whatsapp_config')
       .select('account_id')
@@ -244,12 +251,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify credentials with Meta BEFORE saving
+    // Verify the selected phone number with Meta BEFORE saving
     let phoneInfo;
     try {
       phoneInfo = await verifyPhoneNumber({
         phoneNumberId: phone_number_id,
-        accessToken: access_token,
+        accessToken,
       });
     } catch (err) {
       const message =
@@ -261,12 +268,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // Webhook verify token: generated server-side. The platform owner
+    // configures the webhook once in the Meta app; each account row
+    // carries its own token for the GET verification handshake.
+    const verifyToken = randomBytes(32).toString('hex');
+
     // Encrypt sensitive tokens before storing
     let encryptedAccessToken: string;
-    let encryptedVerifyToken: string | null;
+    let encryptedVerifyToken: string;
     try {
-      encryptedAccessToken = encrypt(access_token);
-      encryptedVerifyToken = verify_token ? encrypt(verify_token) : null;
+      encryptedAccessToken = encrypt(accessToken);
+      encryptedVerifyToken = encrypt(verifyToken);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Unknown encryption error';
@@ -280,101 +292,40 @@ export async function POST(request: Request) {
       );
     }
 
-    // Look up any pre-existing row for this account so we know whether
-    // this number is already registered with Meta — if so we can skip
-    // /register when the user didn't provide a PIN this time around.
     const { data: existing } = await supabase
       .from('whatsapp_config')
-      .select('id, registered_at, phone_number_id')
+      .select('id')
       .eq('account_id', accountId)
       .maybeSingle();
 
-    const sameNumber =
-      existing?.phone_number_id === phone_number_id &&
-      existing?.registered_at != null;
+    // Embedded Signup registers the phone number (incl. two-step PIN)
+    // during onboarding, so no /register call is needed here — mark it
+    // registered and subscribe the WABA to this app for webhook events.
+    const registeredAt = new Date().toISOString();
 
-    // Step 1: register the phone number for inbound webhooks.
-    //
-    // Attempted on first save AND whenever the user supplies a fresh
-    // PIN (e.g. they rotated the 2FA PIN in Meta Manager). Skipped
-    // when the same number is already registered and no PIN was
-    // supplied — re-registering an already-active number with a
-    // stale PIN would actually fail and undo the active subscription.
-    let registeredAt: string | null = existing?.registered_at ?? null;
-    let registrationError: string | null = null;
-    // True when registration was deliberately skipped because no PIN
-    // was supplied (see below). Distinct from registrationError — this
-    // is not a failure, just an incomplete-but-valid save.
-    let registrationSkipped = false;
-
-    const needsRegistration =
-      !sameNumber || (typeof pin === 'string' && pin.length > 0);
-    if (needsRegistration) {
-      if (!pin) {
-        // No PIN provided. Meta TEST numbers (Developer Console) are
-        // pre-registered by Meta and expose no two-step verification
-        // PIN to set, so requiring one made them impossible to connect
-        // (issue #242). The /register + PIN step only matters for
-        // production numbers under a shared WABA (issue #136), so treat
-        // it as best-effort: skip it, save the (already Meta-verified)
-        // credentials as connected, and leave registered_at null. The
-        // UI surfaces a separate "Not registered" banner with a path to
-        // add a PIN later for users who do need inbound webhook routing.
-        registrationSkipped = true;
-      } else {
-        try {
-          await registerPhoneNumber({
-            phoneNumberId: phone_number_id,
-            accessToken: access_token,
-            pin,
-          });
-          registeredAt = new Date().toISOString();
-        } catch (err) {
-          registrationError =
-            err instanceof Error ? err.message : 'Unknown Meta API error';
-          console.error('Phone number /register failed:', registrationError);
-          // We deliberately fall through and still save the row so the
-          // user can retry without re-entering everything. The UI
-          // surfaces `last_registration_error` so they see WHY it's
-          // not actually live yet.
-        }
-      }
-    }
-
-    // Step 2: subscribe the WABA to this app. Idempotent on Meta's
-    // side, so we call on every save and persist the timestamp.
-    // Skipped only when there's no waba_id (legacy rows from before
-    // we required it).
     let subscribedAppsAt: string | null = null;
-    if (waba_id) {
-      try {
-        await subscribeWabaToApp({
-          wabaId: waba_id,
-          accessToken: access_token,
-        });
-        subscribedAppsAt = new Date().toISOString();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        console.warn('WABA subscribed_apps failed (non-fatal):', message);
-        // Subscription failures are rare once the App has the right
-        // permissions; we don't block save on them — the diagnostic
-        // endpoint surfaces this state too.
-      }
+    let subscriptionError: string | null = null;
+    try {
+      await subscribeWabaToApp({
+        wabaId: waba_id,
+        accessToken,
+      });
+      subscribedAppsAt = new Date().toISOString();
+    } catch (err) {
+      subscriptionError = err instanceof Error ? err.message : String(err);
+      console.warn('WABA subscribed_apps failed (non-fatal):', subscriptionError);
     }
 
-    // Persist everything in one shot. If /register failed we still
-    // store the credentials and the error so the UI can guide the
-    // user through a retry.
     const baseRow = {
       phone_number_id,
-      waba_id: waba_id || null,
+      waba_id,
       access_token: encryptedAccessToken,
       verify_token: encryptedVerifyToken,
-      status: registrationError ? 'disconnected' : 'connected',
-      connected_at: registrationError ? null : new Date().toISOString(),
-      registered_at: registrationError ? null : registeredAt,
-      subscribed_apps_at: subscribedAppsAt ?? null,
-      last_registration_error: registrationError,
+      status: 'connected',
+      connected_at: new Date().toISOString(),
+      registered_at: registeredAt,
+      subscribed_apps_at: subscribedAppsAt,
+      last_registration_error: subscriptionError,
       updated_at: new Date().toISOString(),
     };
 
@@ -413,28 +364,11 @@ export async function POST(request: Request) {
       }
     }
 
-    if (registrationError) {
-      // Save succeeded but the number isn't actually live. Return
-      // 200 with a structured error so the UI can show the specific
-      // remediation step instead of a generic toast.
-      return NextResponse.json({
-        success: false,
-        saved: true,
-        registered: false,
-        registration_error: registrationError,
-        phone_info: phoneInfo,
-      });
-    }
-
     return NextResponse.json({
       success: true,
       saved: true,
-      registered: registeredAt != null,
-      // Credentials are valid and saved, but inbound webhook
-      // registration was skipped because no PIN was supplied (e.g. a
-      // Meta test number). The UI shows the "Not registered" banner
-      // rather than claiming the number is fully live.
-      registration_skipped: registrationSkipped,
+      registered: true,
+      subscribed: subscribedAppsAt != null,
       phone_info: phoneInfo,
     });
   } catch (error) {

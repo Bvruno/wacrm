@@ -42,6 +42,37 @@ async function throwMetaError(
 }
 
 // ============================================================
+// Embedded Signup
+// ============================================================
+
+/**
+ * Exchange the authorization `code` returned by Meta Embedded Signup
+ * for a system-user access token. Server-side only — requires the app
+ * secret.
+ */
+export async function exchangeSignupCode(code: string): Promise<string> {
+  const appId = process.env.META_APP_ID ?? process.env.NEXT_PUBLIC_META_APP_ID;
+  const appSecret = process.env.META_APP_SECRET;
+  if (!appId || !appSecret) {
+    throw new Error('META_APP_ID or META_APP_SECRET is not configured');
+  }
+  const url =
+    `${META_API_BASE}/oauth/access_token` +
+    `?client_id=${encodeURIComponent(appId)}` +
+    `&client_secret=${encodeURIComponent(appSecret)}` +
+    `&code=${encodeURIComponent(code)}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    await throwMetaError(response, `Code exchange failed: ${response.status}`);
+  }
+  const data = (await response.json()) as { access_token?: string };
+  if (!data.access_token) {
+    throw new Error('Meta did not return an access token');
+  }
+  return data.access_token;
+}
+
+// ============================================================
 // Phone number / account
 // ============================================================
 
