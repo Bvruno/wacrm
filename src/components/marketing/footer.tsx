@@ -68,7 +68,7 @@ export function MarketingFooter() {
               </li>
               <li>
                 <Link
-                  href="/terms"
+                  href="/terminos"
                   className="text-muted-foreground hover:text-foreground text-sm"
                 >
                   {t('terms')}

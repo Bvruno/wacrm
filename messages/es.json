@@ -278,6 +278,83 @@
           ]
         }
       }
+    },
+    "termsPage": {
+      "title": "Condiciones de Servicio",
+      "subtitle": "Los términos que rigen el uso de CodixIA y sus servicios.",
+      "lastUpdated": "Última actualización: 3 de agosto de 2026",
+      "sections": {
+        "acceptance": {
+          "title": "Aceptación de los términos",
+          "content": [
+            "Al acceder o usar CodixIA aceptas estas Condiciones de Servicio. Si no estás de acuerdo con alguna de ellas, no utilices el servicio.",
+            "Estas condiciones se aplican tanto al uso del software auto-hospedado como a los servicios complementarios que ofrezcamos."
+          ]
+        },
+        "license": {
+          "title": "Licencia del software",
+          "content": [
+            "CodixIA es software de código abierto. Se concede una licencia limitada, no exclusiva e intransferible para instalar y usar el software en tus propios servidores, conforme a la licencia publicada en el repositorio oficial.",
+            "No está permitido revender, sublicenciar ni redistribuir el software como un servicio competidor sin autorización expresa."
+          ]
+        },
+        "account": {
+          "title": "Cuentas y responsabilidad",
+          "content": [
+            "Eres responsable de mantener la confidencialidad de tus credenciales y de todas las actividades que ocurran bajo tu cuenta.",
+            "Debes proporcionar información veraz al crear tu cuenta y mantenerla actualizada. Los datos de acceso de los miembros del equipo se gestionan bajo tu responsabilidad como administrador."
+          ]
+        },
+        "use": {
+          "title": "Uso aceptable",
+          "content": [
+            "Te comprometes a usar CodixIA de acuerdo con la ley aplicable, incluyendo las políticas de WhatsApp y Meta, y las normas de protección de datos (RGPD).",
+            "Queda prohibido el uso del servicio para enviar mensajes no solicitados (spam), contenido fraudulento, ilegal o que infrinja los derechos de terceros.",
+            "Debes obtener el consentimiento de tus contactos para comunicarte con ellos a través de WhatsApp conforme a la normativa aplicable."
+          ]
+        },
+        "whatsapp": {
+          "title": "Dependencia de terceros",
+          "content": [
+            "El envío y recepción de mensajes depende de la API de WhatsApp/Meta y de tu número de teléfono. No controlamos su disponibilidad, sus políticas ni los cambios que puedan aplicar.",
+            "Si Meta suspende o restringe un número, podrías perder el acceso a determinadas funciones. Te corresponde cumplir las políticas de uso de la plataforma."
+          ]
+        },
+        "availability": {
+          "title": "Disponibilidad del servicio",
+          "content": [
+            "Al tratarse de una solución auto-hospedada, la disponibilidad del servicio depende de tu propia infraestructura.",
+            "Los servicios complementarios que operemos se ofrecen «tal cual», sin garantías de disponibilidad continua. Haremos esfuerzos razonables por mantenerlos operativos, pero no garantizamos ausencia de interrupciones."
+          ]
+        },
+        "liability": {
+          "title": "Limitación de responsabilidad",
+          "content": [
+            "En la máxima medida permitida por la ley, no seremos responsables de daños indirectos, incidentales o consecuentes derivados del uso o la imposibilidad de uso del servicio.",
+            "Nuestra responsabilidad total, en cualquier caso, se limitará al importe que hayas pagado por el servicio en los doce meses anteriores al hecho que la origine."
+          ]
+        },
+        "termination": {
+          "title": "Suspensión y terminación",
+          "content": [
+            "Podemos suspender o terminar tu acceso si incumples estas condiciones o la ley aplicable, previa notificación cuando sea razonable.",
+            "Puedes dejar de usar el servicio y eliminar tu cuenta en cualquier momento. Las disposiciones que por su naturaleza deban sobrevivir, seguirán vigentes tras la terminación."
+          ]
+        },
+        "changes": {
+          "title": "Cambios en las condiciones",
+          "content": [
+            "Podemos actualizar estas condiciones periódicamente. Los cambios se publicarán en esta página con la fecha de última actualización.",
+            "El uso continuado del servicio tras la publicación de los cambios constituye su aceptación."
+          ]
+        },
+        "contact": {
+          "title": "Contacto",
+          "content": [
+            "Para cualquier consulta sobre estas condiciones, contacta a través de los canales publicados en la web."
+          ]
+        }
+      }
     }
   },
   "LoginPage": {
