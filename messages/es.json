@@ -293,7 +293,8 @@
     "signingIn": "Iniciando sesión...",
     "signIn": "Iniciar sesión",
     "noAccount": "¿No tienes cuenta?",
-    "createAccount": "Crear cuenta"
+    "createAccount": "Crear cuenta",
+    "oauthFailed": "No se pudo iniciar sesión con el proveedor. Inténtalo de nuevo."
   },
   "SignupPage": {
     "title": "Crear cuenta",
@@ -306,7 +307,29 @@
     "signingUp": "Creando cuenta...",
     "signUp": "Crear cuenta",
     "haveAccount": "¿Ya tienes cuenta?",
-    "signIn": "Iniciar sesión"
+    "signIn": "Iniciar sesión",
+    "oauthFailed": "No se pudo crear la cuenta con el proveedor. Inténtalo de nuevo."
+  },
+  "Auth": {
+    "continueWith": "O continúa con",
+    "google": "Continuar con Google",
+    "facebook": "Continuar con Facebook"
+  },
+  "ResetPasswordPage": {
+    "title": "Restablecer contraseña",
+    "desc": "Elige una nueva contraseña para tu cuenta",
+    "newPasswordLabel": "Nueva contraseña",
+    "confirmLabel": "Confirmar contraseña",
+    "mismatch": "Las contraseñas no coinciden",
+    "tooShort": "La contraseña debe tener al menos 6 caracteres",
+    "saving": "Guardando...",
+    "save": "Guardar contraseña",
+    "saveError": "No se pudo guardar la contraseña. El enlace puede haber expirado.",
+    "successTitle": "Contraseña actualizada",
+    "successDesc": "Tu contraseña se guardó correctamente. Ya puedes iniciar sesión.",
+    "backToLogin": "Ir a iniciar sesión",
+    "expiredDesc": "Este enlace ya no es válido. Solicita uno nuevo.",
+    "requestNewLink": "Enviar otro enlace"
   },
   "roles": {
     "admin": "Admin",

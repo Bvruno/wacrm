@@ -15,7 +15,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { MessageSquare, UsersRound } from 'lucide-react';
+import { UsersRound } from 'lucide-react';
+import { OAuthButtons } from '@/components/auth/oauth-buttons';
 
 // `useSearchParams` opts the component out of static prerendering
 // unless it sits under a Suspense boundary. We split the form into
@@ -38,9 +39,16 @@ function LoginPageInner() {
   const inviteToken = searchParams.get('invite');
   const t = useTranslations('LoginPage');
 
+  // `/auth/callback` bounces failed OAuth exchanges here with
+  // `?error=oauth` — surface it through the same banner as the
+  // email/password path so the user isn't silently stuck.
+  const oauthFailed = searchParams.get('error') === 'oauth';
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    oauthFailed ? t('oauthFailed') : null
+  );
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
 
@@ -119,7 +127,13 @@ function LoginPageInner() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="flex flex-col gap-4">
+          <OAuthButtons
+            inviteToken={inviteToken}
+            onError={() => setError(t('oauthFailed'))}
+          />
+
+          <div className="mt-4">
+            <form onSubmit={handleLogin} className="flex flex-col gap-4">
             {error && (
               <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
                 {error}
@@ -171,7 +185,8 @@ function LoginPageInner() {
             >
               {loading ? t('signingIn') : t('signIn')}
             </Button>
-          </form>
+            </form>
+          </div>
 
           <p className="text-muted-foreground mt-6 text-center text-sm">
             {t('noAccount')}{' '}

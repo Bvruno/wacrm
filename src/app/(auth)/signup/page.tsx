@@ -15,6 +15,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { MessageSquare, CheckCircle, UsersRound } from 'lucide-react';
+import { OAuthButtons } from '@/components/auth/oauth-buttons';
+import { useTranslations } from 'next-intl';
 
 // `useSearchParams` opts the component out of static prerendering
 // unless wrapped in Suspense — same pattern as /login.
@@ -28,18 +30,21 @@ export default function SignupPage() {
 
 function SignupPageInner() {
   const searchParams = useSearchParams();
+  const t = useTranslations('SignupPage');
   // When the user lands here from `/join/<token>` we carry the
   // invite token in the query so it survives the signup → email
   // verification → redirect round-trip. `emailRedirectTo` below
-  // points back at /join/<token> so the user lands on the redeem
-  // step after verifying instead of being dropped on /dashboard.
+  // points the verification link at /auth/callback, which drops the
+  // user back on /join/<token> after exchanging the code.
   const inviteToken = searchParams.get('invite');
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    searchParams.get('error') === 'oauth' ? t('oauthFailed') : null
+  );
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const supabase = createClient();
@@ -60,13 +65,14 @@ function SignupPageInner() {
 
     setLoading(true);
 
-    // If we have an invite token, point Supabase's verification
-    // email back at the join page so the user can accept after
-    // verifying. Without a token, Supabase uses its default
-    // redirect (the app root).
-    const emailRedirectTo = inviteToken
-      ? `${window.location.origin}/join/${encodeURIComponent(inviteToken)}`
-      : undefined;
+    // Every verification link goes through /auth/callback (PKCE code
+    // exchange). The `next` param tells the callback where to land:
+    // the join page when an invite is pending, /dashboard otherwise.
+    const emailRedirectTo = `${window.location.origin}/auth/callback?next=${
+      inviteToken
+        ? `/join/${encodeURIComponent(inviteToken)}`
+        : '/dashboard'
+    }`;
 
     const { error } = await supabase.auth.signUp({
       email,
@@ -75,7 +81,7 @@ function SignupPageInner() {
         data: {
           full_name: fullName,
         },
-        ...(emailRedirectTo ? { emailRedirectTo } : {}),
+        emailRedirectTo,
       },
     });
 
@@ -148,7 +154,13 @@ function SignupPageInner() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSignup} className="flex flex-col gap-4">
+          <OAuthButtons
+            inviteToken={inviteToken}
+            onError={() => setError(t('oauthFailed'))}
+          />
+
+          <div className="mt-4">
+            <form onSubmit={handleSignup} className="flex flex-col gap-4">
             {error && (
               <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
                 {error}
@@ -225,7 +237,8 @@ function SignupPageInner() {
             >
               {loading ? 'Creating account...' : 'Create account'}
             </Button>
-          </form>
+            </form>
+          </div>
 
           <p className="text-muted-foreground mt-6 text-center text-sm">
             Already have an account?{' '}

@@ -11,7 +11,18 @@ export function createClient() {
 
   browserClient = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      // PKCE auth-code flow: OAuth and email verification links hand
+      // a short-lived `code` to /auth/callback, which exchanges it
+      // server-side. `detectSessionInUrl: false` stops the browser
+      // client from double-processing that code (implicit-flow
+      // fragment handling would otherwise fight the server exchange).
+      auth: {
+        flowType: 'pkce',
+        detectSessionInUrl: false,
+      },
+    }
   );
 
   return browserClient;
