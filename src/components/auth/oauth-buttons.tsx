@@ -6,8 +6,6 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 
-type Provider = 'google' | 'facebook';
-
 interface OAuthButtonsProps {
   /** Invite token to carry through the provider round-trip so the
    *  callback can drop the user back on /join/<token>. */
@@ -39,41 +37,30 @@ function GoogleIcon() {
   );
 }
 
-function FacebookIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-4 shrink-0" aria-hidden="true">
-      <path
-        fill="#1877F2"
-        d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
-      />
-    </svg>
-  );
-}
-
 export function OAuthButtons({ inviteToken, onError }: OAuthButtonsProps) {
   const t = useTranslations('Auth');
-  const [pending, setPending] = useState<Provider | null>(null);
+  const [pending, setPending] = useState(false);
   const supabase = createClient();
 
-  async function handleSignIn(provider: Provider) {
-    setPending(provider);
+  async function handleGoogleSignIn() {
+    setPending(true);
     try {
       const redirectTo = new URL('/auth/callback', window.location.origin);
       if (inviteToken) redirectTo.searchParams.set('invite', inviteToken);
 
       const { error } = await supabase.auth.signInWithOAuth({
-        provider,
+        provider: 'google',
         options: { redirectTo: redirectTo.toString() },
       });
       if (error) {
-        console.error(`[oauth] ${provider}:`, error.message);
-        setPending(null);
+        console.error('[oauth] google:', error.message);
+        setPending(false);
         onError?.();
       }
       // On success the browser navigates to the provider; no cleanup.
     } catch (err) {
       console.error('[oauth]', err);
-      setPending(null);
+      setPending(false);
       onError?.();
     }
   }
@@ -89,31 +76,16 @@ export function OAuthButtons({ inviteToken, onError }: OAuthButtonsProps) {
       <Button
         type="button"
         variant="outline"
-        onClick={() => handleSignIn('google')}
-        disabled={pending !== null}
+        onClick={handleGoogleSignIn}
+        disabled={pending}
         className="border-border text-foreground hover:bg-muted h-10 w-full disabled:opacity-50"
       >
-        {pending === 'google' ? (
+        {pending ? (
           <Loader2 className="size-4 animate-spin" />
         ) : (
           <GoogleIcon />
         )}
         {t('google')}
-      </Button>
-
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => handleSignIn('facebook')}
-        disabled={pending !== null}
-        className="border-border text-foreground hover:bg-muted h-10 w-full disabled:opacity-50"
-      >
-        {pending === 'facebook' ? (
-          <Loader2 className="size-4 animate-spin" />
-        ) : (
-          <FacebookIcon />
-        )}
-        {t('facebook')}
       </Button>
     </div>
   );
