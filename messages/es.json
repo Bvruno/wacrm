@@ -389,8 +389,7 @@
   },
   "Auth": {
     "continueWith": "O continúa con",
-    "google": "Continuar con Google",
-    "facebook": "Continuar con Facebook"
+    "google": "Continuar con Google"
   },
   "ResetPasswordPage": {
     "title": "Restablecer contraseña",
@@ -421,7 +420,7 @@
   "Sidebar": {
     "title": "CodixIA",
     "dashboard": "Dashboard",
-    "inbox": "Bandeja",
+    "inbox": "Chats",
     "notifications": "Notificaciones",
     "contacts": "Contactos",
     "pipelines": "Pipelines",
@@ -446,7 +445,7 @@
   },
   "Header": {
     "dashboard": "Dashboard",
-    "inbox": "Bandeja",
+    "inbox": "Chats",
     "notifications": "Notificaciones",
     "contacts": "Contactos",
     "pipelines": "Pipelines",

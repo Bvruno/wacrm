@@ -99,7 +99,7 @@ function LoginPageInner() {
                 <text
                   x="70"
                   y="285"
-                  font-family="Arial, Helvetica, sans-serif"
+                  fontFamily="Arial, Helvetica, sans-serif"
                   font-size="88"
                   font-weight="700"
                   fill="#FFFFFF"
@@ -109,7 +109,7 @@ function LoginPageInner() {
                 <text
                   x="340"
                   y="285"
-                  font-family="Arial, Helvetica, sans-serif"
+                  fontFamily="Arial, Helvetica, sans-serif"
                   font-size="88"
                   font-weight="700"
                   fill="#E11B22"
