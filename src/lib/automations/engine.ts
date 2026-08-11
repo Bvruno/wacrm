@@ -669,8 +669,7 @@ async function runStep(
       if (!cfg.url) throw new Error('send_webhook needs url');
       // SSRF guard: the URL and headers are account-controlled and the
       // server makes the request, so refuse any destination that resolves
-      // to a private / loopback / link-local / reserved address. Mirrors
-      // the webhook_endpoints delivery path (see lib/webhooks/deliver.ts).
+      // to a private / loopback / link-local / reserved address.
       if (!(await isDeliverableUrl(cfg.url))) {
         throw new Error('send_webhook: destination not allowed');
       }

@@ -1,12 +1,12 @@
 // ============================================================
-// SSRF guard for outbound webhook delivery.
+// SSRF guard for server-side outbound HTTP requests.
 //
-// A webhook URL is attacker-influenced (any account admin with
-// `webhooks:manage` can register one) and our server makes the request,
-// so an unguarded fetch is a Server-Side Request Forgery primitive: a
-// URL pointing at `127.0.0.1`, a cloud metadata IP (`169.254.169.254`),
-// or an RFC1918 host would let a caller probe / POST to internal
-// services from the app's network.
+// The destination URL is attacker-influenced (an account admin can set
+// it on the `send_webhook` automation/flow step) and our server makes
+// the request, so an unguarded fetch is a Server-Side Request Forgery
+// primitive: a URL pointing at `127.0.0.1`, a cloud metadata IP
+// (`169.254.169.254`), or an RFC1918 host would let a caller probe /
+// POST to internal services from the app's network.
 //
 // `isDeliverableUrl` resolves the host and rejects any address that is
 // loopback, private, link-local, ULA, or otherwise non-publicly-

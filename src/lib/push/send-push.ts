@@ -63,9 +63,6 @@ export async function sendPushToAccount(
   webpush.setVapidDetails('mailto:support@wacrm.app', publicKey, privateKey);
 
   const db = supabaseAdmin();
-  console.log(
-    `[push] sendPushToAccount called: accountId=${accountId} eventType=${eventType ?? 'none'}`
-  );
 
   const { data: direct, error: directErr } = await db
     .from('push_subscriptions')
@@ -79,30 +76,20 @@ export async function sendPushToAccount(
   }
 
   let subs = direct ?? [];
-  console.log(`[push] direct query returned ${subs.length} subscription(s)`);
 
   if (subs.length === 0) {
-    console.log(
-      `[push] no subscriptions with account_id=${accountId}, trying via profiles`
-    );
     const { data: members } = await db
       .from('profiles')
       .select('user_id')
       .eq('account_id', accountId);
 
-    console.log(`[push] profiles for account found: ${members?.length ?? 0}`);
-
     if (members && members.length > 0) {
       const userIds = members.map((m: { user_id: string }) => m.user_id);
-      console.log(`[push] looking up subs for userIds: ${userIds.join(', ')}`);
       const { data: viaMembers } = await db
         .from('push_subscriptions')
         .select('user_id, endpoint, keys_p256dh, keys_auth, preferences')
         .in('user_id', userIds);
       subs = viaMembers ?? [];
-      console.log(
-        `[push] via-profiles query returned ${subs.length} subscription(s)`
-      );
     }
   }
 
@@ -139,9 +126,6 @@ export async function sendPushToAccount(
   };
 
   const message = JSON.stringify(messageObj);
-  console.log(
-    `[push] payload: title="${messageObj.title}" body="${messageObj.body.substring(0, 80)}" url="${messageObj.url}"`
-  );
 
   const options = { ...DEFAULT_OPTIONS, ...sendOpts };
 
@@ -152,28 +136,13 @@ export async function sendPushToAccount(
     if (eventType) {
       const prefsObj =
         sub.preferences as Partial<NotificationPreferences> | null;
-      if (!prefsObj || typeof prefsObj !== 'object') {
-        console.log(
-          `[push] subscription for user ${sub.user_id} has no preferences object (${JSON.stringify(sub.preferences)}), sending anyway`
-        );
-      } else {
+      if (prefsObj && typeof prefsObj === 'object') {
         const prefValue = prefsObj[eventType];
-        console.log(
-          `[push] user ${sub.user_id}: eventType=${eventType} pref=${prefValue}`
-        );
-        if (prefValue === false) {
-          console.log(
-            `[push] skipping user ${sub.user_id}: ${eventType} preference is false`
-          );
-          continue;
-        }
+        if (prefValue === false) continue;
       }
     }
 
     try {
-      console.log(
-        `[push] sending to user ${sub.user_id} at endpoint ${sub.endpoint.substring(0, 60)}...`
-      );
       await webpush.sendNotification(
         {
           endpoint: sub.endpoint,
@@ -187,7 +156,6 @@ export async function sendPushToAccount(
         }
       );
       sent++;
-      console.log(`[push] sent successfully to user ${sub.user_id}`);
     } catch (err) {
       const status =
         err instanceof webpush.WebPushError ? err.statusCode : 'unknown';
@@ -211,6 +179,5 @@ export async function sendPushToAccount(
     }
   }
 
-  console.log(`[push] done: sent=${sent} failed=${failed}`);
   return { sent, failed };
 }

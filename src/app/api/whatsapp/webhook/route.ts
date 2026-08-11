@@ -1,14 +1,13 @@
 import { NextResponse, after } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { decrypt, encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption';
-import { getMediaUrl, downloadMedia } from '@/lib/whatsapp/meta-api';
+import { getMediaUrl } from '@/lib/whatsapp/meta-api';
 import { normalizePhone } from '@/lib/whatsapp/phone-utils';
 import { findExistingContact, isUniqueViolation } from '@/lib/contacts/dedupe';
 import { verifyMetaWebhookSignature } from '@/lib/whatsapp/webhook-signature';
 import { runAutomationsForTrigger } from '@/lib/automations/engine';
 import { dispatchInboundToFlows } from '@/lib/flows/engine';
 import { dispatchInboundToAiReply } from '@/lib/ai/auto-reply';
-import { dispatchWebhookEvent } from '@/lib/webhooks/deliver';
 import { sendPushToAccount } from '@/lib/push/send-push';
 import {
   handleTemplateWebhookChange,
@@ -215,17 +214,13 @@ export async function POST(request: Request) {
   // (see issue #301). `after()` hands the callback to the runtime, which
   // keeps the function alive until it resolves (within the route's
   // maxDuration).
-  console.log('[AFTER_TEST] before after() — POST handler running');
   after(async () => {
-    console.log('[AFTER_TEST] INSIDE after() callback — THIS SHOULD APPEAR');
     try {
       await processWebhook(body);
-      console.log('[AFTER_TEST] processWebhook completed successfully');
     } catch (error) {
-      console.error('[AFTER_TEST] Error in processWebhook:', error);
+      console.error('Error in processWebhook:', error);
     }
   });
-  console.log('[AFTER_TEST] after after() — about to return 200');
 
   return NextResponse.json({ status: 'received' }, { status: 200 });
 }
@@ -426,34 +421,6 @@ async function handleStatusUpdate(status: {
       console.error('Error updating broadcast recipient status:', recUpdateErr);
     }
   }
-
-  // 3) Webhook fan-out for messages we store (inbox / API sends).
-  //    Runs last so a slow subscriber can't delay the mirrors above.
-  //    Bounded to one row (message_id isn't unique) purely to resolve
-  //    the owning account for delivery.
-  const { data: msgRow } = await supabaseAdmin()
-    .from('messages')
-    .select('conversation_id, conversations(account_id)')
-    .eq('message_id', status.id)
-    .limit(1)
-    .maybeSingle();
-
-  if (msgRow) {
-    const conv = msgRow.conversations as { account_id: string } | null;
-    const accountId = conv?.account_id;
-    if (accountId) {
-      await dispatchWebhookEvent(
-        supabaseAdmin(),
-        accountId,
-        'message.status_updated',
-        {
-          whatsapp_message_id: status.id,
-          conversation_id: msgRow.conversation_id,
-          status: status.status,
-        }
-      );
-    }
-  }
 }
 
 /**
@@ -611,22 +578,6 @@ async function processMessage(
   if (!convResult) return;
   const conversation = convResult.conversation;
 
-  // Emit conversation.created as soon as the thread is opened — BEFORE
-  // the reaction short-circuit below — so a conversation first opened by
-  // a reaction still fires the event, and a subscriber always sees the
-  // thread open before its first message.received.
-  if (convResult.created) {
-    await dispatchWebhookEvent(
-      supabaseAdmin(),
-      accountId,
-      'conversation.created',
-      {
-        conversation_id: conversation.id,
-        contact_id: contactRecord.id,
-      }
-    );
-  }
-
   // Reactions short-circuit here — they aren't messages. We never insert
   // into `messages`, never bump unread_count, never update last_message_text.
   // Done before parseMessageContent so the media-URL fetch is skipped.
@@ -756,10 +707,6 @@ async function processMessage(
 
   // Fire push notification to subscribed agents so they know a new
   // message arrived, even when the app is backgrounded / closed.
-  console.log(
-    '[PUSH_DEBUG] About to call sendPushToAccount for account',
-    accountId
-  );
   try {
     const result = await sendPushToAccount(
       accountId,
@@ -878,9 +825,9 @@ async function processMessage(
 
   // AI auto-reply. Runs only for plain-text inbound the deterministic
   // flow runner did NOT consume (flows win over the LLM), and only when
-  // the account has enabled it. Awaited inside `after()` (same reason as
-  // the webhook dispatch below); `dispatchInboundToAiReply` owns its
-  // eligibility gates + try/catch and never throws.
+  // the account has enabled it. Awaited inside `after()`;
+  // `dispatchInboundToAiReply` owns its eligibility gates + try/catch
+  // and never throws.
   if (!flowConsumed && !interactiveReplyId && inboundText.trim()) {
     await dispatchInboundToAiReply({
       accountId,
@@ -889,21 +836,6 @@ async function processMessage(
       configOwnerUserId,
     });
   }
-
-  // message.received webhook (public API). Awaited — not fire-and-forget
-  // — because we're inside the route's `after()` block, which only keeps
-  // the function alive for promises it can see; a detached promise could
-  // be frozen before it delivers. `dispatchWebhookEvent` early-exits
-  // when the account has no matching endpoint and never throws.
-  // (conversation.created is emitted earlier, right after the thread is
-  // opened.)
-  await dispatchWebhookEvent(supabaseAdmin(), accountId, 'message.received', {
-    conversation_id: conversation.id,
-    contact_id: contactRecord.id,
-    whatsapp_message_id: message.id,
-    content_type: contentType,
-    text: contentText,
-  });
 }
 
 async function parseMessageContent(
