@@ -632,7 +632,7 @@ export function TemplateManager() {
                           ? t('deleteMetaLocallyTitle')
                           : t('deleteLocallyTitle')
                       }
-                      className="text-muted-foreground h-8 w-8 hover:bg-red-950/30 hover:text-red-400"
+                      className="text-muted-foreground touch-min h-8 w-8 hover:bg-red-950/30 hover:text-red-400"
                     >
                       {deletingId === template.id ? (
                         <Loader2 className="size-4 animate-spin" />

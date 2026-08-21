@@ -219,7 +219,7 @@ function BannerButton({
       type="button"
       onClick={onClick}
       disabled={busy}
-      className="border-border bg-card text-foreground hover:bg-muted inline-flex flex-shrink-0 items-center gap-1 rounded-md border px-2.5 py-1 font-medium transition-colors disabled:opacity-60"
+      className="border-border bg-card text-foreground hover:bg-muted touch-min inline-flex flex-shrink-0 items-center gap-1 rounded-md border px-2.5 py-1 font-medium transition-colors disabled:opacity-60"
     >
       {busy ? (
         <Loader2 className="h-3 w-3 animate-spin" />

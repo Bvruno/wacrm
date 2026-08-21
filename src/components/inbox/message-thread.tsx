@@ -972,7 +972,7 @@ export function MessageThread({
               type="button"
               onClick={onBack}
               aria-label={t('backToConversations')}
-              className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md lg:hidden"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground touch-min flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md lg:hidden"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
@@ -1018,7 +1018,7 @@ export function MessageThread({
               title={contactPanelOpen ? t('hideContact') : t('showContact')}
               aria-pressed={contactPanelOpen}
               className={cn(
-                'hover:bg-muted hover:text-foreground hidden h-7 w-7 items-center justify-center rounded-md transition-colors lg:inline-flex',
+                'hover:bg-muted hover:text-foreground inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors lg:h-7 lg:w-7',
                 contactPanelOpen ? 'text-primary' : 'text-muted-foreground'
               )}
             >
@@ -1044,7 +1044,7 @@ export function MessageThread({
             aria-label={t('searchInConversation')}
             title={t('search')}
             className={cn(
-              'hover:bg-muted hover:text-foreground inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+              'hover:bg-muted hover:text-foreground touch-min inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors',
               showSearch ? 'text-primary' : 'text-muted-foreground'
             )}
           >
@@ -1064,7 +1064,7 @@ export function MessageThread({
               aria-label={t('refreshConversation')}
               title={t('refresh')}
               className={cn(
-                'text-muted-foreground hover:bg-muted hover:text-foreground inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors disabled:opacity-60'
+                'text-muted-foreground hover:bg-muted hover:text-foreground touch-min inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors disabled:opacity-60'
               )}
             >
               <RefreshCw
@@ -1077,7 +1077,7 @@ export function MessageThread({
           <DropdownMenu>
             <DropdownMenuTrigger
               className={cn(
-                'hover:bg-muted inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs',
+                'hover:bg-muted touch-min inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs',
                 currentStatus?.color ?? 'text-muted-foreground'
               )}
             >
@@ -1104,7 +1104,7 @@ export function MessageThread({
           <DropdownMenu>
             <DropdownMenuTrigger
               className={cn(
-                'hover:bg-muted inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs',
+                'hover:bg-muted touch-min inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs',
                 assignedAgentId ? 'text-primary' : 'text-muted-foreground'
               )}
             >

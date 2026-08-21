@@ -496,40 +496,40 @@ export function ContactDetailView({
                 defaultValue="details"
                 className="flex min-h-0 flex-1 flex-col"
               >
-                <TabsList className="bg-muted/50 border-border mx-4 mt-3 border-b">
+                <TabsList className="bg-muted/50 border-border mx-4 mt-3 w-full [scrollbar-width:none] justify-start gap-1 overflow-x-auto border-b [&::-webkit-scrollbar]:hidden">
                   <TabsTrigger
                     value="details"
-                    className="data-active:bg-muted data-active:text-primary text-muted-foreground"
+                    className="data-active:bg-muted data-active:text-primary text-muted-foreground flex-none px-3"
                   >
                     {t('tabs.details')}
                   </TabsTrigger>
                   <TabsTrigger
                     value="tags"
-                    className="data-active:bg-muted data-active:text-primary text-muted-foreground"
+                    className="data-active:bg-muted data-active:text-primary text-muted-foreground flex-none px-3"
                   >
                     {t('tabs.tags', { fallback: 'Tags' })}
                   </TabsTrigger>
                   <TabsTrigger
                     value="activity"
-                    className="data-active:bg-muted data-active:text-primary text-muted-foreground"
+                    className="data-active:bg-muted data-active:text-primary text-muted-foreground flex-none px-3"
                   >
                     {t('tabs.activity')}
                   </TabsTrigger>
                   <TabsTrigger
                     value="notes"
-                    className="data-active:bg-muted data-active:text-primary text-muted-foreground"
+                    className="data-active:bg-muted data-active:text-primary text-muted-foreground flex-none px-3"
                   >
                     {t('tabs.notes')}
                   </TabsTrigger>
                   <TabsTrigger
                     value="custom"
-                    className="data-active:bg-muted data-active:text-primary text-muted-foreground"
+                    className="data-active:bg-muted data-active:text-primary text-muted-foreground flex-none px-3"
                   >
                     {t('tabs.custom')}
                   </TabsTrigger>
                   <TabsTrigger
                     value="deals"
-                    className="data-active:bg-muted data-active:text-primary text-muted-foreground"
+                    className="data-active:bg-muted data-active:text-primary text-muted-foreground flex-none px-3"
                   >
                     {t('tabs.deals')}
                   </TabsTrigger>
@@ -619,7 +619,7 @@ export function ContactDetailView({
                               key={tag.id}
                               onClick={() => toggleTag(tag.id)}
                               disabled={savingTags}
-                              className={`inline-flex cursor-pointer items-center rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                              className={`touch-min inline-flex cursor-pointer items-center rounded-full px-3 py-1 text-xs font-medium transition-all ${
                                 selected
                                   ? 'ring-primary ring-offset-border ring-2 ring-offset-1'
                                   : 'opacity-50 hover:opacity-80'
@@ -747,7 +747,8 @@ export function ContactDetailView({
                             </p>
                             <button
                               onClick={() => deleteNote(note.id)}
-                              className="text-muted-foreground shrink-0 cursor-pointer opacity-0 transition-all group-hover:opacity-100 hover:text-red-400"
+                              aria-label="Delete note"
+                              className="text-muted-foreground shrink-0 cursor-pointer opacity-100 transition-all group-hover:text-red-400 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100"
                             >
                               <Trash2 className="size-3.5" />
                             </button>

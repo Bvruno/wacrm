@@ -10,7 +10,8 @@
       "about": "Sobre nosotros",
       "signIn": "Iniciar sesión",
       "signUp": "Registrarse",
-      "dashboard": "Dashboard"
+      "dashboard": "Dashboard",
+      "openMenu": "Abrir menú"
     },
     "hero": {
       "badge": "CRM auto-hospedable para WhatsApp",
@@ -430,6 +431,8 @@
     "aiAgents": "Agentes IA",
     "settings": "Configuración",
     "beta": "Beta",
+    "more": "Más",
+    "openMenu": "Abrir menú",
     "unreadConversations": "{count} {count, plural, =1 {conversación sin leer} other {conversaciones sin leer}}",
     "unreadNotifications": "{count} {count, plural, =1 {notificación sin leer} other {notificaciones sin leer}}",
     "roleOwner": "Propietario",
@@ -923,7 +926,8 @@
       "toastDeleteFailed": "No se pudo eliminar el campo.",
       "toastDeleted": "Eliminado \"{name}\".",
       "search": "Buscar campos\u2026",
-      "noResults": "No hay campos que coincidan con tu búsqueda."
+      "noResults": "No hay campos que coincidan con tu búsqueda.",
+      "cancel": "Cancelar"
     }
   },
   "NotificationsPage": {
@@ -2179,7 +2183,7 @@
       "nameLabel": "Nombre",
       "namePlaceholder": "ej. Automatización Zapier",
       "scopesLabel": "Ámbitos",
-      "scopesHint": "Una clave sin ámbitos aún puede llamar a <code className=\"text-[11px]\">GET /api/v1/me</code> para verificar que funciona.",
+      "scopesHint": "Una clave sin ámbitos aún puede llamar a <code>GET /api/v1/me</code> para verificar que funciona.",
       "cancel": "Cancelar",
       "creating": "Creando…",
       "createKey": "Crear clave",

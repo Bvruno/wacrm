@@ -374,7 +374,7 @@ function AutomationCard({
           <DropdownMenu>
             <DropdownMenuTrigger
               aria-label="Open menu"
-              className="text-muted-foreground hover:bg-muted hover:text-foreground data-[popup-open]:bg-muted inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground data-[popup-open]:bg-muted touch-min inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors"
             >
               <MoreVertical className="h-4 w-4" />
             </DropdownMenuTrigger>

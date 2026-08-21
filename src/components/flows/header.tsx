@@ -63,7 +63,7 @@ export function EditorHeader() {
           onClick={() => router.push('/flows')}
           title="Back to Flows"
           aria-label="Back to Flows"
-          className="text-muted-foreground hover:bg-muted hover:text-foreground inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground touch-min inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>

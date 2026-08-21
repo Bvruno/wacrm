@@ -24,9 +24,10 @@
  * feedback was that the list shape made flows "hard to understand".
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { GitFork, List } from 'lucide-react';
 
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { FlowBuilder } from './flow-builder';
 import { FlowCanvas } from './flow-canvas';
 import { FlowEditorProvider } from './flow-editor-state';
@@ -81,7 +82,7 @@ export function FlowEditorShell({ initialFlow, initialNodes }: Props) {
   // breakpoint regardless of `view` — but we keep `view` itself
   // intact so the user's preference comes back when they widen
   // again (e.g. rotating a tablet, resizing a window).
-  const isMobile = useMatchMedia(MOBILE_BREAKPOINT);
+  const isMobile = useMediaQuery(MOBILE_BREAKPOINT);
   const effectiveView: View = isMobile ? 'list' : view;
 
   const choose = (next: View) => {
@@ -157,28 +158,6 @@ export function FlowEditorShell({ initialFlow, initialNodes }: Props) {
       </div>
     </FlowEditorProvider>
   );
-}
-
-/**
- * Tiny `useMatchMedia` shim. We could pull in `react-responsive` but
- * this is the only consumer and matchMedia is one of those browser
- * APIs that doesn't need a dependency.
- */
-function useMatchMedia(query: string): boolean {
-  const [matches, setMatches] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia(query).matches;
-  });
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const mql = window.matchMedia(query);
-    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
-    // Safari < 14 still uses addListener; addEventListener is the
-    // modern path. Both fire identically.
-    mql.addEventListener('change', handler);
-    return () => mql.removeEventListener('change', handler);
-  }, [query]);
-  return matches;
 }
 
 function SegButton({

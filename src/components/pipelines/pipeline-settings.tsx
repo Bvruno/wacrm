@@ -291,7 +291,7 @@ export function PipelineSettings({
                       key={color}
                       type="button"
                       onClick={() => setNewStageColor(color)}
-                      className="h-5 w-5 rounded-full border-2 transition-transform hover:scale-110"
+                      className="touch-min h-5 w-5 rounded-full border-2 transition-transform hover:scale-110"
                       style={{
                         backgroundColor: color,
                         borderColor:
@@ -410,7 +410,7 @@ function SortableStageRow({
         className="text-muted-foreground hover:text-foreground cursor-grab touch-none active:cursor-grabbing"
         aria-label={t('dragToReorder')}
       >
-        <GripVertical className="h-4 w-4" />
+        <GripVertical className="touch-min h-4 w-4" />
       </button>
       <ColorSwatch
         value={stage.color}
@@ -421,7 +421,7 @@ function SortableStageRow({
       <Input
         value={stage.name}
         onChange={(e) => onNameChange(e.target.value)}
-        className="text-foreground focus:border-border h-7 flex-1 border-transparent bg-transparent text-sm"
+        className="text-foreground focus:border-border touch-min h-7 flex-1 border-transparent bg-transparent text-sm"
       />
       <Button
         variant="ghost"
@@ -453,7 +453,7 @@ function ColorSwatch({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="border-border h-4 w-4 rounded-full border"
+        className="border-border touch-min h-4 w-4 rounded-full border"
         style={{ backgroundColor: value }}
         aria-label={t('changeColor')}
       />

@@ -72,7 +72,7 @@ export function PwaInstallPrompt() {
 
   if (updateReady) {
     return (
-      <div className="border-border bg-card fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-xl border p-4 shadow-lg">
+      <div className="border-border bg-card pb-safe fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-xl border p-4 shadow-lg">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <p className="text-foreground text-sm font-semibold">

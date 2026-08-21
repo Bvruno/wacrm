@@ -1,74 +1,86 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Conversation } from '@/types';
 
 /**
  * Count of conversations with at least one unread inbound message for
- * the current user. Used by the sidebar to surface a green dot on the
- * Inbox nav entry when the user is elsewhere in the app.
+ * the current user. Used by the sidebar and the mobile bottom nav to
+ * surface a green dot on the Inbox entry.
  *
  * Lives on its own realtime channel (distinct from the inbox page's
  * "inbox-realtime") so both can coexist without sharing state.
+ *
+ * Module-level singleton: several components read the same total, but
+ * Supabase forbids adding `postgres_changes` callbacks to a channel
+ * that is already subscribed. Only the first consumer starts the
+ * channel; everyone else attaches to the shared listener set below.
  */
-export function useTotalUnread(): number {
-  const [total, setTotal] = useState(0);
+const listeners = new Set<(total: number) => void>();
 
-  // Keep a live local mirror of {id: unread_count} so INSERT/UPDATE/DELETE
-  // events can adjust the total in O(1) without refetching.
-  const countsRef = useRef<Map<string, number>>(new Map());
+let channelStarted = false;
+let total = 0;
+let counts = new Map<string, number>();
+
+function emit() {
+  let sum = 0;
+  for (const n of counts.values()) if (n > 0) sum += 1;
+  total = sum;
+  for (const listener of listeners) listener(total);
+}
+
+function ensureChannelStarted() {
+  if (channelStarted) return;
+  channelStarted = true;
+  const supabase = createClient();
+
+  // Initial load. RLS scopes this to the signed-in user automatically —
+  // no explicit user_id filter needed here.
+  (async () => {
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('id, unread_count');
+    if (error || !data) return;
+
+    counts = new Map<string, number>();
+    for (const row of data as { id: string; unread_count: number }[]) {
+      counts.set(row.id, row.unread_count ?? 0);
+    }
+    emit();
+  })();
+
+  supabase
+    .channel('total-unread-realtime')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'conversations' },
+      (payload) => {
+        if (payload.eventType === 'DELETE') {
+          const oldRow = payload.old as Partial<Conversation>;
+          if (oldRow.id) counts.delete(oldRow.id);
+        } else {
+          const row = payload.new as Conversation;
+          counts.set(row.id, row.unread_count ?? 0);
+        }
+        emit();
+      }
+    )
+    .subscribe();
+}
+
+export function useTotalUnread(): number {
+  const [state, setState] = useState(total);
 
   useEffect(() => {
-    const supabase = createClient();
-    let cancelled = false;
-
-    // Initial load. RLS scopes this to the signed-in user automatically —
-    // no explicit user_id filter needed here.
-    (async () => {
-      const { data, error } = await supabase
-        .from('conversations')
-        .select('id, unread_count');
-      if (cancelled || error || !data) return;
-
-      const map = new Map<string, number>();
-      let sum = 0;
-      for (const row of data as { id: string; unread_count: number }[]) {
-        const n = row.unread_count ?? 0;
-        map.set(row.id, n);
-        if (n > 0) sum += 1;
-      }
-      countsRef.current = map;
-      setTotal(sum);
-    })();
-
-    const channel = supabase
-      .channel('total-unread-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'conversations' },
-        (payload) => {
-          const map = countsRef.current;
-          if (payload.eventType === 'DELETE') {
-            const oldRow = payload.old as Partial<Conversation>;
-            if (oldRow.id) map.delete(oldRow.id);
-          } else {
-            const row = payload.new as Conversation;
-            map.set(row.id, row.unread_count ?? 0);
-          }
-          // Recompute — cheap, conversations per user stay small.
-          let sum = 0;
-          for (const n of map.values()) if (n > 0) sum += 1;
-          setTotal(sum);
-        }
-      )
-      .subscribe();
-
+    ensureChannelStarted();
+    const listener = (next: number) => setState(next);
+    listeners.add(listener);
+    listener(total);
     return () => {
-      cancelled = true;
-      supabase.removeChannel(channel);
+      listeners.delete(listener);
     };
   }, []);
 
-  return total;
+  return state;
 }

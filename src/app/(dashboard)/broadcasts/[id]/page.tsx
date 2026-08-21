@@ -503,22 +503,22 @@ export default function BroadcastDetailPage() {
                   <TableHead className="text-muted-foreground">
                     {t('table.contact')}
                   </TableHead>
-                  <TableHead className="text-muted-foreground">
+                  <TableHead className="text-muted-foreground hidden sm:table-cell">
                     {t('table.phone')}
                   </TableHead>
                   <TableHead className="text-muted-foreground">
                     {t('table.status')}
                   </TableHead>
-                  <TableHead className="text-muted-foreground">
+                  <TableHead className="text-muted-foreground hidden md:table-cell">
                     {t('table.sent')}
                   </TableHead>
-                  <TableHead className="text-muted-foreground">
+                  <TableHead className="text-muted-foreground hidden lg:table-cell">
                     {t('table.delivered')}
                   </TableHead>
-                  <TableHead className="text-muted-foreground">
+                  <TableHead className="text-muted-foreground hidden lg:table-cell">
                     {t('table.read')}
                   </TableHead>
-                  <TableHead className="text-muted-foreground">
+                  <TableHead className="text-muted-foreground hidden md:table-cell">
                     {t('table.error')}
                   </TableHead>
                 </TableRow>
@@ -531,7 +531,7 @@ export default function BroadcastDetailPage() {
                       <TableCell className="text-foreground font-medium">
                         {recipient.contact?.name ?? 'Unknown'}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground hidden sm:table-cell">
                         {recipient.contact?.phone ?? '-'}
                       </TableCell>
                       <TableCell>
@@ -541,22 +541,22 @@ export default function BroadcastDetailPage() {
                           {tStatus(rStatus.label)}
                         </span>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground hidden md:table-cell">
                         {recipient.sent_at
                           ? new Date(recipient.sent_at).toLocaleString()
                           : '-'}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground hidden lg:table-cell">
                         {recipient.delivered_at
                           ? new Date(recipient.delivered_at).toLocaleString()
                           : '-'}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground hidden lg:table-cell">
                         {recipient.read_at
                           ? new Date(recipient.read_at).toLocaleString()
                           : '-'}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate text-xs text-red-400">
+                      <TableCell className="hidden max-w-xs truncate text-xs text-red-400 md:table-cell">
                         {recipient.error_message ?? '-'}
                       </TableCell>
                     </TableRow>

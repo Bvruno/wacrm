@@ -168,11 +168,10 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               collapsed ? 'justify-center' : 'gap-2'
             )}
           >
-            <div className="bg-primary text-primary-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
+            <div className="bg-primary text-primary-foreground flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="500"
-                height="500"
+                className="h-full w-full"
                 viewBox="0 0 500 500"
               >
                 <text

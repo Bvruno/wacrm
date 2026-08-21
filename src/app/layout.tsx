@@ -60,8 +60,9 @@ export const viewport: Viewport = {
   colorScheme: 'dark light',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // No maximumScale/userScalable lock: WCAG 2.1 AA 1.4.4 requires
+  // pinch-zoom up to 200%. Touch-action on interactive components
+  // mitigates accidental double-tap zoom instead.
   viewportFit: 'cover',
 };
 

@@ -15,9 +15,11 @@ import type {
   ConversationStatus,
 } from '@/types';
 import { useRealtime } from '@/hooks/use-realtime';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { ConversationList } from '@/components/inbox/conversation-list';
 import { MessageThread } from '@/components/inbox/message-thread';
 import { ContactSidebar } from '@/components/inbox/contact-sidebar';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import { WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -85,17 +87,27 @@ function InboxPageInner() {
     }
   }, []);
 
+  // Mobile (<lg) shows the contact info as a right Sheet instead of an
+  // inline column; the thread-header toggle drives whichever one is
+  // active for the current viewport.
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const [mobileContactOpen, setMobileContactOpen] = useState(false);
+
   const handleToggleContactPanel = useCallback(() => {
-    setContactPanelOpen((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem(CONTACT_PANEL_STORAGE_KEY, String(next));
-      } catch {
-        // Persistence is best-effort; ignore storage failures.
-      }
-      return next;
-    });
-  }, []);
+    if (isDesktop) {
+      setContactPanelOpen((prev) => {
+        const next = !prev;
+        try {
+          localStorage.setItem(CONTACT_PANEL_STORAGE_KEY, String(next));
+        } catch {
+          // Persistence is best-effort; ignore storage failures.
+        }
+        return next;
+      });
+    } else {
+      setMobileContactOpen((prev) => !prev);
+    }
+  }, [isDesktop]);
 
   // Fire the deep-link auto-select exactly once per URL — subsequent
   // list refreshes (realtime, manual refetch) must not snap the user
@@ -594,7 +606,7 @@ function InboxPageInner() {
   const hasActiveConv = !!activeConversation;
 
   return (
-    <div className="-m-4 flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden sm:-m-6">
+    <div className="-m-4 flex h-[calc(100dvh-7rem-env(safe-area-inset-bottom))] flex-col overflow-hidden sm:-m-6 lg:h-[calc(100dvh-3.5rem)]">
       {/* WhatsApp connection banner — in the flex column, not absolute,
           so it pushes the panels down instead of overlapping them. */}
       {whatsappConnected === false && (
@@ -653,19 +665,26 @@ function InboxPageInner() {
             onBack={handleCloseConversation}
             resyncToken={resyncToken}
             onRefresh={handleManualRefresh}
-            contactPanelOpen={contactPanelOpen}
+            contactPanelOpen={isDesktop ? contactPanelOpen : mobileContactOpen}
             onToggleContactPanel={handleToggleContactPanel}
           />
         </div>
 
         {/* Right panel: Contact sidebar — desktop only, and only when the
             agent hasn't collapsed it via the thread-header toggle (#258).
-            On mobile it's always hidden (the `lg:block` below), so the
-            toggle — which is itself desktop-only — never affects it. */}
-        {contactPanelOpen && (
+            On mobile it's a right Sheet, toggled from the same header
+            button (now visible on all viewports). */}
+        {isDesktop && contactPanelOpen && (
           <div className="hidden lg:block">
             <ContactSidebar contact={activeContact} />
           </div>
+        )}
+        {!isDesktop && (
+          <Sheet open={mobileContactOpen} onOpenChange={setMobileContactOpen}>
+            <SheetContent side="right" className="w-full p-0 sm:max-w-lg">
+              <ContactSidebar contact={activeContact} />
+            </SheetContent>
+          </Sheet>
         )}
       </div>
     </div>

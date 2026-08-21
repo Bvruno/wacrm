@@ -422,7 +422,7 @@ export function AiKnowledgeCardAdvanced({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0"
+                            className="touch-min h-8 w-8 p-0"
                             onClick={() => viewChunks(doc)}
                             title="View chunks"
                           >
@@ -431,7 +431,7 @@ export function AiKnowledgeCardAdvanced({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0"
+                            className="touch-min h-8 w-8 p-0"
                             onClick={() => void openEdit(doc.id)}
                             title="Edit"
                           >
@@ -440,7 +440,7 @@ export function AiKnowledgeCardAdvanced({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-destructive hover:text-destructive h-8 w-8 p-0"
+                            className="text-destructive hover:text-destructive touch-min h-8 w-8 p-0"
                             onClick={() => void remove(doc.id)}
                             title="Delete"
                           >
@@ -558,8 +558,8 @@ export function AiKnowledgeCardAdvanced({
                 </div>
               ) : (
                 canEdit && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         variant="outline"
                         size="sm"

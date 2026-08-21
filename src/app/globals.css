@@ -384,3 +384,49 @@ html[data-hydrated] #app-splash {
     splash-pulse 2s ease-in-out infinite,
     scale-in 0.4s ease-out both;
 }
+
+/* ============================================================
+ * RESPONSIVE / TOUCH FOUNDATION
+ *
+ * Mobile-first primitives shared across the app:
+ *   - pb-safe / pt-safe / pl-safe / pr-safe: notch + home-indicator
+ *     insets (use on bottom navs, fixed bars, full-bleed headers).
+ *   - touch-min: enforces ≥44×44px tap targets but ONLY on coarse
+ *     pointer devices (touch), leaving desktop layouts untouched.
+ *   - prefers-reduced-motion: kills decorative animation for users
+ *     who ask for it (WCAG 2.3.3).
+ * ============================================================ */
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+@utility pl-safe {
+  padding-left: env(safe-area-inset-left);
+}
+
+@utility pr-safe {
+  padding-right: env(safe-area-inset-right);
+}
+
+@media (pointer: coarse) {
+  .touch-min {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

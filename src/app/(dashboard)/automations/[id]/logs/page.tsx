@@ -85,7 +85,7 @@ export default function AutomationLogsPage({
         <button
           type="button"
           onClick={() => router.push('/automations')}
-          className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-8 w-8 items-center justify-center rounded-md transition-colors"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground touch-min flex h-8 w-8 items-center justify-center rounded-md transition-colors"
           aria-label={t('backAria')}
         >
           <ArrowLeft className="h-4 w-4" />

@@ -5,7 +5,8 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   useDroppable,
@@ -56,8 +57,13 @@ export function PipelineBoard({
   }, [sortedStages, deals]);
 
   const sensors = useSensors(
-    // 5px activation distance avoids clicks being interpreted as drags.
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    // Mouse: 5px activation distance avoids clicks being interpreted
+    // as drags. Touch: long-press (250ms) before dragging, so a quick
+    // swipe scrolls the board instead of lifting a card.
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 8 },
+    }),
     // Keyboard drag support: focus a card, Space to pick up, arrows to move,
     // Space to drop, Escape to cancel.
     useSensor(KeyboardSensor)
@@ -257,7 +263,7 @@ function StageColumn({
         variant="ghost"
         size="sm"
         onClick={() => onAddDeal(stage.id)}
-        className="border-border text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground mt-3 w-full justify-start border border-dashed bg-transparent"
+        className="border-border text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground touch-min mt-3 w-full justify-start border border-dashed bg-transparent"
       >
         <Plus className="mr-1 h-3 w-3" />
         {t('addDeal')}
@@ -284,7 +290,14 @@ function DraggableDealCard({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      style={{ opacity: isDragging ? 0.3 : 1, touchAction: 'none' }}
+      style={{
+        opacity: isDragging ? 0.3 : 1,
+        // pan-x/y lets the board scroll natively until the long-press
+        // TouchSensor delay activates the drag (then dnd-kit takes
+        // over). `touch-action: none` here would block board swipes
+        // that start on a card.
+        touchAction: 'pan-x pan-y',
+      }}
     >
       <DealCard deal={deal} stage={stage} onEdit={onEdit} />
     </div>

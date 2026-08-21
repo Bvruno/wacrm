@@ -147,7 +147,7 @@ export function HeroSlideshow() {
             key={i}
             onClick={() => setCurrent(i)}
             className={cn(
-              'size-2 rounded-full transition-all',
+              'touch-min size-2 rounded-full transition-all',
               i === current ? 'bg-primary w-6' : 'bg-muted-foreground/30'
             )}
             aria-label={`Slide ${i + 1}`}

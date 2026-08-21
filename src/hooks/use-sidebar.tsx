@@ -3,9 +3,9 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useState,
   useCallback,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react';
 
@@ -20,7 +20,14 @@ interface SidebarContextValue {
 const SidebarContext = createContext<SidebarContextValue | null>(null);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [mounted, setMounted] = useState(false);
+  // Hydration-safe mount gate: SSR + first client pass render `false`,
+  // so the localStorage-backed `collapsed` initializer can't mismatch
+  // the server HTML. No effect setState involved.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   const [collapsed, setCollapsedState] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -30,11 +37,6 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
     }
     return false;
   });
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const setCollapsed = useCallback((value: boolean) => {
     setCollapsedState(value);

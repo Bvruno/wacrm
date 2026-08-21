@@ -261,7 +261,12 @@ export function MetaCostsDashboard() {
                 <div
                   key={day.date}
                   className="group relative flex flex-1 flex-col items-center gap-0.5"
-                  title={`${day.date}: Meta ${formatCurrency(day.costMeta)} + AI ${formatCurrency(day.costAi)}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${day.date}: Meta ${formatCurrency(day.costMeta)} + AI ${formatCurrency(day.costAi)}`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') e.preventDefault();
+                  }}
                 >
                   <div className="flex w-full flex-col gap-0">
                     {/* AI cost (blue) */}
@@ -293,8 +298,8 @@ export function MetaCostsDashboard() {
                   <span className="text-muted-foreground mt-1 text-[8px]">
                     {new Date(day.date).getDate()}
                   </span>
-                  {/* Tooltip */}
-                  <div className="bg-popover ring-border absolute bottom-full z-50 mb-2 hidden rounded px-2 py-1 text-[10px] whitespace-nowrap shadow-md ring-1 group-hover:block">
+                  {/* Tooltip — hover (mouse) or tap/focus (touch). */}
+                  <div className="bg-popover ring-border absolute bottom-full left-1/2 z-50 mb-2 hidden max-w-[70vw] -translate-x-1/2 rounded px-2 py-1 text-[10px] whitespace-nowrap shadow-md ring-1 group-focus-within:block group-hover:block">
                     <p className="font-medium">{day.date}</p>
                     <p>Meta: {formatCurrency(day.costMeta)}</p>
                     <p>AI: {formatCurrency(day.costAi)}</p>
@@ -343,7 +348,13 @@ export function MetaCostsDashboard() {
                   <div
                     key={day.date}
                     className="group relative flex flex-1 flex-col items-center"
-                    title={`${day.date}: ${total} messages`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${day.date}: ${total} messages`}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ')
+                        e.preventDefault();
+                    }}
                   >
                     <div className="flex w-full flex-col gap-0">
                       {/* Broadcast (purple) */}
@@ -386,7 +397,7 @@ export function MetaCostsDashboard() {
                     <span className="text-muted-foreground mt-1 text-[8px]">
                       {new Date(day.date).getDate()}
                     </span>
-                    <div className="bg-popover ring-border absolute bottom-full z-50 mb-2 hidden rounded px-2 py-1 text-[10px] whitespace-nowrap shadow-md ring-1 group-hover:block">
+                    <div className="bg-popover ring-border absolute bottom-full left-1/2 z-50 mb-2 hidden max-w-[70vw] -translate-x-1/2 rounded px-2 py-1 text-[10px] whitespace-nowrap shadow-md ring-1 group-focus-within:block group-hover:block">
                       <p className="font-medium">{day.date}</p>
                       <p>Inbound: {day.inbound}</p>
                       <p>Free (in 24h): {day.outboundFree}</p>

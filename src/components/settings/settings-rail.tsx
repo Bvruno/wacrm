@@ -3,6 +3,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
 import {
   RAIL_GROUPS,
@@ -33,19 +34,18 @@ export function SettingsRail({
 }) {
   const t = useTranslations('Settings');
   const activeRef = useRef<HTMLButtonElement>(null);
+  const isDesktop = useMediaQuery(`(min-width: ${RAIL_DESKTOP_MIN_PX}px)`);
 
   // When horizontal (mobile), keep the active chip in view. On desktop
   // the rail is a static column, so skip.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.matchMedia(`(min-width: ${RAIL_DESKTOP_MIN_PX}px)`).matches)
-      return;
+    if (isDesktop) return;
     activeRef.current?.scrollIntoView({
       inline: 'center',
       block: 'nearest',
       behavior: 'smooth',
     });
-  }, [active]);
+  }, [active, isDesktop]);
 
   return (
     <nav

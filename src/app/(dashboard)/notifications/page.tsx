@@ -432,11 +432,18 @@ export default function NotificationsPage() {
               const isUnread = !n.read_at;
               return (
                 <li key={n.id} className="group relative">
-                  <button
-                    type="button"
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleClick(n)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleClick(n);
+                      }
+                    }}
                     className={cn(
-                      'flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors',
+                      'flex w-full cursor-pointer items-start gap-3 rounded-xl border p-4 text-left transition-colors',
                       isUnread
                         ? 'border-primary/30 bg-primary/5 hover:border-primary/50'
                         : 'border-border bg-card hover:border-border/70'
@@ -486,7 +493,7 @@ export default function NotificationsPage() {
                         })}
                       </p>
                     </div>
-                  </button>
+                  </div>
                   <button
                     type="button"
                     onClick={(e) => {
@@ -495,7 +502,7 @@ export default function NotificationsPage() {
                     }}
                     disabled={deleting === n.id}
                     className={cn(
-                      'text-muted-foreground hover:bg-destructive/10 hover:text-destructive absolute top-3 right-3 flex h-7 w-7 items-center justify-center rounded-md opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100',
+                      'text-muted-foreground hover:bg-destructive/10 hover:text-destructive absolute top-3 right-3 flex h-7 w-7 items-center justify-center rounded-md opacity-100 transition-opacity pointer-fine:opacity-0 pointer-fine:group-focus-within:opacity-100 pointer-fine:group-hover:opacity-100',
                       deleting === n.id && 'pointer-events-none opacity-50'
                     )}
                     aria-label={t('delete')}

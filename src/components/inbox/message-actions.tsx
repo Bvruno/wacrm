@@ -95,7 +95,7 @@ export function MessageActions({
         <div
           data-touch-open={touchOpen || pickerOpen ? 'true' : undefined}
           className={cn(
-            'border-border bg-popover/95 absolute -top-3 z-10 flex h-7 items-center gap-0.5 rounded-full border px-1 shadow-md backdrop-blur-sm transition-opacity',
+            'border-border bg-popover/95 absolute -top-3 z-10 flex min-h-7 items-center gap-0.5 rounded-full border px-1 shadow-md backdrop-blur-sm transition-opacity',
             'opacity-0 group-focus-within/actions:opacity-100 group-hover/actions:opacity-100',
             'data-[touch-open=true]:opacity-100',
             isAgent ? 'right-3' : 'left-3'
@@ -103,7 +103,7 @@ export function MessageActions({
         >
           <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
             <PopoverTrigger
-              className="text-popover-foreground hover:bg-muted hover:text-foreground flex h-5 w-5 items-center justify-center rounded-full"
+              className="text-popover-foreground hover:bg-muted hover:text-foreground touch-min flex h-5 w-5 items-center justify-center rounded-full"
               aria-label={t('react')}
             >
               <SmilePlus className="h-3.5 w-3.5" />
@@ -117,7 +117,7 @@ export function MessageActions({
                   key={e}
                   type="button"
                   onClick={() => handlePickEmoji(e)}
-                  className="hover:bg-muted flex h-8 w-8 items-center justify-center rounded-full text-lg leading-none transition-transform hover:scale-125"
+                  className="hover:bg-muted touch-min flex h-8 w-8 items-center justify-center rounded-full text-lg leading-none transition-transform hover:scale-125"
                   aria-label={t('reactWith', { emoji: e })}
                 >
                   {e}

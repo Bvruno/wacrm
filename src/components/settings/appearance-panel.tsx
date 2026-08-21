@@ -151,7 +151,7 @@ function ThemeCard({
       <div className="flex items-center justify-between">
         <span
           aria-hidden
-          className="h-8 w-8 shrink-0 rounded-full"
+          className="touch-min h-8 w-8 shrink-0 rounded-full"
           style={{
             background: swatch,
             boxShadow: 'inset 0 0 0 1px oklch(1 0 0 / 0.15)',

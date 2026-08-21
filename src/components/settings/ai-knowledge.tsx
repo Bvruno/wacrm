@@ -208,7 +208,7 @@ export function AiKnowledgeCard({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0"
+                          className="touch-min h-8 w-8 p-0"
                           onClick={() => void openEdit(doc.id)}
                           title="Edit"
                         >
@@ -217,7 +217,7 @@ export function AiKnowledgeCard({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-destructive hover:text-destructive h-8 w-8 p-0"
+                          className="text-destructive hover:text-destructive touch-min h-8 w-8 p-0"
                           onClick={() => void remove(doc.id)}
                           title="Delete"
                         >

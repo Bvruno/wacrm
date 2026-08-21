@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { SidebarProvider } from '@/hooks/use-sidebar';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
+import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
 import { PresenceHeartbeat } from '@/components/presence/presence-heartbeat';
 
 function DashboardShellInner({ children }: { children: React.ReactNode }) {
@@ -35,16 +36,17 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className="bg-background flex h-screen overflow-hidden">
+    <div className="bg-background flex h-dvh overflow-hidden">
       <PresenceHeartbeat />
       <SidebarProvider>
         <Sidebar open={sidebarOpen} onClose={closeSidebar} />
         <div className="flex flex-1 flex-col overflow-hidden">
           <Header onOpenSidebar={() => setSidebarOpen(true)} />
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <main className="flex-1 overflow-y-auto p-4 pb-16 sm:p-6 sm:pb-16 lg:pb-6">
             <div className="page-enter h-full">{children}</div>
           </main>
         </div>
+        <MobileBottomNav onOpenMore={() => setSidebarOpen(true)} />
       </SidebarProvider>
     </div>
   );

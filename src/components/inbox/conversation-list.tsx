@@ -247,7 +247,7 @@ export function ConversationList({
 
         <div className="flex flex-wrap items-center gap-1">
           <DropdownMenu>
-            <DropdownMenuTrigger className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs">
+            <DropdownMenuTrigger className="text-muted-foreground hover:text-foreground hover:bg-muted touch-min inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs">
               {activeFilter?.label ?? t('filterAll')}
               <ChevronDown className="h-3 w-3" />
             </DropdownMenuTrigger>
@@ -276,7 +276,7 @@ export function ConversationList({
             <DropdownMenu>
               <DropdownMenuTrigger
                 className={cn(
-                  'hover:bg-muted inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs',
+                  'hover:bg-muted touch-min inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs',
                   selectedTagIds.length > 0
                     ? 'text-primary'
                     : 'text-muted-foreground hover:text-foreground'
@@ -318,7 +318,7 @@ export function ConversationList({
             <DropdownMenu>
               <DropdownMenuTrigger
                 className={cn(
-                  'hover:bg-muted inline-flex h-7 max-w-40 items-center justify-center gap-1 rounded-md px-2 text-xs',
+                  'hover:bg-muted touch-min inline-flex h-7 max-w-40 items-center justify-center gap-1 rounded-md px-2 text-xs',
                   selectedCompany
                     ? 'text-primary'
                     : 'text-muted-foreground hover:text-foreground'
@@ -371,7 +371,7 @@ export function ConversationList({
                 <button
                   key={id}
                   onClick={() => toggleTag(id)}
-                  className="bg-muted text-foreground hover:bg-muted/70 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]"
+                  className="bg-muted text-foreground hover:bg-muted/70 touch-min inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]"
                 >
                   <span
                     className="h-1.5 w-1.5 shrink-0 rounded-full"
@@ -389,7 +389,7 @@ export function ConversationList({
             {selectedCompany && (
               <button
                 onClick={() => setSelectedCompany(null)}
-                className="bg-muted text-foreground hover:bg-muted/70 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]"
+                className="bg-muted text-foreground hover:bg-muted/70 touch-min inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]"
               >
                 <span className="max-w-24 truncate">{selectedCompany}</span>
                 <X className="h-3 w-3" />
@@ -397,7 +397,7 @@ export function ConversationList({
             )}
             <button
               onClick={clearContactFilters}
-              className="text-muted-foreground hover:text-foreground px-1 text-[11px]"
+              className="text-muted-foreground hover:text-foreground touch-min px-1 text-[11px]"
             >
               {t('clearAll')}
             </button>

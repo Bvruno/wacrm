@@ -124,7 +124,7 @@ export function IssueLine({
   return (
     <div
       className={cn(
-        'flex items-start gap-2 rounded-md px-2 py-1 text-xs',
+        'touch-min flex items-start gap-2 rounded-md px-2 py-1 text-xs',
         tone
       )}
     >

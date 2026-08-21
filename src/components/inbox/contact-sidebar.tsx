@@ -121,7 +121,7 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
 
   if (!contact) {
     return (
-      <div className="border-border bg-card flex h-full w-70 items-center justify-center border-l">
+      <div className="border-border bg-card flex h-full w-full items-center justify-center border-l lg:w-70">
         <p className="text-muted-foreground text-sm">
           {tThread('selectConversation')}
         </p>
@@ -133,7 +133,7 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
   const initials = displayName.charAt(0).toUpperCase();
 
   return (
-    <div className="border-border bg-card flex h-full w-70 flex-col border-l">
+    <div className="border-border bg-card flex h-full w-full flex-col border-l lg:w-70">
       <ScrollArea className="flex-1">
         <div className="p-4">
           {/* Contact Info */}
@@ -198,7 +198,7 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
                 tags.map((tag) => (
                   <span
                     key={tag.contact_tag_id}
-                    className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    className="touch-min rounded-full px-2 py-0.5 text-[10px] font-medium"
                     style={{
                       backgroundColor: `${tag.color}20`,
                       color: tag.color,

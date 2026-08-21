@@ -360,7 +360,7 @@ export function CustomFieldsPanel() {
             {newOptions.map((opt) => (
               <span
                 key={opt}
-                className="bg-muted text-foreground inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium"
+                className="bg-muted text-foreground touch-min inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium"
               >
                 {opt}
                 <button
@@ -618,7 +618,7 @@ function FieldRow({
           {selectOptions.map((opt) => (
             <span
               key={opt}
-              className="bg-muted/70 text-muted-foreground inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs"
+              className="bg-muted/70 text-muted-foreground touch-min inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs"
             >
               {opt}
             </span>

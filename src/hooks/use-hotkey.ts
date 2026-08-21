@@ -31,7 +31,10 @@ export function useHotkey(
 ) {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const handlerRef = useRef(handler);
-  handlerRef.current = handler;
+
+  useEffect(() => {
+    handlerRef.current = handler;
+  });
 
   useEffect(() => {
     if (!opts.enabled) return;

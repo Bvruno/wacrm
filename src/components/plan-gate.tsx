@@ -247,7 +247,7 @@ export function PlanGate({ feature, children }: PlanGateProps) {
           ¿Listo para desbloquear {featureName.toLowerCase()} y todas las
           funciones premium?
         </p>
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:gap-3">
           <a href="/settings?tab=plan">
             <Button variant="default" size="lg">
               <Rocket className="mr-2 h-4 w-4" />

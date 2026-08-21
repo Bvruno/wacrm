@@ -90,10 +90,10 @@ export function DraftHistory({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetTrigger className="text-muted-foreground hover:bg-muted hover:text-primary inline-flex h-9 w-9 items-center justify-center rounded-md">
+      <SheetTrigger className="text-muted-foreground hover:bg-muted hover:text-primary touch-min inline-flex h-9 w-9 items-center justify-center rounded-md">
         <History className="h-4 w-4" />
       </SheetTrigger>
-      <SheetContent className="w-[400px] sm:w-[540px]">
+      <SheetContent className="w-[400px] max-w-full sm:w-[540px]">
         <SheetHeader>
           <SheetTitle>{t('draftHistory') || 'Draft History'}</SheetTitle>
         </SheetHeader>
@@ -133,7 +133,7 @@ export function DraftHistory({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 text-xs opacity-0 transition-opacity group-hover:opacity-100"
+                      className="touch-min h-7 text-xs opacity-100 transition-opacity pointer-fine:opacity-0 pointer-fine:group-focus-within:opacity-100 pointer-fine:group-hover:opacity-100"
                       onClick={() => {
                         onSelectDraft(draft.draft_text);
                         setOpen(false);

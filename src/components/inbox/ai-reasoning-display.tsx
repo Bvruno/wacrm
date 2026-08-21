@@ -27,7 +27,7 @@ export function ReasoningDisplay({
       <Button
         variant="ghost"
         size="sm"
-        className="h-7 gap-1 text-xs"
+        className="touch-min h-7 gap-1 text-xs"
         onClick={() => setOpen(!open)}
       >
         <Brain className="h-3.5 w-3.5" />

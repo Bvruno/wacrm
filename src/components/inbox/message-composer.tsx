@@ -649,7 +649,7 @@ export function MessageComposer({
           <button
             type="button"
             onClick={cancelRecording}
-            className="text-muted-foreground hover:bg-card hover:text-foreground rounded-md px-2 py-1 text-xs"
+            className="text-muted-foreground hover:bg-card hover:text-foreground touch-min rounded-md px-2 py-1 text-xs"
           >
             {t('cancel')}
           </button>
@@ -663,188 +663,199 @@ export function MessageComposer({
           </Button>
         </div>
       ) : (
-        <div className="flex items-end gap-2">
-          {/* Attach menu — photo / video / document / voice. */}
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              disabled={inputsDisabled || busy}
-              title={
-                readOnly
-                  ? t('readOnlyTitle')
-                  : inputsDisabled
-                    ? undefined
-                    : t('attachMedia')
-              }
-              className="text-muted-foreground hover:text-foreground inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md p-0 disabled:cursor-not-allowed disabled:opacity-50"
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Icon toolbar — wraps to its own row on narrow screens so
+              the textarea never gets crushed (mobile-first). */}
+          <div className="flex items-center gap-2">
+            {/* Attach menu — photo / video / document / voice. */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                disabled={inputsDisabled || busy}
+                title={
+                  readOnly
+                    ? t('readOnlyTitle')
+                    : inputsDisabled
+                      ? undefined
+                      : t('attachMedia')
+                }
+                className="text-muted-foreground hover:text-foreground inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md p-0 disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:w-9"
+              >
+                {busy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Paperclip className="h-4 w-4" />
+                )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                className="border-border bg-popover"
+              >
+                <DropdownMenuItem
+                  onClick={() => imageInputRef.current?.click()}
+                >
+                  <ImageIcon className="mr-2 h-4 w-4" />
+                  {t('photo')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => videoInputRef.current?.click()}
+                >
+                  <Video className="mr-2 h-4 w-4" />
+                  {t('video')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => documentInputRef.current?.click()}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  {t('document')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void startRecording()}>
+                  <Mic className="mr-2 h-4 w-4" />
+                  {t('voiceNote')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* + menu — interactive messages + quick replies. Gated on the
+              24h window like free-form text (interactive requires it). */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                disabled={inputsDisabled}
+                title={
+                  readOnly
+                    ? t('readOnlyTitle')
+                    : inputsDisabled
+                      ? undefined
+                      : t('moreActions')
+                }
+                className="text-muted-foreground hover:text-foreground inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md p-0 disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:w-9"
+              >
+                <Plus className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                className="border-border bg-popover"
+              >
+                <DropdownMenuItem onClick={() => openInteractiveBuilder()}>
+                  <MessageSquareDashed className="mr-2 h-4 w-4" />
+                  {t('interactiveMessage')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setQuickReplyOpen(true)}>
+                  <Zap className="mr-2 h-4 w-4" />
+                  {t('quickReplies')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <GatedButton
+              variant="ghost"
+              size="sm"
+              canAct={!readOnly}
+              gateReason="send messages"
+              title={readOnly ? undefined : t('sendTemplate')}
+              className="text-muted-foreground hover:text-foreground h-10 w-10 shrink-0 p-0 sm:h-9 sm:w-9"
+              onClick={onOpenTemplates}
             >
-              {busy ? (
+              <LayoutTemplate className="h-4 w-4" />
+            </GatedButton>
+
+            <DraftHistory
+              conversationId={conversationId}
+              onSelectDraft={(text) => {
+                setText(text);
+                requestAnimationFrame(() => {
+                  adjustHeight();
+                  const el = textareaRef.current;
+                  if (el) {
+                    el.focus();
+                    el.setSelectionRange(el.value.length, el.value.length);
+                  }
+                });
+              }}
+            />
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-primary h-10 w-10 shrink-0 p-0 sm:h-9 sm:w-9"
+              title="Generate variations"
+              onClick={() => setVariationsOpen(true)}
+              disabled={readOnly || sessionExpired}
+            >
+              <Layers className="h-4 w-4" />
+            </Button>
+
+            <DraftVariations
+              conversationId={conversationId}
+              open={variationsOpen}
+              onOpenChange={setVariationsOpen}
+              onSelectVariation={(text) => {
+                setText(text);
+                requestAnimationFrame(() => {
+                  adjustHeight();
+                  const el = textareaRef.current;
+                  if (el) {
+                    el.focus();
+                    el.setSelectionRange(el.value.length, el.value.length);
+                  }
+                });
+              }}
+            />
+
+            <GatedButton
+              variant="ghost"
+              size="sm"
+              canAct={!readOnly}
+              gateReason="send messages"
+              disabled={drafting}
+              title={readOnly ? undefined : t('draftWithAI')}
+              className="text-muted-foreground hover:text-primary h-10 w-10 shrink-0 p-0 sm:h-9 sm:w-9"
+              onClick={handleDraft}
+            >
+              {drafting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Paperclip className="h-4 w-4" />
+                <Sparkles className="h-4 w-4" />
               )}
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              className="border-border bg-popover"
-            >
-              <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
-                <ImageIcon className="mr-2 h-4 w-4" />
-                {t('photo')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => videoInputRef.current?.click()}>
-                <Video className="mr-2 h-4 w-4" />
-                {t('video')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => documentInputRef.current?.click()}
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                {t('document')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => void startRecording()}>
-                <Mic className="mr-2 h-4 w-4" />
-                {t('voiceNote')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </GatedButton>
+          </div>
 
-          {/* + menu — interactive messages + quick replies. Gated on the
-              24h window like free-form text (interactive requires it). */}
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              disabled={inputsDisabled}
-              title={
+          {/* Textarea + send — own line on mobile, inline on desktop. */}
+          <div className="flex min-w-0 flex-1 basis-full items-end gap-2 sm:basis-auto">
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder={
                 readOnly
-                  ? t('readOnlyTitle')
-                  : inputsDisabled
-                    ? undefined
-                    : t('moreActions')
+                  ? t('readOnlyPlaceholder')
+                  : sessionExpired
+                    ? t('sessionExpiredPlaceholder')
+                    : t('typeMessagePlaceholder')
               }
-              className="text-muted-foreground hover:text-foreground inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md p-0 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={sessionExpired || readOnly}
+              rows={1}
+              // Textarea keeps its own inline title — the GatedButton
+              // wrapping pattern doesn't apply to non-button inputs.
+              // The placeholder text also surfaces the read-only state.
+              title={readOnly ? t('readOnlyTitle') : undefined}
+              className={cn(
+                'border-border bg-muted text-foreground placeholder-muted-foreground focus:border-primary/50 min-w-0 flex-1 resize-none rounded-xl border px-4 py-2.5 text-sm transition-colors outline-none',
+                (sessionExpired || readOnly) && 'cursor-not-allowed opacity-50'
+              )}
+            />
+
+            <GatedButton
+              size="sm"
+              canAct={!readOnly}
+              gateReason="send messages"
+              disabled={!text.trim() || sessionExpired || sending}
+              onClick={handleSend}
+              className="bg-primary hover:bg-primary/90 h-10 w-10 shrink-0 p-0 disabled:opacity-40 sm:h-9 sm:w-9"
             >
-              <Plus className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              className="border-border bg-popover"
-            >
-              <DropdownMenuItem onClick={() => openInteractiveBuilder()}>
-                <MessageSquareDashed className="mr-2 h-4 w-4" />
-                {t('interactiveMessage')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setQuickReplyOpen(true)}>
-                <Zap className="mr-2 h-4 w-4" />
-                {t('quickReplies')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <GatedButton
-            variant="ghost"
-            size="sm"
-            canAct={!readOnly}
-            gateReason="send messages"
-            title={readOnly ? undefined : t('sendTemplate')}
-            className="text-muted-foreground hover:text-foreground h-9 w-9 shrink-0 p-0"
-            onClick={onOpenTemplates}
-          >
-            <LayoutTemplate className="h-4 w-4" />
-          </GatedButton>
-
-          <DraftHistory
-            conversationId={conversationId}
-            onSelectDraft={(text) => {
-              setText(text);
-              requestAnimationFrame(() => {
-                adjustHeight();
-                const el = textareaRef.current;
-                if (el) {
-                  el.focus();
-                  el.setSelectionRange(el.value.length, el.value.length);
-                }
-              });
-            }}
-          />
-
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-primary h-9 w-9 shrink-0 p-0"
-            title="Generate variations"
-            onClick={() => setVariationsOpen(true)}
-            disabled={readOnly || sessionExpired}
-          >
-            <Layers className="h-4 w-4" />
-          </Button>
-
-          <DraftVariations
-            conversationId={conversationId}
-            open={variationsOpen}
-            onOpenChange={setVariationsOpen}
-            onSelectVariation={(text) => {
-              setText(text);
-              requestAnimationFrame(() => {
-                adjustHeight();
-                const el = textareaRef.current;
-                if (el) {
-                  el.focus();
-                  el.setSelectionRange(el.value.length, el.value.length);
-                }
-              });
-            }}
-          />
-
-          <GatedButton
-            variant="ghost"
-            size="sm"
-            canAct={!readOnly}
-            gateReason="send messages"
-            disabled={drafting}
-            title={readOnly ? undefined : t('draftWithAI')}
-            className="text-muted-foreground hover:text-primary h-9 w-9 shrink-0 p-0"
-            onClick={handleDraft}
-          >
-            {drafting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4" />
-            )}
-          </GatedButton>
-
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              readOnly
-                ? t('readOnlyPlaceholder')
-                : sessionExpired
-                  ? t('sessionExpiredPlaceholder')
-                  : t('typeMessagePlaceholder')
-            }
-            disabled={sessionExpired || readOnly}
-            rows={1}
-            // Textarea keeps its own inline title — the GatedButton
-            // wrapping pattern doesn't apply to non-button inputs.
-            // The placeholder text also surfaces the read-only state.
-            title={readOnly ? t('readOnlyTitle') : undefined}
-            className={cn(
-              'border-border bg-muted text-foreground placeholder-muted-foreground focus:border-primary/50 flex-1 resize-none rounded-xl border px-4 py-2.5 text-sm transition-colors outline-none',
-              (sessionExpired || readOnly) && 'cursor-not-allowed opacity-50'
-            )}
-          />
-
-          <GatedButton
-            size="sm"
-            canAct={!readOnly}
-            gateReason="send messages"
-            disabled={!text.trim() || sessionExpired || sending}
-            onClick={handleSend}
-            className="bg-primary hover:bg-primary/90 h-9 w-9 shrink-0 p-0 disabled:opacity-40"
-          >
-            <Send className="h-4 w-4" />
-          </GatedButton>
+              <Send className="h-4 w-4" />
+            </GatedButton>
+          </div>
         </div>
       )}
 

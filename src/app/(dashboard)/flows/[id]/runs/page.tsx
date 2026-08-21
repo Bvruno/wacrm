@@ -321,7 +321,7 @@ const EVENT_COLOR: Record<string, string> = {
 function EventLine({ ev }: { ev: EventRow }) {
   const cls = EVENT_COLOR[ev.event_type] ?? 'text-muted-foreground';
   return (
-    <div className="flex items-start gap-2 rounded-md px-2 py-1 text-xs">
+    <div className="flex [scrollbar-width:none] items-start gap-2 overflow-x-auto rounded-md px-2 py-1 text-xs [&::-webkit-scrollbar]:hidden">
       <span className="text-muted-foreground w-32 shrink-0 text-[10px]">
         {format(new Date(ev.created_at), 'HH:mm:ss')}
       </span>

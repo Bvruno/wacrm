@@ -187,7 +187,7 @@ function FlowNodeCard({ data, selected }: NodeProps) {
         <Handle
           type="target"
           position={Position.Left}
-          className="!bg-card !h-2.5 !w-2.5 !border-2 !border-[var(--nc-ring)]"
+          className="!bg-card !h-2.5 !w-2.5 !border-2 !border-[var(--nc-ring)] pointer-coarse:!h-6 pointer-coarse:!w-6"
         />
       )}
 
@@ -240,7 +240,7 @@ function FlowNodeCard({ data, selected }: NodeProps) {
                 // sits flush with the right edge of the card instead
                 // of floating at vertical center. The negative offset
                 // matches the card's px-3 + the handle's own radius.
-                className="!bg-card !relative !top-auto !right-auto !h-2.5 !w-2.5 !translate-x-[14px] !transform-none !border-2"
+                className="!bg-card !relative !top-auto !right-auto !h-2.5 !w-2.5 !translate-x-[14px] !transform-none !border-2 pointer-coarse:!h-6 pointer-coarse:!w-6"
               />
             </div>
           ))}
@@ -253,7 +253,7 @@ function FlowNodeCard({ data, selected }: NodeProps) {
           id={slots[0].id}
           position={Position.Right}
           style={{ borderColor: c.solid }}
-          className="!bg-card !h-2.5 !w-2.5 !border-2"
+          className="!bg-card !h-2.5 !w-2.5 !border-2 pointer-coarse:!h-6 pointer-coarse:!w-6"
         />
       )}
     </div>
@@ -548,6 +548,9 @@ function FlowCanvasInner() {
           nodesConnectable={true}
           edgesFocusable={true}
           elementsSelectable={true}
+          // Larger snap radius helps finger drag-to-connect on tablets
+          // where precision is coarser than a mouse cursor.
+          connectionRadius={36}
           // Lower default min/max zoom than the lib's defaults; the
           // tiles already truncate their summary at a reasonable
           // size, so we don't need to zoom past 1.5x.
