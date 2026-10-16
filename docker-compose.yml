@@ -170,6 +170,12 @@ services:
       ENABLE_IMAGE_TRANSFORMATION: "false"
     volumes:
       - storage-data:/var/lib/storage
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:5000/status').then((r)=>{if(!r.ok)throw new Error(r.status)})\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
   # ---------------------------------------------------------------------------
   # postgres-meta + Studio (administración de la BD y de Supabase)
@@ -287,7 +293,7 @@ services:
       auth:
         condition: service_healthy
       storage:
-        condition: service_started
+        condition: service_healthy
     environment:
       PGHOST: db
       PGPORT: "5432"

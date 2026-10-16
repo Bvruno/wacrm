@@ -33,6 +33,23 @@ sql -c "create table if not exists migraciones.aplicadas (
   aplicado_en timestamptz not null default now()
 );"
 
+# Reintenta cada archivo: al primer arranque conviven DDL de otros servicios
+# (PostgREST, Realtime, Storage) y puede haber deadlocks transitorios.
+# Las migraciones son idempotentes, así que reintentar es seguro.
+aplicar() {
+  archivo="$1"
+  intento=1
+  while [ "$intento" -le 3 ]; do
+    if sql -f "$archivo"; then
+      return 0
+    fi
+    echo "[migrador] Fallo el intento $intento/3; reintentando en 5s..."
+    intento=$((intento + 1))
+    sleep 5
+  done
+  return 1
+}
+
 for archivo in /migraciones/*.sql; do
   [ -e "$archivo" ] || continue
   nombre="$(basename "$archivo")"
@@ -43,7 +60,10 @@ for archivo in /migraciones/*.sql; do
   fi
 
   echo "[migrador] Aplicando: $nombre"
-  sql -f "$archivo"
+  if ! aplicar "$archivo"; then
+    echo "[migrador] ERROR: $nombre no pudo aplicarse; abortando."
+    exit 1
+  fi
   sql -c "insert into migraciones.aplicadas (nombre) values ('$nombre');"
 done
 
