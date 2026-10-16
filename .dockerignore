@@ -4,9 +4,8 @@ node_modules
 .github
 .vscode
 coverage
-supabase/.temp
-supabase/.branches
-supabase/snippets
+supabase
+docker
 mcp-server
 docs
 .env*
