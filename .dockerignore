@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.github
+.vscode
+coverage
+supabase/.temp
+supabase/.branches
+supabase/snippets
+mcp-server
+docs
+.env*
+*.log
+Dockerfile
+docker-compose.yml
+.dockerignore
