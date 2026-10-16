@@ -41,9 +41,16 @@ export async function GET(request: Request) {
     if (!error) {
       // Behind a CDN/proxy (Hostinger) the externally visible host
       // lives in x-forwarded-host; using it keeps the redirect on
-      // the public domain instead of the internal origin.
+      // the public domain instead of the internal origin. Pair it
+      // with x-forwarded-proto — Next sets both itself (host from the
+      // Host header, proto http over plain local dev), so hardcoding
+      // https here would send local browsers to https://localhost.
       const forwardedHost = request.headers.get('x-forwarded-host');
-      const base = forwardedHost ? `https://${forwardedHost}` : origin;
+      const forwardedProto =
+        request.headers.get('x-forwarded-proto') === 'http' ? 'http' : 'https';
+      const base = forwardedHost
+        ? `${forwardedProto}://${forwardedHost}`
+        : origin;
       return NextResponse.redirect(`${base}${next}`);
     }
   }

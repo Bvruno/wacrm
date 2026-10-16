@@ -12,7 +12,10 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
  * every route), flip the key to `Content-Security-Policy` to enforce.
  *
  * The rest of the headers are straight blocks, safe to enforce today:
- *   - HSTS: only meaningful on HTTPS (no-op on http://localhost).
+ *   - HSTS: production only. Browsers treat localhost as a secure
+ *     context and honor HSTS even over plain http://, which force-
+ *     upgrades the dev server to https:// and breaks it with
+ *     SSL_ERROR_RX_RECORD_TOO_LONG.
  *   - X-Content-Type-Options / X-Frame-Options / Referrer-Policy:
  *     baseline OWASP hardening, no behavioural cost.
  *   - Permissions-Policy: we don't use camera / microphone / etc, so
@@ -20,10 +23,14 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
  *     can't silently opt back in.
  */
 const SECURITY_HEADERS = [
-  {
-    key: 'Strict-Transport-Security',
-    value: 'max-age=63072000; includeSubDomains; preload',
-  },
+  ...(process.env.NODE_ENV === 'production'
+    ? [
+        {
+          key: 'Strict-Transport-Security',
+          value: 'max-age=63072000; includeSubDomains; preload',
+        },
+      ]
+    : []),
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
@@ -80,6 +87,7 @@ const nextConfig: NextConfig = {
    * has no effect on a production build.
    */
   allowedDevOrigins: [
+    '127.0.0.1',
     '*.ngrok-free.app',
     '*.ngrok.app',
     '*.ngrok.io',

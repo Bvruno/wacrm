@@ -39,6 +39,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local supabase dev output (contains local dev keys)
+supabase.local.md
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
